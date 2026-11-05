@@ -722,6 +722,7 @@
   const corpo = document.body;
   let estado = "iniciando";
   let nomeDono = "Miguel";  // vem do perfil (/api/config)
+  let atalhoAtivo = false, nivelAtalho = 0;
 
   // Depois que o Ultron termina de falar, a legenda (sua frase + a resposta) some sozinha; ela continua na conversa (C).
   let legendaTimer = null;
@@ -1147,7 +1148,7 @@
   function quadro(agora) {
     const t = (agora - t0) / 1000;
     let alvo;
-    if (estado === "ouvindo") alvo = volume(analisadorMic);
+    if (estado === "ouvindo") alvo = atalhoAtivo ? nivelAtalho : volume(analisadorMic);
     else if (estado === "falando") alvo = volume(analisadorSaida);
     else if (trabalhando()) alvo = 0.16 + 0.1 * Math.sin(t * 3.4);
     else alvo = 0.04 + 0.03 * Math.sin(t * 1.2);
@@ -1758,6 +1759,21 @@
         if (chatAberto()) desenharChat();
       } else if (e.tipo === "paineis") {
         carregarPaineis();
+      } else if (e.tipo === "atalho") {
+        if (e.estado === "ouvindo") {
+          pararFala();
+          atalhoAtivo = true;
+          nivelAtalho = 0;
+          corpo.classList.add("usado");
+          mudarEstado("ouvindo");
+        } else if (e.estado === "parado") {
+          atalhoAtivo = false;
+          mudarEstado("transcrevendo");
+        } else if (e.estado === "cancelado") {
+          atalhoAtivo = false;
+          mudarEstado("parado");
+        }
+        if (e.nivel !== undefined) nivelAtalho = e.nivel;
       } else if (e.tipo === "voce") {
         turnoAberto = true;
         manterLegenda();

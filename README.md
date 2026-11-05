@@ -24,6 +24,7 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
 - Python 3.9 ou mais novo. **O servidor não precisa de nenhuma biblioteca**: só a biblioteca padrão.
 - Uma chave do [ElevenLabs](https://elevenlabs.io) (o plano grátis serve pra testar). Sem ela, ele responde só escrito.
 - Opcional: `ffmpeg` e o whisper local, pra transcrição grátis.
+- Opcional: `sounddevice` e `numpy`, só pra ligar com palmas (`palmas.py`).
 
 ## Rodar no Windows
 
@@ -48,6 +49,16 @@ notepad .env
    ```
 
    Abre no navegador em `http://localhost:8790`. Na primeira vez, libere o microfone.
+
+### Ligar com duas palmas (opcional)
+
+```powershell
+py -m pip install -r requirements-palmas.txt
+py palmas.py --calibrar   # mostra o volume de cada som, pra ajustar
+py palmas.py              # fica ouvindo; duas palmas ligam o Ultron em tela cheia
+```
+
+Pra ligar junto com o Windows, crie um atalho de `pythonw palmas.py` na pasta `shell:startup`.
 
 ### Whisper local (opcional)
 
@@ -127,6 +138,7 @@ ultron/            o backend (veja docs/ARQUITETURA.md)
 web/               a tela (HTML/CSS/JS, sem build)
 hooks/             trava.py e registro.py
 atalhos/           scripts de resposta rápida
+palmas.py          liga com duas palmas
 persona.example.md a personalidade (copie pra persona.md)
 vozes.json         as vozes da engrenagem
 gatilhos.json      palavras que já disparam um atalho
