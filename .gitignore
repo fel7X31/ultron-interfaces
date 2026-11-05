@@ -8,3 +8,5 @@ cerebro/
 persona-*.md
 *.tmp
 MUDANCAS-ULTRON.md
+front/node_modules/
+web/novo/

@@ -54,7 +54,8 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   └── http/
 │       ├── servidor.py          roteador: @rota("GET", "/api/...")
 │       └── rotas/               um arquivo de rotas por assunto
-├── web/                       a tela (HTML/CSS/JS, sem build)
+├── web/                       a tela antiga (HTML/CSS/JS, sem build); web/novo/ é o build da tela nova
+├── front/                     a tela nova em React + TypeScript (npm run build → web/novo/), em migração
 ├── hooks/                     trava.py (o que precisa de confirmação) e registro.py (log das mudanças do Ultron)
 ├── atalhos/                   scripts de resposta rápida que o Ultron roda
 ├── tests/                     python -m unittest discover -s tests

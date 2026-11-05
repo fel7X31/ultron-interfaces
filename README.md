@@ -129,6 +129,18 @@ O backend fica em `ultron/`, em camadas. Cada funcionalidade é um arquivo em `u
 `ultron/http/rotas/` e os comandos de voz em `ultron/assistente/comandos.py`. O mapa completo, o caminho de uma fala
 e o passo a passo pra criar uma funcionalidade nova estão em **[docs/ARQUITETURA.md](docs/ARQUITETURA.md)**.
 
+### Tela nova (React + TypeScript, em migração)
+
+A tela está passando pra React aos poucos, em `front/`. Enquanto isso, a antiga continua em `/` e a nova abre em
+`http://localhost:8790/novo/`. Precisa do [Node](https://nodejs.org):
+
+```powershell
+cd front
+npm install
+npm run build   # gera web/novo/
+npm run dev     # ou: tela nova com recarga automática em http://localhost:5173/novo/ (com o server.py ligado)
+```
+
 Testes (não abrem o Claude nem chamam serviços de fora):
 
 ```powershell

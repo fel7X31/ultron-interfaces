@@ -142,9 +142,12 @@ class Tratador(BaseHTTPRequestHandler):
 
 
 def arquivo_da_tela(caminho):
-    """Arquivos de web/ (/, /chat.html, /curriculo.html...). Nada fora dessa pasta."""
+    """Arquivos de web/ (/, /chat.html, /novo/...). Pasta vira o index.html dela. Nada fora de web/."""
     raiz = WEB.resolve()
-    arquivo = (WEB / ("index.html" if caminho == "/" else urllib.parse.unquote(caminho).lstrip("/"))).resolve()
+    nome = urllib.parse.unquote(caminho).lstrip("/")
+    if not nome or nome.endswith("/"):
+        nome += "index.html"
+    arquivo = (WEB / nome).resolve()
     if raiz not in arquivo.parents or not arquivo.is_file():
         return em_json({}, 404)
     return Resposta(arquivo.read_bytes(), TIPOS.get(arquivo.suffix, "application/octet-stream"))

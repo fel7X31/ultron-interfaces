@@ -1,9 +1,12 @@
 """O servidor sobe e as rotas principais respondem (sem abrir o Claude nem chamar serviços de fora)."""
 import json
+import tempfile
 import threading
 import unittest
 import urllib.error
 import urllib.request
+from pathlib import Path
+from unittest import mock
 
 from ultron.http.servidor import achar_rota, criar_servidor
 from ultron.nucleo.config import CFG, ESTADO, WEB
@@ -35,6 +38,13 @@ class TesteServidor(unittest.TestCase):
         codigo, corpo = self.pegar("/")
         self.assertEqual(codigo, 200)
         self.assertIn(b"<html", corpo.lower())
+
+    def test_pasta_abre_o_index_dela(self):
+        with mock.patch("ultron.http.servidor.WEB", Path(tempfile.mkdtemp())) as web:
+            (web / "novo").mkdir()
+            (web / "novo" / "index.html").write_text("<html>nova</html>")
+            self.assertEqual(self.pegar("/novo/"), (200, b"<html>nova</html>"))
+            self.assertEqual(self.pegar("/novo")[0], 404)
 
     def test_rotas_json(self):
         for caminho in ("/api/config", "/api/paineis", "/api/provas", "/api/saude", "/api/curriculo/estado"):

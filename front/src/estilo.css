@@ -1,0 +1,54 @@
+:root {
+  --fundo: #c3c6cb;
+  --texto: #1d1f22;
+  --suave: rgba(30, 32, 36, .58);
+  --vermelho: #d7141e;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: radial-gradient(circle at 50% 42%, #f4f5f7 0%, #cfd2d6 45%, #a3a7ad 100%);
+  color: var(--texto);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.topo {
+  position: fixed;
+  top: 28px;
+  left: 32px;
+  right: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--suave);
+}
+
+.marca { color: var(--texto); font-weight: 600; }
+.estado { display: flex; align-items: center; gap: 10px; }
+.ponto { width: 7px; height: 7px; border-radius: 50%; background: var(--texto); opacity: .35; transition: opacity .3s, box-shadow .3s; }
+
+.tela[data-estado="ouvindo"] .ponto,
+.tela[data-estado="falando"] .ponto { opacity: 1; background: var(--vermelho); box-shadow: 0 0 14px var(--vermelho); }
+
+.tela[data-estado="pensando"] .ponto,
+.tela[data-estado="transcrevendo"] .ponto,
+.tela[data-estado="aquecendo"] .ponto { animation: pisca 1s ease-in-out infinite; }
+
+.saudacao {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-size: 18px;
+  color: var(--suave);
+}
+
+@keyframes pisca { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
