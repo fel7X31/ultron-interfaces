@@ -13,6 +13,9 @@ def tentar(texto, aguardando=False):
 
 
 class TesteComandos(unittest.TestCase):
+    def test_controle_de_musica(self):
+        self.assertEqual(tentar("Próxima música!")[0], "Próxima.")
+        self.assertEqual(tentar("pausa a música")[0], "Pausei.")
 
     def test_curriculo(self):
         self.assertIn("análise", tentar("quero analisar meu currículo")[0])
