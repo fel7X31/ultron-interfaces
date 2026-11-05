@@ -1,10 +1,57 @@
 [
-  {"id": "GIuLCSVfgJaUuh7hYOY8", "nome": "Lucas", "genero": "masculina", "descricao": "Grave e serena, de documentário"},
-  {"id": "xHUwLsLfyqiYOIVTzLRW", "nome": "Adryan", "genero": "masculina", "descricao": "Confiante, feita pra assistente de IA"},
-  {"id": "Qrdut83w0Cr152Yb4Xn3", "nome": "Paulo", "genero": "masculina", "descricao": "Formal e expressiva"},
-  {"id": "TY3h8ANhQUsJaa0Bga5F", "nome": "Cassio", "genero": "masculina", "descricao": "Grave, direta e segura"},
-  {"id": "S4M4JhZIzYGUlDsYIOow", "nome": "Elena", "genero": "feminina", "descricao": "Madura, sofisticada e elegante"},
-  {"id": "Eyspt3SYhZzXd1Jd3J8O", "nome": "Bia", "genero": "feminina", "descricao": "Direta, firme e assertiva"},
-  {"id": "cyD08lEy76q03ER1jZ7y", "nome": "Scheila", "genero": "feminina", "descricao": "Séria, calma e direta"},
-  {"id": "7iqXtOF3wl3pomwXFY7G", "nome": "Fernanda", "genero": "feminina", "descricao": "Formal, educada e objetiva"}
+  {
+    "id": "a9afce615f7f44259d46f1a4e7968fb7",
+    "nome": "Ultron",
+    "genero": "masculina",
+    "descricao": "Sua voz com filtro (Fish Audio)",
+    "provedor": "fish"
+  },
+  {
+    "id": "nPczCjzI2devNBz1zQrb",
+    "nome": "Brian",
+    "genero": "masculina",
+    "descricao": "Grave, ressonante e acolhedora"
+  },
+  {
+    "id": "cjVigY5qzO86Huf0OWal",
+    "nome": "Eric",
+    "genero": "masculina",
+    "descricao": "Suave e confiável"
+  },
+  {
+    "id": "pqHfZKP75CvOlQylNhV4",
+    "nome": "Bill",
+    "genero": "masculina",
+    "descricao": "Madura e sábia"
+  },
+  {
+    "id": "iP95p4xoKVk53GoZ742B",
+    "nome": "Chris",
+    "genero": "masculina",
+    "descricao": "Simpática e direta"
+  },
+  {
+    "id": "EXAVITQu4vr4xnSDxMaL",
+    "nome": "Sarah",
+    "genero": "feminina",
+    "descricao": "Madura, segura e tranquila"
+  },
+  {
+    "id": "pFZP5JQG7iQjIQuC4Bku",
+    "nome": "Lily",
+    "genero": "feminina",
+    "descricao": "Aveludada e confiante"
+  },
+  {
+    "id": "XrExE9yKIg1WjnnlVkGX",
+    "nome": "Matilda",
+    "genero": "feminina",
+    "descricao": "Profissional e clara"
+  },
+  {
+    "id": "Xb7hH8MSUJpSbSDYk0k2",
+    "nome": "Alice",
+    "genero": "feminina",
+    "descricao": "Clara e envolvente"
+  }
 ]

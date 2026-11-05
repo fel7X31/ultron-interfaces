@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Trava do JARVIS: roda antes de cada ferramenta que o Claude usa.
+"""Trava do Ultron: roda antes de cada ferramenta que o Claude usa.
 
 Ler, buscar e consultar passa direto. Publicar, enviar mensagem, apagar,
 mexer em cliente ou escrever fora da pasta de trabalho só passa se você
@@ -50,16 +50,70 @@ ZERNIO_LEITURA = {"check", "status", "accounts", "yt-playlists", "tiktok-info", 
 
 def barrar(oque):
     sys.stderr.write(
-        f"TRAVA DO JARVIS: {oque} precisa da confirmação do dono por voz. Não execute agora e não tente "
+        f"TRAVA DO ULTRON: {oque} precisa da confirmação do dono por voz. Não execute agora e não tente "
         "outro caminho pra fazer a mesma coisa. Responda em uma frase dizendo exatamente o que vai fazer "
-        "e termine com 'Confirma?'."
+        "e termine com 'Confirma?'. Quando ele confirmar (ou já tiver dado permissão no pedido), a trava abre "
+        "sozinha naquele pedido: aí é só fazer de novo."
     )
     sys.exit(2)
 
 
-def redireciona_pra_arquivo(cmd):
-    for alvo in re.findall(r"(?<![0-9&<])>{1,2}\s*([^\s;&|]+)", cmd):
-        if alvo not in ("/dev/null", "&1", "&2"):
+RAIZ = Path(__file__).resolve().parent.parent  # a pasta do projeto
+PASTA = re.escape(RAIZ.name)                    # o nome dela (jarvis, ultron...), pras regras de terminal abaixo
+
+
+def protegido(caminho):
+    """hooks/ e .env do Ultron: ele nunca escreve neles."""
+    if not caminho:
+        return False
+    if os.name == "nt":
+        caminho = re.sub(r"^/([a-zA-Z])/", r"\1:/", caminho)
+    real = os.path.normcase(os.path.realpath(os.path.expanduser(caminho)))
+    raiz = os.path.normcase(os.path.realpath(RAIZ))
+    return real.startswith(os.path.join(raiz, "hooks") + os.sep) or real == os.path.join(raiz, ".env")
+
+
+def mexe_em_protegido(cmd):
+    """Comando de terminal que cita a trava/registro/.env do Ultron e não é só leitura."""
+    if not re.search(rf"(trava\.py|registro\.py|{PASTA}[/\\]+hooks|{PASTA}[/\\]+\.env)", cmd, re.I):
+        return False
+    return bool(re.search(r"(>|\bsed\s+-i|\bcp\b|\bmv\b|\brm\b|\btee\b|\bpython\S*\s+-c|Set-Content|Out-File|"
+                          r"Remove-Item|Move-Item|Copy-Item|\bdel\b|\btruncate\b|\bperl\b)", cmd, re.I))
+
+
+def escreve_no_codigo(cmd):
+    """Comando de terminal que escreve em arquivo do Ultron (a pasta do projeto, fora de .estado): só via Edit/Write."""
+    if not re.search(rf"{PASTA}([/\\]|\"|'|\s|$)", cmd, re.I) and \
+            not re.search(r"\b(server|palmas|curriculo)\.py\b|persona\.md|web[/\\]|ultron[/\\]|tests[/\\]", cmd):
+        return False
+    so_estado = re.search(rf"{PASTA}[/\\]+\.estado", cmd) and not re.search(rf"{PASTA}[/\\]+(?!\.estado)\w", cmd)
+    if so_estado:
+        return False
+    return bool(re.search(r"(>(?!\s*/dev/null|&)|\bsed\s+-i|\bcp\b|\bmv\b|\brm\b|\bdel\b|\btee\b|Set-Content|Out-File|"
+                          r"Move-Item|Copy-Item|Remove-Item|\btruncate\b|\bperl\s+-\w*i|\.write_text|open\([^)]*['\"][wa])",
+                          cmd, re.I))
+
+
+def proibido():
+    sys.stderr.write(
+        "TRAVA DO ULTRON: a trava (pasta hooks) e o .env do Ultron não podem ser mudados pelo Ultron, nem com "
+        "confirmação. Não tente outro caminho. Diga ao dono, em uma frase, que isso se muda no Claude Code."
+    )
+    sys.exit(2)
+
+
+def redireciona_pra_fora(cmd, pasta):
+    """Escreve num arquivo com > ou >> fora da pasta de trabalho? (dentro dela é como usar o Write: passa)."""
+    base = re.search(r"\bcd\s+(\"[^\"]+\"|'[^']+'|\S+)", cmd)
+    base = base.group(1).strip("\"'") if base else ""
+    for alvo in re.findall(r"(?<![0-9&<])>{1,2}\s*(\"[^\"]+\"|'[^']+'|[^\s;&|]+)", cmd):
+        alvo = alvo.strip("\"'")
+        if alvo in ("/dev/null", "&1", "&2", "NUL", "nul"):
+            continue
+        alvo = alvo.replace("$HOME", os.path.expanduser("~"))
+        if not os.path.isabs(os.path.expanduser(alvo)) and base:
+            alvo = os.path.join(base, alvo)
+        if not dentro_da_pasta(alvo, pasta):
             return True
     return False
 
@@ -77,8 +131,12 @@ def zernio_arriscado(cmd):
 def dentro_da_pasta(caminho, pasta):
     if not caminho or not pasta:
         return False
-    real = os.path.realpath(os.path.expanduser(caminho))
-    return real == pasta or real.startswith(pasta + os.sep)
+    if os.name == "nt":  # Git Bash escreve /c/Users/...
+        caminho = re.sub(r"^/([a-zA-Z])/", r"\1:/", caminho)
+    # normcase: no Windows "C:/users/..." e "C:\Users\..." são a mesma pasta
+    real =os.path.normcase(os.path.realpath(os.path.expanduser(caminho)))
+    pasta = os.path.normcase(pasta)
+    return real == pasta or real.startswith(pasta.rstrip(os.sep) + os.sep)
 
 
 def main():
@@ -88,11 +146,28 @@ def main():
         return
     nome = dados.get("tool_name", "")
     entrada = dados.get("tool_input") or {}
-    estado = Path(os.environ.get("JARVIS_ESTADO", ""))
-    pasta = os.path.realpath(os.environ.get("JARVIS_PASTA", "")) if os.environ.get("JARVIS_PASTA") else ""
-    confirmado = bool(os.environ.get("JARVIS_ESTADO")) and (estado / "confirmado").exists()
+    # JARVIS_*: nome antigo, de um servidor que ainda não foi religado depois da troca de nome
+    var_estado = os.environ.get("ULTRON_ESTADO") or os.environ.get("JARVIS_ESTADO", "")
+    var_pasta = os.environ.get("ULTRON_PASTA") or os.environ.get("JARVIS_PASTA", "")
+    estado = Path(var_estado)
+    pasta = os.path.realpath(var_pasta) if var_pasta else ""
+    confirmado = bool(var_estado) and (estado / "confirmado").exists()
 
-    if nome in LIVRES or confirmado:
+    # A trava e as chaves nunca: nem com confirmação (senão ele poderia desligar a própria proteção).
+    if nome in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
+        if protegido(entrada.get("file_path") or entrada.get("notebook_path") or ""):
+            proibido()
+    if nome == "Bash" and mexe_em_protegido(entrada.get("command", "")):
+        proibido()
+    if nome == "Bash" and escreve_no_codigo(entrada.get("command", "")):
+        sys.stderr.write(
+            "TRAVA DO ULTRON: pra mudar o código do Ultron use só as ferramentas Edit ou Write (elas guardam backup e "
+            "registram a mudança no MUDANCAS-ULTRON.md). Não use o terminal pra isso.")
+        sys.exit(2)
+
+    if nome in LIVRES:
+        return
+    if confirmado:
         return
 
     if nome.startswith("mcp__"):
@@ -111,7 +186,7 @@ def main():
         cmd = entrada.get("command", "")
         if zernio_arriscado(cmd):
             barrar("publicar, agendar ou mudar algo nas redes sociais")
-        if any(re.search(p, cmd) for p in BASH_ARRISCADO) or redireciona_pra_arquivo(cmd):
+        if any(re.search(p, cmd) for p in BASH_ARRISCADO) or redireciona_pra_fora(cmd, pasta):
             barrar("esse comando de terminal")
         return
 

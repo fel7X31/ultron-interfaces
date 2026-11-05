@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversa · Ultron</title>
+<link rel="icon" type="image/svg+xml" href="/icone.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Janela destacada da conversa: mesmo tema da tela do Ultron (prata ou escuro). */
+  :root { --texto: #1d1f22; --suave: rgba(30, 32, 36, .58); --fundo: #c3c6cb; }
+  html, body { margin: 0; height: 100%; font-family: Inter, system-ui, "Segoe UI", sans-serif; color: var(--texto);
+    background: var(--fundo); background-image: radial-gradient(circle at 50% 30%, #f4f5f7 0%, #cfd2d6 55%, #a3a7ad 100%); }
+  body { display: flex; flex-direction: column; padding: 14px; box-sizing: border-box; }
+  body.escuro { --texto: #e9ecef; --suave: rgba(233, 236, 239, .6); --fundo: #030405; color-scheme: dark;
+    background-image: radial-gradient(circle at 50% 30%, #1d2024 0%, #0b0c0e 55%, #000 100%); }
+  .topo { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .titulo { font-size: 13px; letter-spacing: .28em; text-transform: uppercase; font-weight: 600; flex: 1; }
+  .titulo::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #d7141e; margin-right: 9px; vertical-align: 1px; box-shadow: 0 0 8px rgba(215, 20, 30, .6); }
+  .voltar { border: 1px solid rgba(30, 32, 36, .2); border-radius: 10px; padding: 7px 11px; font: inherit; font-size: 12px; background: transparent; color: var(--texto); cursor: pointer; }
+  body.escuro .voltar { border-color: rgba(255, 255, 255, .2); }
+  .voltar:hover { background: rgba(215, 20, 30, .1); }
+  .caixa { flex: 1; display: flex; flex-direction: column; min-height: 0; background: rgba(255, 255, 255, .38); border: 1px solid rgba(255, 255, 255, .6);
+    border-radius: 16px; padding: 14px; box-shadow: 0 10px 30px rgba(40, 44, 50, .18); }
+  body.escuro .caixa { background: rgba(18, 20, 23, .62); border-color: rgba(255, 255, 255, .08); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+  .lista { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px; scrollbar-width: thin; }
+  .msg { display: flex; gap: 10px; align-items: flex-end; max-width: 88%; }
+  .msg.eu { align-self: flex-end; flex-direction: row-reverse; }
+  .balao { padding: 10px 13px; border-radius: 14px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+  .msg.ele .balao { background: rgba(30, 32, 36, .06); border: 1px solid rgba(30, 32, 36, .08); border-bottom-left-radius: 4px; }
+  body.escuro .msg.ele .balao { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .08); }
+  .msg.eu .balao { background: rgba(215, 20, 30, .10); border: 1px solid rgba(215, 20, 30, .22); border-bottom-right-radius: 4px; }
+  .quem { width: 26px; height: 26px; flex: none; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+  .quem img { width: 100%; height: 100%; object-fit: cover; }
+  .msg.eu .quem { background: rgba(30, 32, 36, .1); }
+  .msg.ele .quem { background: radial-gradient(circle, #ff3b2b 0 1.1px, transparent 1.6px) 0 0 / 5px 5px, radial-gradient(circle at 50% 45%, #3a0d0d 0%, #16090a 55%, #050505 100%);
+    box-shadow: inset 0 0 0 1.5px rgba(255, 40, 30, .65); }
+  .digitando { font-size: 12px; color: var(--suave); min-height: 16px; margin-top: 6px; }
+  form { display: flex; gap: 8px; margin-top: 8px; }
+  input[type=text] { flex: 1; background: rgba(30, 32, 36, .05); border: 1px solid rgba(30, 32, 36, .15); border-radius: 12px; color: var(--texto);
+    font: inherit; font-size: 15px; padding: 12px 14px; outline: none; }
+  body.escuro input[type=text] { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .12); }
+  input[type=text]:focus { border-color: rgba(215, 20, 30, .55); }
+  .enviar { border: 0; border-radius: 12px; padding: 0 16px; font: inherit; font-size: 13px; font-weight: 600; background: #d7141e; color: #fff; cursor: pointer; }
+  .opcoes { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--suave); }
+  .opcoes label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  .opcoes input { accent-color: #d7141e; }
+</style>
+</head>
+<body>
+<div class="topo">
+  <span class="titulo">Conversa</span>
+  <button id="voltar" class="voltar" title="Volta a conversa pra dentro da tela do Ultron">Voltar pra tela</button>
+</div>
+<div class="caixa">
+  <div id="lista" class="lista"></div>
+  <div id="digitando" class="digitando"></div>
+  <form id="form" autocomplete="off">
+    <input id="entrada" type="text" placeholder="Escreva para ele..." aria-label="Mensagem" autofocus>
+    <button class="enviar" type="submit">Enviar</button>
+  </form>
+  <div class="opcoes">
+    <label><input id="modoTexto" type="checkbox"> Modo texto (sem voz)</label>
+    <label><input id="modoProva" type="checkbox"> Modo prova</label>
+  </div>
+</div>
+<script>
+(() => {
+  // Esta janela só mostra e envia: quem guarda o histórico é a tela do Ultron (mesmo navegador, mesmo armazenamento).
+  const el = (id) => document.getElementById(id);
+  let nomeDono = "Miguel";
+  const tema = () => document.body.classList.toggle("escuro", localStorage.getItem("tema") === "escuro");
+
+  function bolinha(quem) {
+    const q = document.createElement("div");
+    q.className = "quem";
+    const foto = localStorage.getItem(quem === "eu" ? "fotoPerfil" : "fotoUltron");
+    if (foto) { const i = document.createElement("img"); i.src = foto; i.alt = ""; q.appendChild(i); }
+    else if (quem === "eu") q.textContent = (nomeDono || "?").charAt(0).toUpperCase();
+    return q;
+  }
+  function desenhar() {
+    const lista = el("lista");
+    const embaixo = lista.scrollHeight - lista.scrollTop - lista.clientHeight < 40;
+    lista.replaceChildren();
+    JSON.parse(localStorage.getItem("chatHistorico") || "[]").forEach((m) => {
+      const d = document.createElement("div");
+      d.className = "msg " + m.quem;
+      const b = document.createElement("div");
+      b.className = "balao";
+      b.textContent = m.texto;
+      d.append(bolinha(m.quem), b);
+      lista.appendChild(d);
+    });
+    if (embaixo) lista.scrollTop = lista.scrollHeight;
+  }
+  addEventListener("storage", (e) => {
+    if (e.key === "chatHistorico" || e.key === "fotoPerfil" || e.key === "fotoUltron") desenhar();
+    if (e.key === "tema") tema();
+  });
+
+  async function config(mudanca) {
+    const r = await fetch("/api/config", mudanca ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(mudanca) } : undefined);
+    const c = await r.json();
+    if (c.nome) nomeDono = c.nome;
+    el("modoTexto").checked = !!c.modo_texto;
+    el("modoProva").checked = !!c.modo_prova;
+    desenhar();
+  }
+  el("modoTexto").addEventListener("change", (e) => config({ modo_texto: e.target.checked }));
+  el("modoProva").addEventListener("change", (e) => config({ modo_prova: e.target.checked }));
+
+  el("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const texto = el("entrada").value.trim();
+    if (!texto) return;
+    el("entrada").value = "";
+    const r = await fetch("/api/texto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto }) });
+    if (r.status === 409) el("digitando").textContent = "Um pedido de cada vez. Ele ainda está no anterior.";
+  });
+
+  const fonte = new EventSource("/api/eventos");
+  fonte.onmessage = (ev) => {
+    const e = JSON.parse(ev.data);
+    if (e.tipo === "voce") el("digitando").textContent = "Ultron está escrevendo...";
+    if (e.tipo === "resposta") el("digitando").textContent = "";
+    if (e.tipo === "estado" && e.estado === "parado") el("digitando").textContent = "";
+    if (e.tipo === "aviso") el("digitando").textContent = e.texto;
+  };
+
+  el("voltar").addEventListener("click", () => {
+    try { if (window.opener && !window.opener.closed) window.opener.postMessage("voltarChat", location.origin); } catch (e) {}
+    window.close();
+  });
+
+  tema();
+  config();
+  el("entrada").focus();
+})();
+</script>
+</body>
+</html>

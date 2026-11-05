@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Desenha o ícone do JARVIS.app (esfera de pontos branca num quadrado preto).
+"""Desenha o ícone do Ultron.app (esfera de pontos branca num quadrado preto).
 
 Uso: python3 app/icone.py saida.png   (precisa do Pillow: pip3 install pillow)
 """

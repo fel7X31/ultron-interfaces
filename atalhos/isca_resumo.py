@@ -10,7 +10,7 @@ Uso:
   python3 atalhos/isca_resumo.py --dia hoje
   python3 atalhos/isca_resumo.py --dia 2026-10-21
 
-Dia fechado fica guardado em .estado/isca/ (o JARVIS calcula "ontem" quando abre,
+Dia fechado fica guardado em .estado/isca/ (o Ultron calcula "ontem" quando abre,
 então a pergunta responde na hora). Precisa de ZERNIO_API_KEY (em ~/.zernio.env).
 """
 import argparse
@@ -31,7 +31,7 @@ except ImportError:  # Python < 3.9
 BASE = "https://zernio.com/api/v1"
 RAIZ = Path(__file__).resolve().parent.parent
 CACHE = RAIZ / ".estado" / "isca"
-FUSO = os.environ.get("JARVIS_FUSO", "America/Sao_Paulo")
+FUSO = os.environ.get("ULTRON_FUSO", "America/Sao_Paulo")
 POR_PAGINA = 200
 
 

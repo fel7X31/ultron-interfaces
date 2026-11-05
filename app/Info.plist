@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>JARVIS</string>
+	<string>Ultron</string>
 	<key>CFBundleDisplayName</key>
-	<string>JARVIS</string>
+	<string>Ultron</string>
 	<key>CFBundleIdentifier</key>
-	<string>local.jarvis.claude-code</string>
+	<string>local.ultron.claude-code</string>
 	<key>CFBundleExecutable</key>
-	<string>JARVIS</string>
+	<string>Ultron</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
@@ -25,7 +25,7 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>O JARVIS usa o microfone pra ouvir você enquanto você segura a barra de espaço.</string>
+	<string>O Ultron usa o microfone pra ouvir você enquanto você segura a barra de espaço.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
@@ -33,9 +33,9 @@
 	</dict>
 	<key>NSHumanReadableCopyright</key>
 	<string>Assistente de voz em cima do Claude Code. Licença MIT.</string>
-	<key>JarvisPasta</key>
+	<key>UltronPasta</key>
 	<string>__PASTA__</string>
-	<key>JarvisPorta</key>
+	<key>UltronPorta</key>
 	<string>__PORTA__</string>
 </dict>
 </plist>

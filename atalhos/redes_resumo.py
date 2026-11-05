@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resumo das redes (via Zernio) numa linha só, pro JARVIS falar rápido.
+"""Resumo das redes (via Zernio) numa linha só, pro Ultron falar rápido.
 
 Uso:
   python3 atalhos/redes_resumo.py                                  # ontem, Instagram
@@ -8,7 +8,7 @@ Uso:
   python3 atalhos/redes_resumo.py --de 2026-10-01 --ate 2026-10-21 # período inteiro, uma chamada
   python3 atalhos/redes_resumo.py --ultimos 7                      # a semana (hoje e os 6 dias antes)
 
-Precisa do zernio.py da skill publicar-agendar-posts (caminho em JARVIS_ZERNIO).
+Precisa do zernio.py da skill publicar-agendar-posts (caminho em ULTRON_ZERNIO).
 """
 import argparse
 import datetime as dt
@@ -25,8 +25,8 @@ except ImportError:  # Python < 3.9
     ZoneInfo = None
 
 ZERNIO = Path(os.environ.get(
-    "JARVIS_ZERNIO", "~/.claude/skills/publicar-agendar-posts/materiais/scripts/zernio.py")).expanduser()
-FUSO = os.environ.get("JARVIS_FUSO", "America/Sao_Paulo")
+    "ULTRON_ZERNIO", "~/.claude/skills/publicar-agendar-posts/materiais/scripts/zernio.py")).expanduser()
+FUSO = os.environ.get("ULTRON_FUSO", "America/Sao_Paulo")
 POR_PAGINA = 100  # máximo que a Zernio aceita
 
 

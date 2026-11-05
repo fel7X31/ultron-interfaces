@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Monta o JARVIS.app (Mac) e instala em Aplicativos.
+# Monta o Ultron.app (Mac) e instala em Aplicativos.
 # Uso: bash app/montar.sh            (instala em /Applications ou ~/Applications)
 #      bash app/montar.sh ~/Desktop  (instala onde você quiser)
 # Precisa: Xcode ou Command Line Tools (xcode-select --install) e Pillow (pip3 install pillow).
@@ -11,26 +11,26 @@ DESTINO="${1:-/Applications}"
 [ -w "$DESTINO" ] || DESTINO="$HOME/Applications"
 mkdir -p "$DESTINO"
 
-PORTA="$(grep -E '^JARVIS_PORTA=' "$RAIZ/.env" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]' || true)"
+PORTA="$(grep -E '^ULTRON_PORTA=' "$RAIZ/.env" 2>/dev/null | cut -d= -f2 | tr -d '[:space:]' || true)"
 PORTA="${PORTA:-8790}"
 
-ALVO="$DESTINO/JARVIS.app"
+ALVO="$DESTINO/Ultron.app"
 if [ -d "$ALVO" ]; then
   ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$ALVO/Contents/Info.plist" 2>/dev/null || true)"
-  if [ "$ID" != "local.jarvis.claude-code" ]; then
-    echo "Já existe outro app chamado JARVIS em $DESTINO ($ID). Não vou sobrescrever." >&2
+  if [ "$ID" != "local.ultron.claude-code" ]; then
+    echo "Já existe outro app chamado Ultron em $DESTINO ($ID). Não vou sobrescrever." >&2
     exit 1
   fi
 fi
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-APP="$TMP/JARVIS.app"
+APP="$TMP/Ultron.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
 echo "Compilando..."
 xcrun swiftc -O -swift-version 5 -target "$(uname -m)-apple-macos12.0" \
-  -o "$APP/Contents/MacOS/JARVIS" "$AQUI/JarvisApp.swift" -framework Cocoa -framework WebKit
+  -o "$APP/Contents/MacOS/Ultron" "$AQUI/UltronApp.swift" -framework Cocoa -framework WebKit
 
 sed -e "s#__PASTA__#$RAIZ#" -e "s#__PORTA__#$PORTA#" "$AQUI/Info.plist" > "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
@@ -55,4 +55,4 @@ touch "$ALVO"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$ALVO" >/dev/null 2>&1 || true
 
 echo "Pronto: $ALVO"
-echo "Abra pelo Spotlight (⌘ espaço, digite JARVIS) ou arraste pro Dock."
+echo "Abra pelo Spotlight (⌘ espaço, digite Ultron) ou arraste pro Dock."

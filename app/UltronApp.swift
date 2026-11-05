@@ -1,4 +1,4 @@
-// JARVIS.app: janela nativa do Mac pro JARVIS.
+// Ultron.app: janela nativa do Mac pro Ultron.
 // Liga o servidor (server.py) quando abre, mostra a esfera numa janela própria,
 // libera o microfone e desliga tudo quando você fecha.
 // Montar: app/montar.sh
@@ -10,7 +10,7 @@ let telaEspera = """
 <html><body style="margin:0;height:100vh;background:#000;color:rgba(255,255,255,.6);display:flex;\
 align-items:center;justify-content:center;font:12px -apple-system,system-ui;letter-spacing:.32em;\
 text-transform:uppercase"><div style="display:flex;gap:12px;align-items:center"><span style="width:7px;\
-height:7px;border-radius:50%;background:#fff;animation:p 1s infinite"></span>ligando o jarvis</div>\
+height:7px;border-radius:50%;background:#fff;animation:p 1s infinite"></span>ligando o ultron</div>\
 <style>@keyframes p{0%,100%{opacity:.25}50%{opacity:1}}</style></body></html>
 """
 
@@ -20,7 +20,7 @@ func telaErro(_ mensagem: String, log: String) -> String {
     <html><body style="margin:0;height:100vh;background:#000;color:#fff;display:flex;align-items:center;\
     justify-content:center;font:15px -apple-system,system-ui;text-align:center"><div style="max-width:560px;\
     padding:24px"><div style="font-size:12px;letter-spacing:.32em;text-transform:uppercase;\
-    color:rgba(255,255,255,.6);margin-bottom:18px">jarvis</div><div style="font-size:20px;margin-bottom:14px">\
+    color:rgba(255,255,255,.6);margin-bottom:18px">ultron</div><div style="font-size:20px;margin-bottom:14px">\
     \(limpa(mensagem))</div><div style="color:rgba(255,255,255,.55);line-height:1.6">Detalhes em \
     <code>\(limpa(log))</code><br>Aperte ⌘R pra tentar de novo.</div></div></body></html>
     """
@@ -33,8 +33,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
     var encerrando = false
     var tentativas = 0
 
-    let pasta = Bundle.main.object(forInfoDictionaryKey: "JarvisPasta") as? String ?? ""
-    let porta = Bundle.main.object(forInfoDictionaryKey: "JarvisPorta") as? String ?? "8790"
+    let pasta = Bundle.main.object(forInfoDictionaryKey: "UltronPasta") as? String ?? ""
+    let porta = Bundle.main.object(forInfoDictionaryKey: "UltronPorta") as? String ?? "8790"
     var base: URL { URL(string: "http://localhost:\(porta)/")! }
     var caminhoLog: String { (pasta as NSString).appendingPathComponent(".estado/app.log") }
 
@@ -78,7 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
             contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered, defer: false)
-        janela.title = "JARVIS"
+        janela.title = "Ultron"
         // Barra preta no topo, fora da página: é por ela que se arrasta a janela.
         janela.titlebarAppearsTransparent = true
         janela.titleVisibility = .hidden
@@ -93,7 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
         janela.contentView = web
         janela.initialFirstResponder = web
         janela.center()
-        janela.setFrameAutosaveName("JarvisJanela")
+        janela.setFrameAutosaveName("UltronJanela")
         janela.makeKeyAndOrderFront(nil)
         janela.makeFirstResponder(web)
         NSApp.activate(ignoringOtherApps: true)
@@ -104,11 +104,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
 
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Sobre o JARVIS", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "Sobre o Ultron", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Ocultar JARVIS", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: "Ocultar Ultron", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Encerrar JARVIS", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Encerrar Ultron", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
         principal.addItem(appItem)
 
@@ -154,7 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
             }
             self.tentativas += 1
             if self.tentativas > 120 {
-                self.mostrarErro("O JARVIS não ligou em 60 segundos.")
+                self.mostrarErro("O Ultron não ligou em 60 segundos.")
                 return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.esperar() }
@@ -181,14 +181,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKUIDelegate, WKNaviga
             DispatchQueue.main.async {
                 guard let self = self, !self.encerrando else { return }
                 self.servidor = nil
-                self.mostrarErro("O JARVIS parou (código \(processo.terminationStatus)).")
+                self.mostrarErro("O Ultron parou (código \(processo.terminationStatus)).")
             }
         }
         do {
             try p.run()
             servidor = p
         } catch {
-            mostrarErro("Não consegui ligar o JARVIS: \(error.localizedDescription)")
+            mostrarErro("Não consegui ligar o Ultron: \(error.localizedDescription)")
         }
     }
 

@@ -3,27 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JARVIS</title>
+<title>ULTRON</title>
+<link rel="icon" type="image/svg+xml" href="/icone.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --fundo: #000;
-    --texto: #fff;
-    --suave: rgba(255, 255, 255, .58);
-    --fraco: rgba(255, 255, 255, .30);
-    --linha: rgba(255, 255, 255, .20);
+    --fundo: #c3c6cb;
+    --texto: #1d1f22;
+    --suave: rgba(30, 32, 36, .58);
+    --fraco: rgba(30, 32, 36, .30);
+    --linha: rgba(30, 32, 36, .20);
   }
   html, body {
     margin: 0; height: 100%; background: var(--fundo); color: var(--texto);
     font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
     overflow: hidden; -webkit-font-smoothing: antialiased; user-select: none;
+    background-image: radial-gradient(circle at 50% 42%, #f4f5f7 0%, #cfd2d6 45%, #a3a7ad 100%);
   }
-  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: default; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: default; touch-action: none; user-select: none; }
 
   .topo {
-    position: fixed; top: 28px; left: 32px; right: 32px; display: flex; justify-content: space-between;
+    position: fixed; top: 28px; left: 32px; right: 270px; display: flex; justify-content: space-between;  /* espaço pros 5 botões do topo (o último acaba em 250px) */
     align-items: center; font-size: 12px; letter-spacing: .32em; text-transform: uppercase; color: var(--suave);
     pointer-events: none;
   }
@@ -31,11 +33,13 @@
   .estado { display: flex; align-items: center; gap: 10px; }
   .ponto { width: 7px; height: 7px; border-radius: 50%; background: var(--texto); opacity: .35; transition: opacity .3s, box-shadow .3s; }
   body[data-estado="ouvindo"] .ponto,
-  body[data-estado="falando"] .ponto { opacity: 1; box-shadow: 0 0 14px #fff; }
+  body[data-estado="falando"] .ponto { opacity: 1; box-shadow: 0 0 14px #d7141e; background: #d7141e; }
   body[data-estado="pensando"] .ponto,
   body[data-estado="transcrevendo"] .ponto,
   body[data-estado="aquecendo"] .ponto { animation: pisca 1s ease-in-out infinite; }
 
+  .legenda .voce, .legenda .resposta, .legenda .tempo, .legenda .ferramentas { transition: opacity .7s ease; }
+  .legenda.sumindo .voce, .legenda.sumindo .resposta, .legenda.sumindo .tempo, .legenda.sumindo .ferramentas { opacity: 0; }
   .legenda {
     position: fixed; left: 50%; bottom: 10vh; transform: translateX(-50%);
     width: min(980px, calc(100vw - 32px)); text-align: center; pointer-events: none;
@@ -43,7 +47,7 @@
   .ferramentas { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; min-height: 30px; margin-bottom: 18px; }
   .chip {
     font-size: 12px; letter-spacing: .08em; padding: 6px 12px; border: 1px solid var(--linha); border-radius: 999px;
-    background: rgba(255, 255, 255, .04); display: flex; gap: 8px; align-items: center; animation: entra .35s ease both;
+    background: rgba(30, 32, 36, .04); display: flex; gap: 8px; align-items: center; animation: entra .35s ease both;
   }
   .chip i { width: 6px; height: 6px; border-radius: 50%; background: var(--texto); animation: pisca 1s ease-in-out infinite; }
   .chip.feito { color: var(--suave); }
@@ -70,41 +74,41 @@
 
   #caixa { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); width: min(640px, calc(100vw - 32px)); display: none; }
   #caixa input {
-    width: 100%; box-sizing: border-box; background: rgba(255, 255, 255, .06); border: 1px solid var(--linha);
+    width: 100%; box-sizing: border-box; background: rgba(30, 32, 36, .06); border: 1px solid var(--linha);
     border-radius: 12px; color: var(--texto); font: inherit; font-size: 16px; padding: 14px 16px; outline: none;
   }
   body.digitando #caixa { display: block; }
 
-  /* Engrenagem: aparece só quando o mouse mexe (não atrapalha a gravação). */
+  /* Botões do topo: sempre à vista (um pouco apagados); acendem quando o mouse mexe. */
   .engrenagem {
     position: fixed; top: 14px; right: 14px; z-index: 5; width: 40px; height: 40px; border: 0; border-radius: 999px;
-    background: transparent; color: rgba(255, 255, 255, .5); cursor: pointer; display: grid; place-items: center;
-    opacity: 0; transition: opacity .4s, background .2s, color .2s, transform .4s;
+    background: transparent; color: rgba(30, 32, 36, .5); cursor: pointer; display: grid; place-items: center;
+    opacity: .75; transition: opacity .4s, background .2s, color .2s, transform .4s;
   }
-  body.mouse .engrenagem, .engrenagem:focus-visible { opacity: 1; }
-  .engrenagem:hover { color: #fff; background: rgba(255, 255, 255, .08); transform: rotate(30deg); }
+  body.mouse .engrenagem, .engrenagem:focus-visible, .engrenagem:hover { opacity: 1; }
+  .engrenagem:hover { color: #1d1f22; background: rgba(30, 32, 36, .08); transform: rotate(30deg); }
 
   .config {
     position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
-    background: rgba(0, 0, 0, .6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    background: rgba(110, 114, 120, .45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   }
   .config[hidden] { display: none; }
   .config-caixa {
     width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; box-sizing: border-box;
-    background: #0b0b0b; border: 1px solid rgba(255, 255, 255, .12); border-radius: 18px; padding: 20px;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, .6); user-select: none;
-    scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .15) transparent;
+    background: #e9ebee; border: 1px solid rgba(30, 32, 36, .12); border-radius: 18px; padding: 20px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .25); user-select: none;
+    scrollbar-width: thin; scrollbar-color: rgba(30, 32, 36, .15) transparent;
   }
   .config-caixa::-webkit-scrollbar { width: 8px; height: 0; }
-  .config-caixa::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .15); border-radius: 8px; }
+  .config-caixa::-webkit-scrollbar-thumb { background: rgba(30, 32, 36, .15); border-radius: 8px; }
   .config-caixa::-webkit-scrollbar-track { background: transparent; }
   .config-topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
   .config-titulo { font-size: 13px; letter-spacing: .28em; text-transform: uppercase; font-weight: 600; }
   .config-fechar {
-    width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, .06);
+    width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(30, 32, 36, .06);
     color: var(--suave); font-size: 18px; cursor: pointer; line-height: 1;
   }
-  .config-fechar:hover { color: #fff; background: rgba(255, 255, 255, .12); }
+  .config-fechar:hover { color: #1d1f22; background: rgba(30, 32, 36, .12); }
   .config-secao {
     display: flex; justify-content: space-between; margin: 18px 0 10px; font-size: 11px; letter-spacing: .22em;
     text-transform: uppercase; color: var(--suave);
@@ -113,38 +117,552 @@
   .grupo-voz { font-size: 11px; color: var(--fraco); margin: 12px 0 6px; letter-spacing: .08em; text-transform: uppercase; }
   .voz {
     display: grid; grid-template-columns: 16px 1fr auto; gap: 12px; align-items: center; width: 100%; box-sizing: border-box;
-    padding: 11px 12px; margin-bottom: 6px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 12px;
-    background: rgba(255, 255, 255, .02); color: var(--texto); font: inherit; text-align: left; cursor: pointer;
+    padding: 11px 12px; margin-bottom: 6px; border: 1px solid rgba(30, 32, 36, .08); border-radius: 12px;
+    background: rgba(30, 32, 36, .02); color: var(--texto); font: inherit; text-align: left; cursor: pointer;
     transition: border-color .2s, background .2s;
   }
-  .voz:hover { background: rgba(255, 255, 255, .05); }
-  .voz.ativa { border-color: rgba(255, 255, 255, .7); background: rgba(255, 255, 255, .06); }
-  .voz .marca-voz { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .45); box-sizing: border-box; }
-  .voz.ativa .marca-voz { background: #fff; border-color: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, .6); }
+  .voz:hover { background: rgba(30, 32, 36, .05); }
+  .voz.ativa { border-color: rgba(215, 20, 30, .7); background: rgba(30, 32, 36, .06); }
+  .voz .marca-voz { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(30, 32, 36, .45); box-sizing: border-box; }
+  .voz.ativa .marca-voz { background: #d7141e; border-color: #d7141e; box-shadow: 0 0 10px rgba(215, 20, 30, .5); }
   .voz-nome { font-size: 15px; font-weight: 500; }
   .voz-desc { font-size: 12px; color: var(--suave); margin-top: 2px; }
   .ouvir {
-    font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .2);
+    font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(30, 32, 36, .2);
     background: transparent; color: var(--texto); cursor: pointer;
   }
-  .ouvir:hover { background: rgba(255, 255, 255, .1); }
-  .velocidade { width: 100%; accent-color: #fff; }
+  .ouvir:hover { background: rgba(30, 32, 36, .1); }
+  .velocidade { width: 100%; accent-color: #d7141e; }
   .config-nota { margin-top: 14px; font-size: 12px; color: var(--fraco); }
+
+  /* Botões do topo (conversa e perfil), ao lado da engrenagem. */
+  /* Da direita pra esquerda: perfil no canto | engrenagem, conversa, provas, música */
+  #botaoPerfil { right: 14px; }
+  #botaoPerfil::before { content: ""; position: absolute; left: -5px; top: 11px; bottom: 11px; width: 1px; background: var(--linha); }
+  #engrenagem { right: 66px; }
+  #botaoChat { right: 114px; }
+  #botaoChat:hover, #botaoPerfil:hover { transform: none; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; display: block; }
+  .avatar-vazio { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: rgba(30, 32, 36, .1); color: var(--texto); font-size: 12px; font-weight: 600; }
+
+  /* Conversa por texto */
+  .chat-caixa { width: min(640px, calc(100vw - 32px)); height: min(74vh, 760px); display: flex; flex-direction: column; }
+  .chat-lista { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 2px 10px; scrollbar-width: thin; }
+  .msg { display: flex; gap: 10px; align-items: flex-end; max-width: 86%; animation: entra .25s ease both; }
+  .msg.eu { align-self: flex-end; flex-direction: row-reverse; }
+  .msg .balao { padding: 10px 13px; border-radius: 14px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; user-select: text; }
+  .msg.ele .balao { background: rgba(30, 32, 36, .06); border: 1px solid rgba(30, 32, 36, .08); border-bottom-left-radius: 4px; }
+  .msg.eu .balao { background: rgba(215, 20, 30, .10); border: 1px solid rgba(215, 20, 30, .22); border-bottom-right-radius: 4px; }
+  .msg .quem { width: 26px; height: 26px; flex: none; border-radius: 50%; overflow: hidden; }
+  .msg.ele .quem, .avatar-ultron {
+    background: radial-gradient(circle, #ff3b2b 0 1.1px, transparent 1.6px) 0 0 / 5px 5px,
+                radial-gradient(circle at 50% 45%, #3a0d0d 0%, #16090a 55%, #050505 100%);
+    box-shadow: inset 0 0 0 1.5px rgba(255, 40, 30, .65), 0 0 8px rgba(232, 16, 10, .35);
+  }
+  .msg .quem img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .chat-rodape { display: flex; gap: 8px; margin-top: 10px; }
+  .chat-rodape input {
+    flex: 1; background: rgba(30, 32, 36, .05); border: 1px solid rgba(30, 32, 36, .15); border-radius: 12px;
+    color: var(--texto); font: inherit; font-size: 15px; padding: 12px 14px; outline: none;
+  }
+  .chat-rodape input:focus { border-color: rgba(215, 20, 30, .55); }
+  .botao-vermelho {
+    border: 0; border-radius: 12px; padding: 0 16px; font: inherit; font-size: 13px; font-weight: 600; letter-spacing: .08em;
+    background: #d7141e; color: #fff; cursor: pointer;
+  }
+  .botao-vermelho:hover { background: #b80f18; }
+  .botao-claro { border: 1px solid rgba(30, 32, 36, .2); border-radius: 12px; padding: 9px 14px; font: inherit; font-size: 13px; background: transparent; color: var(--texto); cursor: pointer; }
+  .botao-claro:hover { background: rgba(30, 32, 36, .06); }
+  .modo-texto { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--suave); margin-top: 10px; cursor: pointer; user-select: none; }
+  .modo-texto input { accent-color: #d7141e; width: 16px; height: 16px; }
+  .chat-digitando { font-size: 12px; color: var(--suave); min-height: 16px; margin-top: 6px; }
+
+  /* Perfil */
+  .perfil-foto { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+  .perfil-foto .grande { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; background: rgba(30, 32, 36, .1); display: grid; place-items: center; font-size: 30px; font-weight: 600; color: var(--texto); border: 2px solid rgba(215, 20, 30, .5); }
+  .perfil-botoes { display: flex; gap: 8px; flex-wrap: wrap; }
+  .perfil-campo { width: 100%; box-sizing: border-box; background: rgba(30, 32, 36, .05); border: 1px solid rgba(30, 32, 36, .15); border-radius: 12px; color: var(--texto); font: inherit; font-size: 15px; padding: 12px 14px; outline: none; }
+  .perfil-campo:focus { border-color: rgba(215, 20, 30, .55); }
+  .perfil-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .perfil-acoes .botao-vermelho { padding: 10px 18px; }
+
+  /* Painéis com tamanho ajustável: puxe o canto de baixo à direita. */
+  .painel { position: relative; display: flex; flex-direction: column; min-width: 220px; min-height: 44px; max-width: 92vw; max-height: 90vh; overflow: visible; }
+  .painel > header, .painel > .conteudo, .painel > .nova-tarefa { position: relative; z-index: 1; }
+  .alca { position: absolute; z-index: 2; }
+  .alca.n { top: -4px; left: 10px; right: 10px; height: 8px; cursor: ns-resize; }
+  .alca.s { bottom: -4px; left: 10px; right: 10px; height: 8px; cursor: ns-resize; }
+  .alca.e { right: -4px; top: 10px; bottom: 10px; width: 8px; cursor: ew-resize; }
+  .alca.w { left: -4px; top: 10px; bottom: 10px; width: 8px; cursor: ew-resize; }
+  .alca.ne, .alca.nw, .alca.se, .alca.sw { width: 14px; height: 14px; }
+  .alca.ne { top: -5px; right: -5px; cursor: nesw-resize; }
+  .alca.sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+  .alca.nw { top: -5px; left: -5px; cursor: nwse-resize; }
+  .alca.se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+  .painel.min .alca.n, .painel.min .alca.s, .painel.min .alca.ne, .painel.min .alca.nw, .painel.min .alca.se, .painel.min .alca.sw { display: none; }
+  body.redimensionando, body.redimensionando * { user-select: none !important; }
+  .painel .conteudo { flex: 1; min-height: 0; }
+  .painel.dimensionado .conteudo { max-height: none; }
+  .painel.min { height: auto !important; min-height: 0; }
+  .painel::-webkit-resizer { background: transparent; }
+  .tarefa .principal, .linha-painel.tarefa .principal { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+  .tarefa { align-items: flex-start; }
+  .tarefa .caixinha { margin-top: 2px; }
+
+  /* O conteúdo do painel cresce e diminui junto com o tamanho dele (--escala vem da largura). */
+  .painel { font-size: calc(13px * var(--escala, 1)); }
+  .painel .titulo, .painel .contador, .linha-painel .sub, .cal-lista-titulo { font-size: .846em; }
+  .linha-painel, .nova-tarefa, .cal-topo { font-size: 1em; }
+  .linha-painel .trecho, .vazio, .cal-grade { font-size: .923em; }
+  .cal-grade .sem { font-size: .833em; }
+  .painel .minimizar, .painel .mais { font-size: 1.15em; width: 1.6em; height: 1.6em; }
+  .cal-topo button { font-size: 1.2em; width: 1.6em; height: 1.6em; }
+  .tarefa .caixinha { width: 1.15em; height: 1.15em; font-size: 1em; }
+  .tarefa .apagar { font-size: 1.15em; }
+  .painel header { padding: .77em .92em .77em 1.08em; }
+  /* com vários botões (Tarefas tem 4), o contador encolhe e os botões nunca saem do painel */
+  .painel header > button { flex: none; }
+  .painel header .contador { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .painel header .titulo { flex: none; }
+  .painel .conteudo { padding: 0 1.08em .92em; }
+
+  /* Data embaixo do calendário: mais afastada dos dias; com o painel maior, o calendário cresce e empurra ela pra baixo. */
+  .cal-lista-titulo { margin-top: 1.3em !important; padding-top: .9em; border-top: 1px solid rgba(30, 32, 36, .1); }
+  body.escuro .cal-lista-titulo { border-top-color: rgba(255, 255, 255, .08); }
+  .painel[data-painel="agenda"].dimensionado .conteudo { display: flex; flex-direction: column; }
+  .painel[data-painel="agenda"].dimensionado .cal-grade { flex: 1 1 auto; grid-auto-rows: 1fr; align-items: stretch; }
+  .painel[data-painel="agenda"].dimensionado .cal-dia { display: flex; align-items: center; justify-content: center; }
+  .painel[data-painel="agenda"].dimensionado .cal-grade .sem { align-self: end; }
+
+  /* Destacar a conversa e painel de provas */
+  #botaoProvas { right: 162px; }
+  #botaoProvas:hover { transform: none; }
+  #botaoProvas.ativo { color: #d7141e; }
+  .chat-caixa .config-topo { cursor: grab; }
+  .chat-caixa.arrastando { transition: none; opacity: .9; }
+  .chat-caixa.perto-da-borda { outline: 2px dashed #d7141e; outline-offset: 4px; }
+  .destacar { margin-left: auto; margin-right: 6px; }
+  .provas-caixa { width: min(1100px, calc(100vw - 32px)); height: min(82vh, 900px); display: flex; flex-direction: column; }
+  /* Quadro de tarefas: um card por tarefa, com dificuldade, prioridade, prazo, tempo e o prompt pra copiar */
+  .quadro-caixa { width: min(1180px, calc(100vw - 32px)); height: min(86vh, 960px); display: flex; flex-direction: column; user-select: text; }
+  .quadro-caixa .config-topo { gap: 14px; margin-bottom: 12px; }
+  .quadro-caixa .config-titulo { margin-right: auto; }
+  .quadro-resumo { font-size: 12px; color: var(--suave); }
+  .quadro-cab { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; font-size: 13px; color: var(--suave); }
+  .quadro-filtros { display: flex; gap: 6px; }
+  .quadro-filtros .botao-claro { padding: 6px 12px; }
+  .quadro-filtros .botao-claro.ativo { background: #d7141e; border-color: #d7141e; color: #fff; }
+  .quadro-ordem { display: flex; align-items: center; gap: 6px; }
+  .quadro-ordem select, .card-tarefa select, .card-tarefa input[type="date"] {
+    font: inherit; font-size: 12px; color: var(--texto); background: rgba(30, 32, 36, .05);
+    border: 1px solid rgba(30, 32, 36, .15); border-radius: 8px; padding: 4px 6px; cursor: pointer;
+  }
+  .quadro-cab .quadro-nova { flex: 1; min-width: 220px; width: auto; margin: 0; }
+  .quadro-cards {
+    flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 12px; align-content: start; padding: 2px 4px 4px 2px; scrollbar-width: thin;
+  }
+  .quadro-vazio { grid-column: 1 / -1; text-align: center; color: var(--suave); padding: 40px 0; font-size: 14px; }
+  .card-tarefa {
+    display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px;
+    border: 1px solid rgba(30, 32, 36, .1); border-left: 4px solid var(--cor-prio, rgba(30, 32, 36, .2));
+    background: rgba(255, 255, 255, .45); min-width: 0;
+  }
+  .card-tarefa.prio-alta { --cor-prio: #d7141e; } .card-tarefa.prio-media { --cor-prio: #d39a12; } .card-tarefa.prio-baixa { --cor-prio: #2e9d5b; }
+  .card-tarefa.feita { opacity: .6; }
+  .card-tarefa.feita .card-titulo span { text-decoration: line-through; text-decoration-color: #d7141e; }
+  .card-titulo { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .card-titulo span { flex: 1; word-break: break-word; }
+  .card-titulo input.editando { flex: 1; margin: -4px 0; font-weight: 400; }
+  .card-check { flex: none; width: 18px; height: 18px; margin-top: 1px; border-radius: 5px; border: 1.5px solid var(--suave); background: transparent; cursor: pointer; padding: 0; display: grid; place-items: center; color: #d7141e; font-weight: 700; font-size: 14px; line-height: 1; }
+  .card-tarefa.feita .card-check { border-color: #d7141e; }
+  .card-tarefa.feita .card-check::after { content: "✓"; }
+  .card-acoes { display: flex; gap: 2px; flex: none; }
+  .card-acoes button { border: 0; background: transparent; color: var(--suave); cursor: pointer; font-size: 14px; padding: 0 4px; opacity: .55; }
+  .card-tarefa:hover .card-acoes button { opacity: 1; }
+  .card-acoes button:hover { color: #d7141e; }
+  .card-resumo { font-size: 13px; color: var(--suave); line-height: 1.45; }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; }
+  .card-meta .chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; background: rgba(30, 32, 36, .06); color: var(--texto); white-space: nowrap; }
+  .card-meta .chip .dif { width: 1.5em; height: 1.5em; border: 0; border-radius: 999px; padding: 0; font: inherit; font-size: 11px; font-weight: 700; color: #fff; cursor: pointer; display: grid; place-items: center; }
+  .card-meta .dif-1 { background: #2e9d5b; } .card-meta .dif-2 { background: #7fae2e; } .card-meta .dif-3 { background: #d39a12; }
+  .card-meta .dif-4 { background: #e0621b; } .card-meta .dif-5 { background: #d7141e; }
+  .card-meta .dif.avaliando { background: rgba(127, 127, 127, .2); color: var(--suave); animation: avaliandoDif 1.4s ease-in-out infinite; }
+  .card-meta select, .card-meta input[type="date"] { padding: 1px 4px; border-radius: 999px; background: transparent; border-color: transparent; }
+  .card-meta select:hover, .card-meta input[type="date"]:hover { border-color: rgba(30, 32, 36, .2); }
+  .chip.prazo.atrasada { background: rgba(215, 20, 30, .14); color: #b3101a; font-weight: 600; }
+  .chip.prazo.logo { background: rgba(211, 154, 18, .18); }
+  .card-prompt { position: relative; display: flex; flex-direction: column; gap: 6px; }
+  .card-prompt .rotulo { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--suave); }
+  .card-prompt .rotulo span { margin-right: auto; }
+  .card-prompt pre {
+    margin: 0; max-height: 190px; overflow: auto; white-space: pre-wrap; word-break: break-word; font: inherit;
+    font-size: 12.5px; line-height: 1.5; padding: 10px 12px; border-radius: 10px; background: rgba(30, 32, 36, .05);
+    border: 1px solid rgba(30, 32, 36, .08); scrollbar-width: thin; user-select: text; cursor: text;
+  }
+  .card-prompt pre.escrevendo { color: var(--suave); font-style: italic; animation: avaliandoDif 1.4s ease-in-out infinite; }
+  .card-prompt .botao-claro { padding: 4px 10px; font-size: 12px; border-radius: 8px; }
+  .card-prompt .copiar { background: #d7141e; border-color: #d7141e; color: #fff; }
+  .card-prompt .copiar:hover { background: #b3101a; }
+  .card-prompt .copiar.copiado { background: #2e9d5b; border-color: #2e9d5b; }
+  body.escuro .card-tarefa { background: rgba(255, 255, 255, .03); border-color: rgba(255, 255, 255, .08); border-left-color: var(--cor-prio, rgba(255, 255, 255, .2)); }
+  body.escuro .card-meta .chip, body.escuro .card-prompt pre { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .08); }
+  body.escuro .quadro-ordem select, body.escuro .card-meta select, body.escuro .card-meta input[type="date"] { color-scheme: dark; }
+  body.escuro .chip.prazo.atrasada { color: #ff6a5f; }
+  .provas-cab { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; font-size: 13px; color: var(--suave); }
+  .provas-cab .placar b { color: var(--texto); }
+  .provas-cab .placar .c { color: #1c7c45; } .provas-cab .placar .e { color: #c4121b; }
+  body.escuro .provas-cab .placar .c { color: #3ecf7a; } body.escuro .provas-cab .placar .e { color: #ff4a3d; }
+  .provas-lista { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; scrollbar-width: thin; }
+  .prova { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; border-radius: 12px; border: 1px solid rgba(30, 32, 36, .1); background: rgba(30, 32, 36, .03); }
+  body.escuro .prova { border-color: rgba(255, 255, 255, .08); background: rgba(255, 255, 255, .03); }
+  .prova.certa { border-color: rgba(28, 124, 69, .45); }
+  .prova.errada { border-color: rgba(196, 18, 27, .5); }
+  .prova .col h4 { margin: 0 0 6px; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--suave); font-weight: 600; }
+  .prova .col div.txt { font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; user-select: text; }
+  .prova .rodape { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .prova .quando { font-size: 11px; color: var(--suave); margin-right: auto; }
+  .prova .marcar-certa.ativo { background: #1c7c45; border-color: #1c7c45; color: #fff; }
+  .prova .marcar-errada.ativo { background: #c4121b; border-color: #c4121b; color: #fff; }
+  .prova textarea { grid-column: 1 / -1; width: 100%; box-sizing: border-box; min-height: 60px; resize: vertical; background: rgba(30, 32, 36, .05);
+    border: 1px solid rgba(196, 18, 27, .35); border-radius: 10px; color: var(--texto); font: inherit; font-size: 13px; padding: 9px 11px; outline: none; }
+  body.escuro .prova textarea { background: rgba(255, 255, 255, .05); }
+  @media (max-width: 700px) { .prova { grid-template-columns: 1fr; } }
+
+  /* E-mail não lido em negrito; calendário da agenda; foto do assistente no perfil */
+  .linha-painel.nao-lido .principal { font-weight: 600; }
+  .linha-painel.nao-lido .principal::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #d7141e; margin-right: 6px; vertical-align: 1px; }
+  .cal-topo { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 6px; font-size: 13px; font-weight: 600; text-transform: capitalize; }
+  .cal-topo button { border: 0; background: transparent; color: var(--texto); font-size: 16px; cursor: pointer; width: 26px; height: 26px; border-radius: 999px; }
+  .cal-topo button:hover { background: rgba(215, 20, 30, .12); }
+  .cal-topo button:disabled { opacity: .25; cursor: default; background: transparent; }
+  .cal-grade { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 12px; }
+  .cal-grade .sem { font-size: 10px; color: var(--suave); padding-bottom: 2px; }
+  .cal-dia { position: relative; padding: 5px 0 7px; border-radius: 8px; cursor: pointer; color: var(--texto); }
+  .cal-dia:hover { background: rgba(215, 20, 30, .10); }
+  .cal-dia.fora { color: var(--fraco); }
+  .cal-dia.hoje { font-weight: 700; color: #d7141e; }
+  .cal-dia.escolhido { background: rgba(215, 20, 30, .16); }
+  .cal-dia.tem::after { content: ""; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: #d7141e; }
+  .cal-lista-titulo { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--suave); margin: 10px 0 2px; }
+  .perfil-secao-ultron { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(30, 32, 36, .1); }
+  body.escuro .perfil-secao-ultron { border-top-color: rgba(255, 255, 255, .08); }
+  .perfil-foto .grande.avatar-ultron { border: 2px solid rgba(215, 20, 30, .5); }
+
+  /* Trecho do e-mail, lápis da foto, botões do topo sempre visíveis */
+  .linha-painel .trecho { font-size: 12px; color: var(--suave); margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .foto-editavel { position: relative; cursor: pointer; }
+  .foto-editavel .lapis {
+    position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+    background: #d7141e; color: #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, .25); pointer-events: none;
+  }
+  .form-evento .marcar { flex-direction: row; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; font-size: 13px; }
+  .form-evento .marcar input { width: 16px; height: 16px; accent-color: #d7141e; padding: 0; }
+  #excluirEvento { margin-right: auto; color: #c4121b; border-color: rgba(196, 18, 27, .35); }
+
+  /* Recorte da foto de perfil (arrasta e dá zoom dentro do círculo) */
+  .recorte-area { position: relative; width: 280px; height: 280px; margin: 0 auto; overflow: hidden; border-radius: 16px; background: #111; touch-action: none; cursor: grab; }
+  .recorte-area.arrastando { cursor: grabbing; }
+  .recorte-area img { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; -webkit-user-drag: none; pointer-events: none; max-width: none; }
+  .recorte-mascara { position: absolute; inset: 10px; border-radius: 50%; box-shadow: 0 0 0 999px rgba(0, 0, 0, .55); border: 2px solid rgba(255, 255, 255, .85); pointer-events: none; }
+  .recorte-zoom { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 16px; color: var(--suave); }
+  .recorte-zoom input { flex: 1; accent-color: #d7141e; }
+  .recorte-nota { text-align: center; font-size: 12px; color: var(--suave); margin-top: 8px; }
+
+  /* Painéis arrastáveis, e-mail clicável, + na agenda e nas tarefas */
+  .painel header { cursor: grab; user-select: none; }
+  .painel.arrastando { cursor: grabbing; opacity: .92; z-index: 4; }
+  .painel.solto { position: fixed; width: clamp(260px, 19vw, 400px); z-index: 3; }
+  .painel .mais {
+    width: 24px; height: 24px; border: 0; border-radius: 999px; background: rgba(30, 32, 36, .07); color: var(--texto);
+    font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
+  }
+  .painel .mais:hover { background: rgba(215, 20, 30, .15); }
+  /* o "+" de novo item é vermelho e fica separado do botão de minimizar */
+  .painel .mais { color: #d7141e; font-weight: 600; margin-right: 2px; }
+  .clicavel { cursor: pointer; border-radius: 8px; }
+  .clicavel:hover .principal { color: #d7141e; }
+  .tarefa { display: flex; align-items: center; gap: 8px; }
+  .tarefa .caixinha { width: 15px; height: 15px; flex: none; border-radius: 4px; border: 1.5px solid var(--suave); box-sizing: border-box; display: grid; place-items: center; color: #d7141e; font-size: 13px; font-weight: 700; line-height: 1; }
+  .tarefa.feita .caixinha { border-color: #d7141e; }
+  .tarefa.feita .caixinha::after { content: "✓"; }
+  .tarefa.feita .principal { text-decoration: line-through; text-decoration-color: #d7141e; text-decoration-thickness: 1.5px; color: var(--suave); }
+  .tarefa .principal { flex: 1; }
+  .tarefa .etiqueta { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: .78em; font-weight: 600; line-height: 1.5; white-space: nowrap; color: hsl(var(--h), 55%, 30%); background: hsla(var(--h), 70%, 50%, .18); }
+  body.escuro .tarefa .etiqueta { color: hsl(var(--h), 70%, 72%); background: hsla(var(--h), 70%, 55%, .22); }
+  #filtroTarefa.ligado { background: rgba(215, 20, 30, .18); }
+  .tarefa .apagar, .tarefa .editar { border: 0; background: transparent; color: var(--suave); cursor: pointer; font-size: 15px; opacity: 0; padding: 0 2px; }
+  .tarefa .editar { font-size: 13px; }
+  .tarefa:hover .apagar, .tarefa:hover .editar { opacity: 1; }
+  .tarefa .editar:hover, .tarefa .apagar:hover { color: #d7141e; }
+  .tarefa .dif { flex: none; width: 1.45em; height: 1.45em; margin-top: -1px; border: 0; border-radius: 999px; padding: 0; font: inherit; font-size: .8em; font-weight: 700; line-height: 1; cursor: pointer; display: grid; place-items: center; color: #fff; }
+  .tarefa .dif:hover { filter: brightness(1.15); outline: 1.5px solid currentColor; outline-offset: 1px; }
+  .tarefa .dif-1 { background: #2e9d5b; } .tarefa .dif-2 { background: #7fae2e; } .tarefa .dif-3 { background: #d39a12; }
+  .tarefa .dif-4 { background: #e0621b; } .tarefa .dif-5 { background: #d7141e; }
+  .tarefa .dif.avaliando { background: rgba(127, 127, 127, .2); color: var(--suave); animation: avaliandoDif 1.4s ease-in-out infinite; }
+  @keyframes avaliandoDif { 50% { opacity: .45; } }
+  .tarefa.feita .dif { opacity: .4; }
+  /* Caixinha pra escolher a dificuldade (abre ao clicar no número) */
+  .escolha-dif { position: fixed; z-index: 20; width: 230px; padding: 10px; border-radius: 12px; box-sizing: border-box;
+    background: rgba(245, 246, 248, .96); border: 1px solid rgba(255, 255, 255, .7); box-shadow: 0 12px 34px rgba(40, 44, 50, .25);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-size: 13px; animation: entra .15s ease both; }
+  .escolha-dif .cab { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--suave); margin: 0 2px 4px; }
+  .escolha-dif .qual { font-size: 12px; color: var(--texto); margin: 0 2px 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .escolha-dif .op { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; color: var(--texto);
+    font: inherit; padding: 5px 6px; border-radius: 8px; cursor: pointer; text-align: left; }
+  .escolha-dif .op:hover { background: rgba(127, 127, 127, .14); }
+  .escolha-dif .op.atual { background: rgba(127, 127, 127, .2); font-weight: 600; }
+  .escolha-dif .op .dif { width: 1.45em; height: 1.45em; border-radius: 999px; display: grid; place-items: center; color: #fff; font-size: .8em; font-weight: 700; flex: none; }
+  .escolha-dif .dif-1 { background: #2e9d5b; } .escolha-dif .dif-2 { background: #7fae2e; } .escolha-dif .dif-3 { background: #d39a12; }
+  .escolha-dif .dif-4 { background: #e0621b; } .escolha-dif .dif-5 { background: #d7141e; }
+  .escolha-dif .op .marca { margin-left: auto; font-size: 11px; color: var(--suave); font-weight: 400; }
+  .escolha-dif .refazer { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--linha); }
+  .escolha-dif .refazer .op { color: var(--suave); font-size: 12px; }
+  body.escuro .escolha-dif { background: rgba(18, 20, 23, .97); border-color: rgba(255, 255, 255, .08); box-shadow: 0 12px 34px rgba(0, 0, 0, .6); }
+  .tarefa .nova-tarefa.editando { flex: 1; margin: -4px 0; padding: 4px 8px; width: auto; }
+  .nova-tarefa { width: 100%; box-sizing: border-box; margin: 2px 0 8px; background: rgba(30, 32, 36, .05); border: 1px solid rgba(30, 32, 36, .15); border-radius: 10px; color: var(--texto); font: inherit; font-size: 13px; padding: 8px 10px; outline: none; }
+  .leitor-cab { font-size: 13px; color: var(--suave); margin-bottom: 4px; }
+  .leitor-assunto { font-size: 17px; font-weight: 600; margin-bottom: 12px; }
+  .leitor-texto { font-size: 14px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; max-height: 58vh; overflow: auto; user-select: text; }
+  .form-evento { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-evento .inteiro { grid-column: 1 / -1; }
+  .form-evento label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--suave); display: flex; flex-direction: column; gap: 6px; }
+  .form-evento input, .form-evento select { background: rgba(30, 32, 36, .05); border: 1px solid rgba(30, 32, 36, .15); border-radius: 10px; color: var(--texto); font: inherit; font-size: 14px; padding: 10px 12px; outline: none; text-transform: none; letter-spacing: 0; }
+  .form-status { font-size: 13px; color: var(--suave); min-height: 18px; margin-top: 12px; }
+  .temas { display: flex; gap: 8px; }
+  .temas button.ativo { border-color: #d7141e; color: #d7141e; }
+
+  /* Tema escuro: o prata vira preto */
+  body.escuro {
+    --fundo: #030405; --texto: #e9ecef; --suave: rgba(233, 236, 239, .6); --fraco: rgba(233, 236, 239, .32); --linha: rgba(233, 236, 239, .18);
+    background-image: radial-gradient(circle at 50% 42%, #1d2024 0%, #0b0c0e 50%, #000 100%); color-scheme: dark;
+  }
+  body.escuro .painel { background: rgba(18, 20, 23, .62); border-color: rgba(255, 255, 255, .08); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+  body.escuro .linha-painel { border-top-color: rgba(255, 255, 255, .07); }
+  body.escuro .painel .minimizar, body.escuro .painel .mais, body.escuro .config-fechar { background: rgba(255, 255, 255, .08); }
+  body.escuro .config { background: rgba(0, 0, 0, .6); }
+  body.escuro .config-caixa { background: #0f1113; border-color: rgba(255, 255, 255, .08); box-shadow: 0 30px 80px rgba(0, 0, 0, .7); }
+  body.escuro .engrenagem { color: rgba(233, 236, 239, .6); }
+  body.escuro .engrenagem:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+  body.escuro .msg.ele .balao { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .08); }
+  body.escuro .chat-rodape input, body.escuro .perfil-campo, body.escuro .nova-tarefa,
+  body.escuro .form-evento input, body.escuro .form-evento select, body.escuro #caixa input { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .12); }
+  body.escuro .botao-claro { border-color: rgba(255, 255, 255, .2); }
+  body.escuro .botao-claro:hover { background: rgba(255, 255, 255, .06); }
+  body.escuro .voz { border-color: rgba(255, 255, 255, .08); background: rgba(255, 255, 255, .02); }
+  body.escuro .voz:hover { background: rgba(255, 255, 255, .05); }
+  body.escuro .ouvir { border-color: rgba(255, 255, 255, .2); }
+  body.escuro .avatar-vazio, body.escuro .perfil-foto .grande { background: rgba(255, 255, 255, .1); }
+  body.escuro .sobe { color: #3ecf7a; } body.escuro .desce { color: #ff4a3d; }
+
+  /* Painéis: e-mails, agenda, mercado e tarefas. Cada um minimiza; P esconde todos. */
+  .paineis { position: fixed; top: 64px; width: clamp(260px, 19vw, 400px); display: flex; flex-direction: column; gap: 12px; z-index: 3; }
+  .paineis.esq { left: 22px; }
+  .paineis.dir { right: 22px; }
+  body.sem-paineis .paineis, body.sem-paineis .painel { display: none; }
+  .painel {
+    background: rgba(255, 255, 255, .38); border: 1px solid rgba(255, 255, 255, .6); border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(40, 44, 50, .18); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    animation: entra .35s ease both;
+  }
+  .painel header { display: flex; align-items: center; gap: 8px; padding: 10px 12px 10px 14px; }
+  .painel .titulo { font-size: 11px; letter-spacing: .24em; text-transform: uppercase; font-weight: 600; color: var(--texto); }
+  .painel .titulo::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #d7141e; margin-right: 8px; vertical-align: 1px; box-shadow: 0 0 8px rgba(215, 20, 30, .6); }
+  .painel .contador { margin-left: auto; font-size: 11px; color: var(--suave); }
+  .painel .minimizar {
+    width: 24px; height: 24px; border: 0; border-radius: 999px; background: rgba(30, 32, 36, .07); color: var(--texto);
+    font: inherit; font-size: 15px; line-height: 1; cursor: pointer;
+  }
+  .painel .minimizar:hover { background: rgba(215, 20, 30, .15); }
+  .painel .conteudo { padding: 0 14px 12px; max-height: 32vh; overflow: auto; scrollbar-width: thin; }
+  .painel.min .conteudo { display: none !important; }  /* !important: a agenda redimensionada tem display:flex mais específico e não minimizava */
+  .linha-painel { padding: 7px 0; border-top: 1px solid rgba(30, 32, 36, .08); font-size: 13px; color: var(--texto); }
+  .linha-painel:first-child { border-top: 0; }
+  .linha-painel .sub { font-size: 11px; color: var(--suave); margin-top: 2px; }
+  .linha-painel .principal { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mercado-item { display: block; }
+  .mercado-topo { display: flex; justify-content: space-between; gap: 8px; }
+  .mercado-trilho { position: relative; height: 5px; margin-top: 4px; border-radius: 3px; background: rgba(120, 124, 130, .18); }
+  .mercado-trilho::before { content: ""; position: absolute; left: 50%; top: -1px; bottom: -1px; width: 1px; background: rgba(120, 124, 130, .45); }
+  .mercado-barra { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: currentColor; transition: width .4s; }
+  .mercado-barra.sobe { left: 50%; border-radius: 0 3px 3px 0; }
+  .mercado-barra.desce { right: 50%; border-radius: 3px 0 0 3px; }
+  .sobe { color: #1c7c45; } .desce { color: #c4121b; }
+  .tarefa.feita .principal { text-decoration: line-through; color: var(--suave); }
+  .vazio { font-size: 12px; color: var(--suave); padding: 4px 0; }
+  @media (max-width: 900px) { .paineis { display: none; } }
 
   @keyframes pisca { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
   @keyframes entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   @media (max-width: 600px) {
-    .topo { left: 16px; right: 16px; top: 18px; letter-spacing: .22em; }
+    .topo { left: 16px; right: 266px; top: 18px; letter-spacing: .22em; }  /* não passa por baixo dos botões */
     .topo .atalhos { display: none; }
   }
 </style>
 </head>
 <body data-estado="iniciando">
-<canvas id="esfera" aria-label="Esfera do JARVIS. Segure a barra de espaço para falar."></canvas>
+<canvas id="esfera" aria-label="Esfera do ULTRON. Segure a barra de espaço para falar."></canvas>
 
 <div class="topo">
-  <span class="marca">Jarvis</span>
+  <span class="marca">Ultron</span>
   <span class="estado"><span class="ponto"></span><span id="estadoTexto">iniciando</span></span>
+</div>
+
+<div class="paineis esq">
+  <section class="painel" data-painel="emails"><header><span class="titulo">E-mails</span><span class="contador"></span><button class="minimizar" title="Minimizar">–</button></header><div class="conteudo"></div></section>
+  <section class="painel" data-painel="agenda"><header><span class="titulo">Agenda</span><span class="contador"></span><button class="mais" id="maisEvento" title="Novo compromisso">+</button><button class="minimizar" title="Minimizar">–</button></header><div class="conteudo"></div></section>
+</div>
+<div class="paineis dir">
+  <section class="painel" data-painel="mercado"><header><span class="titulo">Mercado</span><span class="contador"></span><button class="minimizar" title="Minimizar">–</button></header><div class="conteudo"></div></section>
+  <section class="painel" data-painel="tarefas"><header><span class="titulo">Tarefas</span><span class="contador"></span><button class="mais" id="filtroTarefa" title="Filtro: todas">☰</button><button class="mais" id="abrirQuadro" title="Abrir o quadro de tarefas (cards com prompt)">⤢</button><button class="mais" id="maisTarefa" title="Nova tarefa">+</button><button class="minimizar" title="Minimizar">–</button></header><div class="conteudo"></div></section>
+</div>
+
+<button id="botaoChat" class="engrenagem" aria-label="Conversa por texto" title="Conversa por texto">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+<button id="botaoProvas" class="engrenagem" aria-label="Provas" title="Provas (modo prova)">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2h6V3"/><path d="m9 12 2 2 4-4"/><path d="M9 17h6"/></svg>
+</button>
+<div id="provas" class="config" hidden>
+  <div class="config-caixa provas-caixa" role="dialog" aria-modal="true" aria-label="Provas">
+    <div class="config-topo">
+      <span class="config-titulo">Provas</span>
+      <button id="fecharProvas" class="config-fechar" aria-label="Fechar">×</button>
+    </div>
+    <div class="provas-cab">
+      <label class="modo-texto" style="margin:0"><input id="provaLigada" type="checkbox"> Modo prova ligado</label>
+      <span id="placar" class="placar"></span>
+    </div>
+    <div id="provasLista" class="provas-lista"></div>
+  </div>
+</div>
+<button id="botaoPerfil" class="engrenagem" aria-label="Perfil" title="Perfil"><span id="avatarTopo" class="avatar-vazio">?</span></button>
+
+<div id="quadro" class="config" hidden>
+  <div class="config-caixa quadro-caixa" role="dialog" aria-modal="true" aria-label="Quadro de tarefas">
+    <div class="config-topo">
+      <span class="config-titulo">Tarefas</span>
+      <span id="quadroResumo" class="quadro-resumo"></span>
+      <button id="fecharQuadro" class="config-fechar" aria-label="Fechar">×</button>
+    </div>
+    <div class="quadro-cab">
+      <div class="quadro-filtros" role="tablist">
+        <button class="botao-claro ativo" type="button" data-filtro="pendentes">Pendentes</button>
+        <button class="botao-claro" type="button" data-filtro="feitas">Feitas</button>
+        <button class="botao-claro" type="button" data-filtro="todas">Todas</button>
+      </div>
+      <label class="quadro-ordem">Ordenar por
+        <select id="quadroOrdem">
+          <option value="prioridade">Prioridade</option>
+          <option value="prazo">Prazo</option>
+          <option value="dificuldade">Dificuldade</option>
+          <option value="ordem">Ordem do arquivo</option>
+        </select>
+      </label>
+      <input id="quadroNova" class="nova-tarefa quadro-nova" type="text" maxlength="200" placeholder="Nova tarefa e Enter (o Ultron escreve o prompt)">
+    </div>
+    <div id="quadroCards" class="quadro-cards"></div>
+  </div>
+</div>
+<div id="chat" class="config" hidden>
+  <div class="config-caixa chat-caixa" role="dialog" aria-modal="true" aria-label="Conversa">
+    <div class="config-topo">
+      <span class="config-titulo">Conversa</span>
+      <button id="destacarChat" class="botao-claro destacar" type="button" title="Abrir a conversa numa janela separada (ou arraste pela barra até a borda da tela)">Destacar ⧉</button>
+      <button id="fecharChat" class="config-fechar" aria-label="Fechar">×</button>
+    </div>
+    <div id="chatLista" class="chat-lista"></div>
+    <div id="chatDigitando" class="chat-digitando"></div>
+    <form id="chatForm" class="chat-rodape" autocomplete="off">
+      <input id="chatEntrada" type="text" placeholder="Escreva para ele..." aria-label="Mensagem">
+      <button class="botao-vermelho" type="submit">Enviar</button>
+    </form>
+    <label class="modo-texto"><input id="modoTexto" type="checkbox"> Modo texto: ele responde só escrito, sem falar</label>
+    <label class="modo-texto"><input id="modoProvaChat" type="checkbox"> Modo prova: revisa cada questão duas vezes e não responde quando você manda só "ok" ou "boa"</label>
+  </div>
+</div>
+
+<div id="perfil" class="config" hidden>
+  <div class="config-caixa" role="dialog" aria-modal="true" aria-label="Perfil">
+    <div class="config-topo">
+      <span class="config-titulo">Perfil</span>
+      <button id="fecharPerfil" class="config-fechar" aria-label="Fechar">×</button>
+    </div>
+    <div class="perfil-foto">
+      <div id="fotoEditar" class="foto-editavel" title="Ajustar foto"><div id="fotoGrande" class="grande">?</div><span class="lapis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span></div>
+      <div class="perfil-botoes">
+        <button id="trocarFoto" class="botao-claro" type="button">Trocar foto</button>
+        <button id="removerFoto" class="botao-claro" type="button">Remover</button>
+        <input id="arquivoFoto" type="file" accept="image/*" hidden>
+      </div>
+    </div>
+    <div class="config-secao"><span>Como ele te chama</span></div>
+    <input id="perfilNome" class="perfil-campo" type="text" maxlength="40" placeholder="Seu nome">
+    <div class="config-nota">Vale na voz e no texto, a partir da próxima resposta.</div>
+    <div class="perfil-secao-ultron">
+      <div class="config-secao"><span>Foto do Ultron</span></div>
+      <div class="perfil-foto">
+        <div id="fotoUltronEditar" class="foto-editavel" title="Ajustar foto do Ultron"><div id="fotoUltronGrande" class="grande avatar-ultron"></div><span class="lapis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span></div>
+        <div class="perfil-botoes">
+          <button id="trocarFotoUltron" class="botao-claro" type="button">Trocar foto</button>
+          <button id="removerFotoUltron" class="botao-claro" type="button">Padrão</button>
+        </div>
+      </div>
+    </div>
+    <div class="perfil-acoes">
+      <button id="salvarPerfil" class="botao-vermelho" type="button">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="leitor" class="config" hidden>
+  <div class="config-caixa chat-caixa" role="dialog" aria-modal="true" aria-label="E-mail">
+    <div class="config-topo">
+      <span class="config-titulo">E-mail</span>
+      <button id="fecharLeitor" class="config-fechar" aria-label="Fechar">×</button>
+    </div>
+    <div id="leitorCab" class="leitor-cab"></div>
+    <div id="leitorAssunto" class="leitor-assunto"></div>
+    <div id="leitorTexto" class="leitor-texto"></div>
+  </div>
+</div>
+
+<div id="novoEvento" class="config" hidden>
+  <div class="config-caixa" role="dialog" aria-modal="true" aria-label="Novo compromisso">
+    <div class="config-topo">
+      <span id="evTituloModal" class="config-titulo">Novo compromisso</span>
+      <button id="fecharEvento" class="config-fechar" aria-label="Fechar">×</button>
+    </div>
+    <form id="formEvento" class="form-evento" autocomplete="off">
+      <label class="inteiro">Título<input id="evTitulo" type="text" maxlength="120" required></label>
+      <label>Data<input id="evData" type="date" required></label>
+      <label>Hora<input id="evHora" type="time"></label>
+      <label>Duração<select id="evDuracao"><option value="30">30 min</option><option value="60" selected>1 hora</option><option value="90">1h30</option><option value="120">2 horas</option><option value="240">4 horas</option></select></label>
+      <label>Local<input id="evLocal" type="text" maxlength="120" placeholder="opcional"></label>
+      <label class="marcar inteiro"><input id="evDiaTodo" type="checkbox"> Dia todo</label>
+    </form>
+    <div id="evStatus" class="form-status"></div>
+    <div class="perfil-acoes">
+      <button id="excluirEvento" class="botao-claro" type="button" hidden>Excluir</button>
+      <button id="criarEvento" class="botao-vermelho" type="button">Criar</button>
+    </div>
+  </div>
+</div>
+
+<div id="recorte" class="config" hidden>
+  <div class="config-caixa" role="dialog" aria-modal="true" aria-label="Ajustar foto">
+    <div class="config-topo">
+      <span class="config-titulo">Ajustar foto</span>
+      <button id="fecharRecorte" class="config-fechar" aria-label="Fechar">×</button>
+    </div>
+    <div id="recorteArea" class="recorte-area"><img id="recorteImg" alt=""><div class="recorte-mascara"></div></div>
+    <div class="recorte-zoom"><span>−</span><input id="recorteZoom" type="range" min="1" max="4" step="0.01" value="1" aria-label="Zoom"><span>+</span></div>
+    <div class="recorte-nota">Arraste a foto e use o zoom pra encaixar no círculo.</div>
+    <div class="perfil-acoes">
+      <button id="cancelarRecorte" class="botao-claro" type="button">Cancelar</button>
+      <button id="usarRecorte" class="botao-vermelho" type="button">Usar</button>
+    </div>
+  </div>
 </div>
 
 <button id="engrenagem" class="engrenagem" aria-label="Configurações" title="Configurações">
@@ -157,7 +675,11 @@
       <span class="config-titulo">Configurações</span>
       <button id="fecharConfig" class="config-fechar" aria-label="Fechar">×</button>
     </div>
-    <div class="config-secao"><span>Voz do Jarvis</span></div>
+    <div class="config-secao"><span>Tema</span></div>
+    <div class="temas"><button class="botao-claro" type="button" data-tema="prata">Prata</button><button class="botao-claro" type="button" data-tema="escuro">Escuro</button></div>
+    <div class="config-secao"><span>Esfera</span></div>
+    <div class="temas estilos-esfera"><button class="botao-claro" type="button" data-esfera="rede">Rede</button><button class="botao-claro" type="button" data-esfera="fluxo">Fluxo</button><button class="botao-claro" type="button" data-esfera="orbitas">Órbitas</button></div>
+    <div class="config-secao"><span>Voz do Ultron</span></div>
     <div id="listaVozes"></div>
     <div class="config-secao"><span>Velocidade da fala</span><span id="velValor"></span></div>
     <input id="velocidade" class="velocidade" type="range" min="0.8" max="1.2" step="0.05" aria-label="Velocidade da fala">
@@ -175,7 +697,7 @@
   <div class="aviso" id="aviso"></div>
 </div>
 
-<div class="dica" id="dica">Segure <b>espaço</b> pra falar · <b>T</b> digitar · <b>N</b> nova conversa · <b>H</b> detalhes</div>
+<div class="dica" id="dica">Segure <b>espaço</b> pra falar · <b>C</b> conversa · <b>N</b> nova conversa · <b>H</b> <span id="dicaH">minimizar detalhes</span></div>
 
 <script>
 (() => {
@@ -186,8 +708,26 @@
   const el = (id) => document.getElementById(id);
   const corpo = document.body;
   let estado = "iniciando";
+  let nomeDono = "Miguel";  // vem do perfil (/api/config)
 
+  // Depois que o Ultron termina de falar, a legenda (sua frase + a resposta) some sozinha; ela continua na conversa (C).
+  let legendaTimer = null;
+  function apagarLegenda(depois) {
+    clearTimeout(legendaTimer);
+    legendaTimer = setTimeout(() => {
+      const leg = document.querySelector(".legenda");
+      leg.classList.add("sumindo");
+      legendaTimer = setTimeout(() => {
+        ["voce", "resposta", "tempo"].forEach((id) => { el(id).textContent = ""; });
+        el("ferramentas").innerHTML = "";
+        leg.classList.remove("sumindo");
+      }, 750);
+    }, depois);
+  }
+  function manterLegenda() { clearTimeout(legendaTimer); document.querySelector(".legenda").classList.remove("sumindo"); }
   function mudarEstado(novo) {
+    if (estado === "falando" && novo === "parado" && !turnoAberto) apagarLegenda(2500);
+    else if (novo !== "parado") manterLegenda();
     estado = novo;
     corpo.dataset.estado = novo;
     el("estadoTexto").textContent = NOMES[novo] || novo;
@@ -206,16 +746,378 @@
   addEventListener("resize", medir);
   medir();
 
-  const N = 2400;
-  const pontos = [];
-  for (let i = 0; i < N; i++) {
-    const y = 1 - (i / (N - 1)) * 2;
-    const r = Math.sqrt(1 - y * y);
-    const th = i * 2.399963229728653;
-    pontos.push([Math.cos(th) * r, y, Math.sin(th) * r, Math.random() * Math.PI * 2]);
+  // Átomo/giroscópio vermelho: uma esfera sólida no meio e, em volta, órbitas finas cruzadas (umas duplas), anéis
+  // de pontinhos (régua), um anel horizontal forte e contas brilhando nas órbitas. Cada órbita gira devagar em volta
+  // de um eixo próprio (diferente do plano dela), então as elipses vão se inclinando como num giroscópio.
+  // PTS: [x, y, z, fase, giro, ex, ey, ez]  (giro: velocidade em volta do eixo e)
+  // SEG: [i, j, tipo, forca]   tipo 0 órbita fina · 1 órbita forte · 2 fraco · 3 anel horizontal · 4 régua
+  const PTS = [], SEG = [], BRILHOS = [], PARTICULAS = [], CAMINHOS_IMP = [];
+  const NUCLEO = 0.2;  // raio da esfera sólida do meio (o R da tela é o raio das órbitas)
+  (function criarOrbitas() {
+    let semente = 1618;
+    const rnd = () => ((semente = (semente * 16807) % 2147483647) / 2147483647);
+    const unit = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+    const cruz = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    const base = (e) => { const u = unit(cruz(e, Math.abs(e[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0])); return [u, cruz(e, u)]; };
+    const add = (v, giro, e) => { PTS.push([v[0], v[1], v[2], rnd() * 6.28, giro || 0, e[0], e[1], e[2]]); return PTS.length - 1; };
+    function plano(e) {
+      const [u, w] = base(e);
+      return (r, a) => [u[0] * Math.cos(a) * r + w[0] * Math.sin(a) * r, u[1] * Math.cos(a) * r + w[1] * Math.sin(a) * r,
+                        u[2] * Math.cos(a) * r + w[2] * Math.sin(a) * r];
+    }
+    // círculo inteiro no plano de normal e; gira em volta de "eixo" na velocidade giro. Devolve os índices (pros impulsos)
+    function circulo(e, r, tipo, forca, giro, eixo) {
+      const P = plano(e), passos = Math.ceil(6.2832 * r / 0.03), ids = [];
+      for (let k = 0; k <= passos; k++) {
+        const j = k === passos ? ids[0] : add(P(r, 6.2832 * k / passos), giro, eixo);
+        if (k) SEG.push([ids[ids.length - 1], j, tipo, forca]);
+        if (k < passos) ids.push(j);
+      }
+      return ids;
+    }
+    function regua(e, r, tam, passo, forca, giro, eixo) {  // anel de risquinhos pra dentro
+      const P = plano(e);
+      for (let a = 0; a < 6.283; a += passo) SEG.push([add(P(r, a), giro, eixo), add(P(r - tam, a), giro, eixo), 4, forca]);
+    }
+    // 1) órbitas finas em vários ângulos (umas com uma segunda linha colada, como na referência)
+    const ORBITAS = [
+      [[0.15, 0.25, 1], 0.98, 1, true], [[1, 0.1, 0.35], 0.95, 0.8, false], [[0.6, 1, 0.1], 0.9, 0.85, true],
+      [[-0.7, 0.5, 0.6], 1.02, 0.75, false], [[0.5, -0.4, 0.8], 0.86, 0.9, true], [[-0.2, 1, -0.55], 1.06, 0.65, false],
+      [[0.9, -0.8, 0.1], 0.93, 0.7, false],
+    ];
+    ORBITAS.forEach(([eb, r, f, dupla], k) => {
+      const e = unit(eb), eixo = unit([rnd() - 0.5, 1, rnd() - 0.5]), giro = (k % 2 ? -1 : 1) * (0.25 + rnd() * 0.35);
+      const ids = circulo(e, r, k < 3 ? 1 : 0, f, giro, eixo);
+      if (dupla) circulo(e, r * 0.975, 2, f * 0.7, giro, eixo);
+      for (let c = 0; c + 40 < ids.length; c += 40) CAMINHOS_IMP.push(ids.slice(c, c + 40));
+      for (let b = 0; b < 2; b++) BRILHOS.push(ids[(rnd() * ids.length) | 0]);  // contas brilhando na órbita
+    });
+    // 2) anéis de régua (pontilhado), um por dentro e um por fora
+    regua(unit([0.3, 0.9, 0.3]), 0.78, 0.035, 0.045, 0.75, 0.5, unit([0.2, 1, 0]));
+    regua(unit([-0.4, 0.3, 1]), 1.12, 0.03, 0.04, 0.55, -0.35, unit([1, 0.2, 0]));
+    regua(unit([0.8, 0.6, -0.2]), 0.66, 0.025, 0.06, 0.6, 0.8, unit([0, 0.3, 1]));
+    // 3) anel horizontal forte, quase de lado (o traço branco da referência), mais largo que o resto
+    {
+      const e = unit([0.02, 1, 0.06]);
+      for (const [r, f] of [[1.2, 1], [1.21, 0.8], [1.19, 0.6]]) circulo(e, r, 3, f, 0.15, e);
+    }
+    // 4) poeira bem leve em volta da esfera
+    for (let k = 0; k < 260; k++) {
+      const d = unit([rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1]), r = NUCLEO * 1.25 + Math.pow(rnd(), 0.8) * 0.85;
+      PARTICULAS.push(add([d[0] * r, d[1] * r, d[2] * r], 0.25, [0, 1, 0]));
+    }
+  })();
+  // Superfície da esfera do meio, em 3D (gira no próprio eixo e junto quando você arrasta):
+  // MANCHAS [x, y, z, tamanho, alfa, clara] na superfície · CRATERAS [x, y, z, raio] · GRADE: linhas de latitude/longitude
+  const MANCHAS = [], CRATERAS = [], GRADE = [];
+  (function criarSuperficie() {
+    let sm = 7;
+    const rnd = () => ((sm = (sm * 16807) % 2147483647) / 2147483647);
+    const ponto = () => { const z = rnd() * 2 - 1, a = rnd() * 6.2832, r = Math.sqrt(1 - z * z); return [Math.cos(a) * r, z, Math.sin(a) * r]; };
+    for (let k = 0; k < 420; k++) { const [x, y, z] = ponto(); MANCHAS.push([x, y, z, 0.7 + rnd() * 1.3, 0.12 + rnd() * 0.3, rnd() < 0.25]); }
+    for (let k = 0; k < 16; k++) { const [x, y, z] = ponto(); CRATERAS.push([x, y, z, 0.07 + rnd() * 0.17]); }
+    for (let k = 0; k < 6; k++) {  // meridianos
+      const a = k * Math.PI / 6, linha = [];
+      for (let j = 0; j <= 48; j++) { const b = j / 48 * 6.2832; linha.push([Math.cos(b) * Math.cos(a), Math.sin(b), Math.cos(b) * Math.sin(a)]); }
+      GRADE.push(linha);
+    }
+    for (const lat of [-0.55, 0, 0.55]) {  // paralelos
+      const r = Math.sqrt(1 - lat * lat), linha = [];
+      for (let j = 0; j <= 48; j++) { const b = j / 48 * 6.2832; linha.push([Math.cos(b) * r, lat, Math.sin(b) * r]); }
+      GRADE.push(linha);
+    }
+  })();
+  // Zoom da esfera com a rodinha do mouse (em cima da tela, fora dos painéis). Duplo clique na esfera volta ao normal.
+  const ESTILOS_ESFERA = ["rede", "fluxo", "orbitas"];  // Configurações > Esfera (o primeiro é o padrão)
+  let estiloEsfera = ESTILOS_ESFERA.includes(localStorage.getItem("estiloEsferaV2")) ? localStorage.getItem("estiloEsferaV2") : "rede";
+  let zoomAlvo = Math.min(3, Math.max(0.5, Number(localStorage.getItem("zoomEsfera")) || 1)), zoom = zoomAlvo;
+  const PX = new Float32Array(PTS.length), PY = new Float32Array(PTS.length), PZ = new Float32Array(PTS.length);
+  const PR = new Float32Array(PTS.length);  // distância do centro (pra saber o quanto o ponto está "na borda")
+  for (let i = 0; i < PTS.length; i++) PR[i] = Math.hypot(PTS[i][0], PTS[i][1], PTS[i][2]) || 1;
+
+  // ---------------------------------------------------------- esfera "fluxo" (o outro estilo: Configurações > Esfera)
+  // Uma esfera feita de linhas de corrente: um campo de vetores na superfície, com uns pontos onde as linhas se juntam
+  // (redemoinhos), e centenas de linhas seguindo esse campo. Pontinhos correm pelas linhas (mais e mais rápido com a
+  // voz) e a borda tem um contorno de pontos. Tudo em 3D: gira sozinha e junto quando você arrasta.
+  const FLUXO = (function criarFluxo() {
+    let sm = 2024;
+    const rnd = () => ((sm = (sm * 16807) % 2147483647) / 2147483647);
+    const unit = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+    const noEsfera = () => { const z = rnd() * 2 - 1, a = rnd() * 6.2832, r = Math.sqrt(1 - z * z); return [Math.cos(a) * r, z, Math.sin(a) * r]; };
+    // redemoinhos: [ponto, puxa (+ junta, − espalha), giro]
+    const NOS = [];
+    for (let k = 0; k < 7; k++) NOS.push([noEsfera(), k % 3 === 2 ? -0.6 : 1, (rnd() - 0.5) * 1.6]);
+    const EIXO = unit([0.3, 1, 0.2]);
+    function campo(p) {
+      let v = [EIXO[1] * p[2] - EIXO[2] * p[1], EIXO[2] * p[0] - EIXO[0] * p[2], EIXO[0] * p[1] - EIXO[1] * p[0]];  // corrente de fundo
+      v = [v[0] * 0.35, v[1] * 0.35, v[2] * 0.35];
+      for (const [c, puxa, giro] of NOS) {
+        const d = [c[0] - p[0], c[1] - p[1], c[2] - p[2]], w = 1 / (d[0] * d[0] + d[1] * d[1] + d[2] * d[2] + 0.06);
+        const g = [p[1] * d[2] - p[2] * d[1], p[2] * d[0] - p[0] * d[2], p[0] * d[1] - p[1] * d[0]];
+        v = [v[0] + w * (puxa * d[0] + giro * g[0]), v[1] + w * (puxa * d[1] + giro * g[1]), v[2] + w * (puxa * d[2] + giro * g[2])];
+      }
+      const n = v[0] * p[0] + v[1] * p[1] + v[2] * p[2];  // só a parte tangente à esfera
+      return [v[0] - n * p[0], v[1] - n * p[1], v[2] - n * p[2]];
+    }
+    function seguir(p, sentido, passos) {
+      const out = [];
+      for (let k = 0; k < passos; k++) {
+        const v = campo(p), l = Math.hypot(v[0], v[1], v[2]);
+        if (l < 1e-3) break;
+        p = unit([p[0] + sentido * v[0] / l * 0.022, p[1] + sentido * v[1] / l * 0.022, p[2] + sentido * v[2] / l * 0.022]);
+        if (NOS.some(([c]) => (c[0] - p[0]) ** 2 + (c[1] - p[1]) ** 2 + (c[2] - p[2]) ** 2 < 0.0009)) break;  // chegou no redemoinho
+        out.push(p);
+      }
+      return out;
+    }
+    const LINHAS = [];  // [início, fim, força] em índices de pontos
+    const P = [];
+    for (let k = 0; k < 560; k++) {
+      const s = noEsfera();
+      const pts = seguir(s, -1, 32).reverse().concat([s], seguir(s, 1, 32));
+      if (pts.length < 8) continue;
+      const ini = P.length / 3;
+      for (const q of pts) P.push(q[0], q[1], q[2]);
+      LINHAS.push([ini, P.length / 3 - 1, 0.45 + rnd() * 0.55, rnd()]);
+    }
+    const BRILHOS = [];  // pontinhos parados em cima das linhas, piscando
+    for (let k = 0; k < 520; k++) { const L = LINHAS[(rnd() * LINHAS.length) | 0]; BRILHOS.push([L[0] + ((rnd() * (L[1] - L[0] + 1)) | 0), rnd() * 6.28, 0.6 + rnd() * 1.4]); }
+    const BORDA = [];  // contorno de pontos na silhueta (em tela, não gira)
+    for (let k = 0; k < 420; k++) BORDA.push([rnd() * 6.2832, Math.pow(rnd(), 2.2), rnd() * 6.28, 0.6 + rnd() * 1.6]);
+    const n = P.length / 3;
+    return { P: new Float32Array(P), LINHAS, BRILHOS, BORDA, X: new Float32Array(n), Y: new Float32Array(n), Z: new Float32Array(n) };
+  })();
+
+  function desenharFluxo(cc, o) {
+    const { cx, cy, t, nivel, ativo, escuro, m, VERMELHO } = o, F = FLUXO;
+    const Rs = o.R * 1.12;
+    // gira no próprio eixo (inclinado) e depois na orientação do arraste
+    const sg = rot * 3 + t * 0.05, cs = Math.cos(sg), sn = Math.sin(sg), CT = 0.95, ST = 0.31;
+    for (let i = 0, n = F.X.length; i < n; i++) {
+      const x = F.P[i * 3], y = F.P[i * 3 + 1], z = F.P[i * 3 + 2];
+      const x1 = x * cs + z * sn, z1 = -x * sn + z * cs, x2 = x1 * CT - y * ST, y2 = x1 * ST + y * CT;
+      const vx = m[0] * x2 + m[1] * y2 + m[2] * z1, vy = m[3] * x2 + m[4] * y2 + m[5] * z1, vz = m[6] * x2 + m[7] * y2 + m[8] * z1;
+      F.X[i] = cx + vx * Rs; F.Y[i] = cy - vy * Rs; F.Z[i] = vz;
+    }
+    // brilho de fundo
+    const halo = cc.createRadialGradient(cx, cy, Rs * 0.2, cx, cy, Rs * 1.35);
+    halo.addColorStop(0, `rgba(230,15,5,${(escuro ? 0.1 : 0.06) + nivel * 0.16})`);
+    halo.addColorStop(0.75, `rgba(200,0,0,${0.03 + nivel * 0.05})`);
+    halo.addColorStop(1, "rgba(200,0,0,0)");
+    cc.globalAlpha = 1; cc.fillStyle = halo;
+    cc.beginPath(); cc.arc(cx, cy, Rs * 1.35, 0, Math.PI * 2); cc.fill();
+    // linhas: agrupadas por brilho (trás bem apagada, frente forte)
+    const NIV = 8, cam = [];
+    for (let k = 0; k < NIV; k++) cam.push(new Path2D());
+    const onda = 0.75 + 0.25 * ativo;
+    for (const [a, b, f] of F.LINHAS) {
+      for (let i = a; i < b; i++) {
+        const z = (F.Z[i] + F.Z[i + 1]) / 2;
+        const v = f * (z > 0 ? 0.35 + 0.65 * z : 0.12 + 0.12 * (1 + z)) * onda;
+        const c = cam[Math.max(0, Math.min(NIV - 1, (v * NIV) | 0))];
+        c.moveTo(F.X[i], F.Y[i]); c.lineTo(F.X[i + 1], F.Y[i + 1]);
+      }
+    }
+    cc.strokeStyle = VERMELHO; cc.lineCap = "round";
+    for (let k = 0; k < NIV; k++) {
+      const nv = (k + 0.5) / NIV;
+      cc.globalAlpha = Math.min(1, 0.05 + 0.95 * nv * nv);
+      cc.lineWidth = 0.45 + 0.75 * nv;
+      cc.stroke(cam[k]);
+    }
+    // pontinhos parados piscando (só a frente)
+    const CLARO = escuro ? "rgb(255,150,130)" : VERMELHO;
+    cc.fillStyle = CLARO;
+    for (const [i, fase, tam] of F.BRILHOS) {
+      if (F.Z[i] <= 0) continue;
+      const b = 0.5 + 0.5 * Math.sin(t * 2 + fase * 3);
+      cc.globalAlpha = Math.min(1, F.Z[i] * (0.25 + 0.75 * b));
+      const l = tam * (0.5 + 0.5 * F.Z[i]);
+      cc.fillRect(F.X[i] - l / 2, F.Y[i] - l / 2, l, l);
+    }
+    // pontos correndo pelas linhas, com rastro curto (com a voz: mais pontos e mais rápidos)
+    const vel = 0.12 + ativo * 0.9, quantos = 1 + (ativo > 0.25 ? 1 : 0) + (ativo > 0.6 ? 1 : 0);
+    cc.strokeStyle = CLARO; cc.lineWidth = 1.3;
+    for (const [a, b, f, fase] of F.LINHAS) {
+      const len = b - a;
+      for (let q = 0; q < quantos; q++) {
+        const pos = ((t * vel + fase + q / quantos) % 1) * len, i = a + (pos | 0);
+        if (F.Z[i] <= 0.05) continue;
+        cc.globalAlpha = Math.min(1, F.Z[i] * f * 1.2);
+        cc.beginPath(); cc.moveTo(F.X[i], F.Y[i]);
+        for (let r = 1; r < 5 && i - r >= a; r++) cc.lineTo(F.X[i - r], F.Y[i - r]);
+        cc.stroke();
+        cc.fillRect(F.X[i] - 1.1, F.Y[i] - 1.1, 2.2, 2.2);
+      }
+    }
+    // contorno: borda acesa + pontos na silhueta
+    cc.globalAlpha = 0.35 + nivel * 0.4; cc.strokeStyle = VERMELHO; cc.lineWidth = 1.1;
+    cc.beginPath(); cc.arc(cx, cy, Rs, 0, Math.PI * 2); cc.stroke();
+    cc.fillStyle = CLARO;
+    for (const [ang, dentro, fase, tam] of F.BORDA) {
+      const r = Rs * (1.005 - dentro * 0.06), b = 0.5 + 0.5 * Math.sin(t * 1.6 + fase);
+      cc.globalAlpha = Math.min(1, (0.25 + 0.75 * b) * (1 - dentro * 0.7) * (0.7 + ativo * 0.5));
+      cc.fillRect(cx + Math.cos(ang) * r - tam / 2, cy + Math.sin(ang) * r - tam / 2, tam, tam);
+    }
   }
 
+  // ---------------------------------------------------------- esfera "rede" (Configurações > Esfera)
+  // Rede de pontos ligados aos vizinhos (plexus): um núcleo denso, quase uma bola de cristal, e em volta uma casca
+  // irregular e falhada, mais rala. Cada parte gira pra um lado; os pontos tremem de leve e, com a voz, uma onda de
+  // luz passa pelas ligações e tudo treme mais.
+  const NUCLEO_REDE = 300;
+  const REDE = (function criarRede() {
+    let sm = 4242;
+    const rnd = () => ((sm = (sm * 16807) % 2147483647) / 2147483647);
+    const dir = () => { const z = rnd() * 2 - 1, a = rnd() * 6.2832, r = Math.sqrt(1 - z * z); return [Math.cos(a) * r, z, Math.sin(a) * r]; };
+    const P = [], GRUPO = [], FASE = [];
+    // núcleo: quase tudo perto da superfície (é o que dá o contorno de bola), uns pontos por dentro
+    for (let k = 0; k < NUCLEO_REDE; k++) {
+      const d = dir(), r = 0.5 * (rnd() < 0.8 ? 0.9 + rnd() * 0.1 : 0.35 + rnd() * 0.5);
+      P.push([d[0] * r, d[1] * r, d[2] * r]); GRUPO.push(0); FASE.push(rnd() * 6.28);
+    }
+    // casca de fora: irregular (raio varia com a direção) e com falhas
+    const ondula = (d) => 1.05 + 0.13 * Math.sin(d[0] * 3.1 + 1) + 0.1 * Math.sin(d[1] * 4.3 + 2) + 0.08 * Math.sin(d[2] * 5.2);
+    let casca = 0;
+    while (casca < 230) {
+      const d = dir();
+      if (Math.sin(d[0] * 2.3 + d[1] * 1.7) + Math.sin(d[2] * 2.9 - 0.5) > 1.45) continue;  // falhas na casca
+      const r = ondula(d) * (0.94 + rnd() * 0.1);
+      P.push([d[0] * r, d[1] * 0.8 * r, d[2] * r]); GRUPO.push(1); FASE.push(rnd() * 6.28); casca++;
+    }
+    const n = P.length, d2 = (a, b) => (P[a][0] - P[b][0]) ** 2 + (P[a][1] - P[b][1]) ** 2 + (P[a][2] - P[b][2]) ** 2;
+    const LIG = [], tem = new Set(), GRAU = new Array(n).fill(0);
+    const ligar = (a, b, f, tipo) => {
+      const ch = a < b ? a * n + b : b * n + a;
+      if (a === b || tem.has(ch)) return;
+      tem.add(ch); LIG.push([a, b, f, tipo]); GRAU[a]++; GRAU[b]++;
+    };
+    for (let a = 0; a < n; a++) {
+      const viz = [];
+      for (let b = 0; b < n; b++) if (b !== a && GRUPO[b] === GRUPO[a]) viz.push([d2(a, b), b]);
+      viz.sort((x, y) => x[0] - y[0]);
+      const k = GRUPO[a] ? 6 : 8, max = GRUPO[a] ? 0.2 : 0.1;
+      for (let j = 0; j < k && j < viz.length; j++) if (viz[j][0] < max) ligar(a, viz[j][1], 0.6 + rnd() * 0.4, GRUPO[a]);
+      if (!GRUPO[a]) for (let j = 0; j < 4; j++) { const b = viz[8 + ((rnd() * 60) | 0)]; if (b) ligar(a, b[1], 0.25 + rnd() * 0.3, 2); }  // cordas por dentro
+    }
+    for (let k = 0; k < 40; k++) {  // pontes do núcleo pra casca (as linhas que saem pro lado na referência)
+      const a = (rnd() * NUCLEO_REDE) | 0;
+      let melhor = -1, dm = 9;
+      for (let b = NUCLEO_REDE; b < n; b++) { const dd = d2(a, b); if (dd < dm && rnd() < 0.5) { dm = dd; melhor = b; } }
+      if (melhor >= 0) ligar(a, melhor, 0.3 + rnd() * 0.3, 2);
+    }
+    return { P, GRUPO, FASE, LIG, GRAU, X: new Float32Array(n), Y: new Float32Array(n), Z: new Float32Array(n) };
+  })();
+
+  function desenharRede(cc, o) {
+    const { cx, cy, t, nivel, ativo, escuro, m, VERMELHO } = o, G = REDE, Rs = o.R * 1.05;
+    const treme = 0.012 + ativo * 0.035;
+    // núcleo e casca giram em eixos e sentidos diferentes, depois a orientação do arraste
+    const giros = [[rot * 2.6 + t * 0.04, 0.95, 0.31], [-rot * 1.3 - t * 0.02, 0.8, -0.6]];
+    for (let i = 0; i < G.P.length; i++) {
+      const [sg, CT, ST] = giros[G.GRUPO[i]], cs = Math.cos(sg), sn = Math.sin(sg), f = G.FASE[i];
+      const x = G.P[i][0] + Math.sin(t * 1.3 + f) * treme, y = G.P[i][1] + Math.sin(t * 1.1 + f * 2) * treme, z = G.P[i][2] + Math.cos(t * 1.2 + f) * treme;
+      const x1 = x * cs + z * sn, z1 = -x * sn + z * cs, x2 = x1 * CT - y * ST, y2 = x1 * ST + y * CT;
+      const vx = m[0] * x2 + m[1] * y2 + m[2] * z1, vy = m[3] * x2 + m[4] * y2 + m[5] * z1, vz = m[6] * x2 + m[7] * y2 + m[8] * z1;
+      const e = 1 / (1 - vz * 0.18);
+      G.X[i] = cx + vx * Rs * e; G.Y[i] = cy - vy * Rs * e; G.Z[i] = vz;
+    }
+    const halo = cc.createRadialGradient(cx, cy, Rs * 0.1, cx, cy, Rs * 1.2);
+    halo.addColorStop(0, `rgba(230,15,5,${(escuro ? 0.12 : 0.07) + nivel * 0.18})`);
+    halo.addColorStop(1, "rgba(200,0,0,0)");
+    cc.globalAlpha = 1; cc.fillStyle = halo;
+    cc.beginPath(); cc.arc(cx, cy, Rs * 1.2, 0, Math.PI * 2); cc.fill();
+    // ligações por brilho: profundidade × força × onda (a onda sai do centro quando ele fala)
+    const NIV = 8, cam = [];
+    for (let k = 0; k < NIV; k++) cam.push(new Path2D());
+    const BASE = [1.1, 0.95, 0.55];
+    for (const [a, b, f, tipo] of G.LIG) {
+      const z = (G.Z[a] + G.Z[b]) / 2, prof = 0.25 + 0.75 * Math.max(0, Math.min(1, (z + 1.2) / 2.4));
+      const dx = G.X[a] - cx, dy = G.Y[a] - cy, r = Math.sqrt(dx * dx + dy * dy) / Rs;
+      const onda = 1 + ativo * 1.2 * Math.max(0, Math.sin(r * 9 - t * 7));
+      const v = f * BASE[tipo] * prof * prof * (0.75 + 0.25 * Math.sin(t * 0.9 + G.FASE[a])) * onda * 0.85;
+      const c = cam[Math.max(0, Math.min(NIV - 1, (v * NIV) | 0))];
+      c.moveTo(G.X[a], G.Y[a]); c.lineTo(G.X[b], G.Y[b]);
+    }
+    cc.strokeStyle = VERMELHO; cc.lineCap = "round";
+    for (let k = 0; k < NIV; k++) {
+      const nv = (k + 0.5) / NIV;
+      cc.globalAlpha = Math.min(1, 0.06 + 0.9 * nv);
+      cc.lineWidth = 0.4 + 0.6 * nv;
+      cc.stroke(cam[k]);
+    }
+    // nós: os mais ligados brilham mais
+    const CLARO = escuro ? "rgb(255,140,120)" : VERMELHO;
+    cc.fillStyle = CLARO;
+    for (let i = 0; i < G.P.length; i++) {
+      const prof = Math.max(0, Math.min(1, (G.Z[i] + 1.2) / 2.4)), g = Math.min(1, G.GRAU[i] / 9);
+      const b = 0.6 + 0.4 * Math.sin(t * 2 + G.FASE[i] * 3);
+      cc.globalAlpha = Math.min(1, prof * prof * (0.35 + 0.65 * g) * b * (1 + ativo * 0.6));
+      const l = (0.9 + g * 1.6) * (0.6 + 0.5 * prof) * (1 + ativo * 0.4);
+      cc.fillRect(G.X[i] - l / 2, G.Y[i] - l / 2, l, l);
+    }
+  }
+
+  // Girar com o mouse: segure a esfera e arraste; ao soltar, ela continua um pouco no embalo e volta ao giro dela.
+  // A orientação é uma matriz 3x3 (linhas): começa um pouco inclinada pra frente.
+  let ORI = [1, 0, 0, 0, Math.cos(0.35), -Math.sin(0.35), 0, Math.sin(0.35), Math.cos(0.35)];
+  function girarOri(eixo, ang) {  // gira ORI em volta de um eixo da tela (x = horizontal, y = vertical)
+    if (!ang) return;
+    const c = Math.cos(ang), s = Math.sin(ang);
+    const Rm = eixo === "y" ? [c, 0, s, 0, 1, 0, -s, 0, c] : [1, 0, 0, 0, c, -s, 0, s, c];
+    const m = ORI, n = new Array(9);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++)
+      n[i * 3 + j] = Rm[i * 3] * m[j] + Rm[i * 3 + 1] * m[3 + j] + Rm[i * 3 + 2] * m[6 + j];
+    ORI = n;
+  }
+  const arraste = { ativo: false, x: 0, y: 0, vx: 0, vy: 0, ultimo: 0 };
+  let ORB = { cx: 0, cy: 0, R: 1 };  // onde a esfera está na tela (o quadro() atualiza)
+  const naEsfera = (x, y) => Math.hypot(x - ORB.cx, y - ORB.cy) < ORB.R * 1.25;  // inclui a crista e as ilhas
+  tela.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || !naEsfera(e.clientX, e.clientY)) return;
+    arraste.ativo = true; arraste.x = e.clientX; arraste.y = e.clientY; arraste.vx = arraste.vy = 0;
+    arraste.ultimo = performance.now();
+    try { tela.setPointerCapture(e.pointerId); } catch (_) { /* sem captura: ainda gira enquanto o mouse estiver na tela */ }
+    tela.style.cursor = "grabbing";
+  });
+  tela.addEventListener("pointermove", (e) => {
+    if (!arraste.ativo) { tela.style.cursor = naEsfera(e.clientX, e.clientY) ? "grab" : "default"; return; }
+    const dx = e.clientX - arraste.x, dy = e.clientY - arraste.y, agora = performance.now();
+    const k = 1 / Math.max(80, ORB.R);  // arrastar o raio inteiro gira ~1 radiano
+    girarOri("y", dx * k); girarOri("x", dy * k);
+    const dt = Math.max(1, agora - arraste.ultimo);
+    arraste.vx = 0.7 * arraste.vx + 0.3 * (dx * k / dt * 16); arraste.vy = 0.7 * arraste.vy + 0.3 * (dy * k / dt * 16);
+    arraste.x = e.clientX; arraste.y = e.clientY; arraste.ultimo = agora;
+  });
+  const soltarEsfera = (e) => {
+    if (!arraste.ativo) return;
+    arraste.ativo = false;
+    if (performance.now() - arraste.ultimo > 90) arraste.vx = arraste.vy = 0;  // parou antes de soltar: sem embalo
+    tela.style.cursor = naEsfera(e.clientX, e.clientY) ? "grab" : "default";
+  };
+  tela.addEventListener("pointerup", soltarEsfera);
+  tela.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    zoomAlvo = Math.min(3, Math.max(0.5, zoomAlvo * Math.exp(-e.deltaY * 0.0015)));
+    localStorage.setItem("zoomEsfera", zoomAlvo.toFixed(3));
+  }, { passive: false });
+  tela.addEventListener("dblclick", (e) => {
+    if (!naEsfera(e.clientX, e.clientY)) return;
+    zoomAlvo = 1; localStorage.setItem("zoomEsfera", "1");
+  });
+  tela.addEventListener("pointercancel", soltarEsfera);
+
   let audioCtx = null, analisadorMic = null, analisadorSaida = null;
+  let compressor = null;
+  // Volume igual em toda fala: cada resposta é ajustada pra este volume médio (RMS).
+  const VOLUME_FALA = 0.08;
+  function ganhoDaFala(buffer) {
+    const d = buffer.getChannelData(0);
+    let soma = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) { if (Math.abs(d[i]) > 0.005) { soma += d[i] * d[i]; n++; } }
+    if (!n) return 1;
+    return Math.min(3, Math.max(0.25, VOLUME_FALA / Math.sqrt(soma / n)));
+  }
   const amostras = new Uint8Array(1024);
   function volume(analisador) {
     if (!analisador) return 0;
@@ -243,33 +1145,209 @@
     rot += veloc;
 
     ctx.clearRect(0, 0, W, H);
-    const cx = W / 2, cy = H * 0.42;
-    const R = Math.min(W, H) * 0.2 * (1 + nivel * 0.3);
+    const cx = W / 2, cy = H * 0.44;
+    zoom += (zoomAlvo - zoom) * 0.18;
+    const R = Math.min(W, H) * 0.21 * zoom * (1 + nivel * 0.06);  // raio das órbitas (× zoom da rodinha)
+    const escuro = corpo.classList.contains("escuro");
+    const ativo = Math.min(1, nivel * 1.6);
 
-    const brilho = ctx.createRadialGradient(cx, cy, R * 0.05, cx, cy, R * 2.1);
-    brilho.addColorStop(0, `rgba(255,255,255,${0.09 + nivel * 0.22})`);
-    brilho.addColorStop(0.4, `rgba(255,255,255,${0.025 + nivel * 0.05})`);
-    brilho.addColorStop(1, "rgba(255,255,255,0)");
+    // Começa um pouco inclinado e gira devagar sozinho (mostra o 3D). Segurando, você gira; ao soltar, segue no embalo.
+    ORB = { cx, cy, R: R * 0.95 };
+    if (!quadro.iniciado) { quadro.iniciado = true; ORI = [1, 0, 0, 0, 1, 0, 0, 0, 1]; girarOri("x", 0.35); girarOri("y", -0.5); }
+    if (!arraste.ativo) {
+      girarOri("y", veloc * 0.55 + arraste.vx); girarOri("x", arraste.vy);
+      arraste.vx *= 0.95; arraste.vy *= 0.95;
+    }
+    const m = ORI;
+    // Camada nítida + bloom por baixo. Um vermelho só e os traços não somam luz: nada vira branco.
+    if (!quadro.camada || quadro.camada.width !== tela.width || quadro.camada.height !== tela.height) {
+      quadro.camada = document.createElement("canvas");
+      quadro.camada.width = tela.width; quadro.camada.height = tela.height;
+      quadro.cc = quadro.camada.getContext("2d");
+      quadro.bloom = document.createElement("canvas");
+      quadro.bloom.width = Math.max(1, tela.width >> 2); quadro.bloom.height = Math.max(1, tela.height >> 2);
+      quadro.bc = quadro.bloom.getContext("2d");
+    }
+    const cc = quadro.cc, dpr = tela.width / W;
+    cc.setTransform(1, 0, 0, 1, 0, 0);
+    cc.clearRect(0, 0, quadro.camada.width, quadro.camada.height);
+    cc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cc.globalCompositeOperation = "source-over";
+    cc.lineCap = "round"; cc.lineJoin = "round";
+    const VERMELHO = escuro ? "rgb(255,26,14)" : "rgb(205,10,6)";
+    if (estiloEsfera === "rede") desenharRede(cc, { cx, cy, R, t, nivel, ativo, escuro, m, VERMELHO });
+    else if (estiloEsfera === "fluxo") desenharFluxo(cc, { cx, cy, R, t, nivel, ativo, escuro, m, VERMELHO });
+    else {  // estilo "órbitas"
+    // cada peça gira em volta do PRÓPRIO eixo (p[5..7]) na velocidade p[4]: os anéis cruzados giram cada um pra um lado
+    const pulsoDisco = 1 + 0.025 * nivel * (0.6 + 0.4 * Math.sin(t * 9));
+    for (let i = 0; i < PTS.length; i++) {
+      const p = PTS[i], a = rot * p[4], c = Math.cos(a), s = Math.sin(a);
+      const ex = p[5], ey = p[6], ez = p[7], px = p[0], py = p[1], pz = p[2];
+      const d = (ex * px + ey * py + ez * pz) * (1 - c);  // Rodrigues: v·cos + (e×v)·sen + e(e·v)(1−cos)
+      const k = p[4] === 0.25 ? pulsoDisco * (1 + 0.02 * nivel) : pulsoDisco;
+      const x = (px * c + (ey * pz - ez * py) * s + ex * d) * k;
+      const y = (py * c + (ez * px - ex * pz) * s + ey * d) * k;
+      const z = (pz * c + (ex * py - ey * px) * s + ez * d) * k;
+      const x1 = m[0] * x + m[1] * y + m[2] * z, y1 = m[3] * x + m[4] * y + m[5] * z, z2 = m[6] * x + m[7] * y + m[8] * z;
+      const e = 1 / (1 - z2 * 0.15);
+      PX[i] = cx + x1 * R * e; PY[i] = cy - y1 * R * e; PZ[i] = z2;
+    }
+
+    // fundo: brilho vermelho leve no meio
+    const halo = ctx.createRadialGradient(cx, cy, R * 0.05, cx, cy, R * 1.3);
+    halo.addColorStop(0, `rgba(230,15,5,${(escuro ? 0.12 : 0.09) + nivel * 0.18})`);
+    halo.addColorStop(0.6, `rgba(200,0,0,${0.03 + nivel * 0.06})`);
+    halo.addColorStop(1, "rgba(200,0,0,0)");
     ctx.globalAlpha = 1;
-    ctx.fillStyle = brilho;
+    ctx.fillStyle = halo;
     ctx.fillRect(0, 0, W, H);
 
-    ctx.fillStyle = "#fff";
-    const cr = Math.cos(rot), sr = Math.sin(rot);
-    const inc = 0.42, ci = Math.cos(inc), si = Math.sin(inc);
-    const forca = estado === "falando" || estado === "ouvindo" ? 0.6 : 0.35;
-    for (let i = 0; i < N; i++) {
-      const p = pontos[i];
-      const onda = 1 + nivel * forca * Math.sin(p[3] + t * 6 + p[1] * 5);
-      const x = p[0] * onda, y = p[1] * onda, z = p[2] * onda;
-      const x1 = x * cr + z * sr, z1 = -x * sr + z * cr;
-      const y1 = y * ci - z1 * si, z2 = y * si + z1 * ci;
-      const prof = (z2 + 1.3) / 2.6;
-      const esc = 1.4 / (1.9 - z2 * 0.5);
-      const tam = (0.55 + 1.35 * prof) * (1 + nivel * 0.35);
-      ctx.globalAlpha = Math.max(0.04, Math.min(1, 0.06 + 0.9 * prof * prof));
-      ctx.fillRect(cx + x1 * R * esc - tam / 2, cy + y1 * R * esc - tam / 2, tam, tam);
+    // brilho de cada traço: força × profundidade × ativação (onda que gira pelo anel e pulsa do centro pra fora)
+    const ativacao = (p) => {
+      const r = Math.hypot(p[0], p[1]), ang = Math.atan2(p[1], p[0]);
+      const gira = 0.5 + 0.5 * Math.sin(ang * 2 - t * (1 + ativo * 4));
+      const sai = 0.5 + 0.5 * Math.sin(r * 14 - t * (2 + ativo * 9));
+      return 0.7 + 0.3 * (1 - ativo) + ativo * (0.6 * gira + 0.8 * sai * sai);
+    };
+    const prof = (z) => Math.max(0, Math.min(1, (z + 1.1) / 2.2));
+    const TIPOS = 5, NIVEIS = 7;
+    const caminhos = new Array(2 * TIPOS * NIVEIS);  // metade de trás e metade da frente (a esfera fica no meio)
+    for (let k = 0; k < caminhos.length; k++) caminhos[k] = new Path2D();
+    for (let s = 0; s < SEG.length; s++) {
+      const g = SEG[s], i = g[0], j = g[1], pr = prof((PZ[i] + PZ[j]) / 2);
+      const v = g[3] * (0.18 + 0.82 * pr * pr) * ativacao(PTS[i]) * 1.1;  // o de trás bem mais apagado: dá a profundidade
+      const n = Math.max(0, Math.min(NIVEIS - 1, v * NIVEIS | 0));
+      const c = caminhos[(PZ[i] + PZ[j] > 0 ? TIPOS * NIVEIS : 0) + g[2] * NIVEIS + n];
+      c.moveTo(PX[i], PY[i]); c.lineTo(PX[j], PY[j]);
     }
+
+    //          fina   forte  fraco  horizontal  régua
+    const ALFA = [0.8,   1,     0.5,   1,          0.9];
+    const LARG = [0.85,  1.15,  0.65,  2.2,        1.0];
+    const rs = R * NUCLEO * (1 + nivel * 0.25);  // esfera sólida do meio (cresce com a voz)
+    const tapada = (i) => PZ[i] < 0 && Math.hypot(PX[i] - cx, PY[i] - cy) < rs;  // atrás da esfera: não aparece
+    function camada(frente) {
+      cc.strokeStyle = VERMELHO;
+      for (let tipo = 0; tipo < TIPOS; tipo++) {
+        for (let n = 0; n < NIVEIS; n++) {
+          const nv = (n + 0.5) / NIVEIS;
+          cc.globalAlpha = Math.min(1, ALFA[tipo] * (0.08 + 0.92 * nv));
+          cc.lineWidth = LARG[tipo] * (0.6 + 0.8 * nv);
+          cc.stroke(caminhos[(frente ? TIPOS * NIVEIS : 0) + tipo * NIVEIS + n]);
+        }
+      }
+      cc.fillStyle = VERMELHO;
+      for (const i of PARTICULAS) {
+        if ((PZ[i] > 0) !== frente) continue;
+        const b = 0.4 + 0.6 * Math.sin(t * 1.5 + PTS[i][3] * 4);
+        cc.globalAlpha = Math.min(1, 0.4 * b * (0.7 + ativo * 0.7) * (0.3 + 0.7 * prof(PZ[i])));
+        cc.fillRect(PX[i] - 0.6, PY[i] - 0.6, 1.2, 1.2);
+      }
+      for (const i of BRILHOS) {  // contas nas órbitas
+        if ((PZ[i] > 0) !== frente) continue;
+        cc.globalAlpha = Math.min(1, (0.55 + 0.45 * Math.sin(t * 2.2 + PTS[i][3] * 5)) * (0.35 + 0.65 * prof(PZ[i])));
+        cc.beginPath(); cc.arc(PX[i], PY[i], 1.6 + ativo * 1.4, 0, Math.PI * 2); cc.fill();
+      }
+    }
+    camada(false);
+    // a esfera: vermelha, iluminada de cima à esquerda, com borda acesa e umas manchas (textura)
+    {
+      const aura = cc.createRadialGradient(cx, cy, rs * 0.9, cx, cy, rs * 1.9);
+      aura.addColorStop(0, `rgba(240,20,10,${0.22 + nivel * 0.5})`);
+      aura.addColorStop(1, "rgba(200,0,0,0)");
+      cc.globalAlpha = 1; cc.fillStyle = aura;
+      cc.beginPath(); cc.arc(cx, cy, rs * 1.9, 0, Math.PI * 2); cc.fill();
+      const luz = cc.createRadialGradient(cx - rs * 0.38, cy - rs * 0.42, rs * 0.05, cx, cy, rs);
+      luz.addColorStop(0, escuro ? "rgb(240,80,62)" : "rgb(232,70,55)");
+      luz.addColorStop(0.35, escuro ? "rgb(178,20,12)" : "rgb(170,16,10)");
+      luz.addColorStop(0.85, "rgb(78,4,3)");
+      luz.addColorStop(1, "rgb(46,0,0)");
+      cc.fillStyle = luz;
+      cc.beginPath(); cc.arc(cx, cy, rs, 0, Math.PI * 2); cc.fill();
+      // superfície girando: o eixo da esfera é inclinado e ela gira mais rápido quando está pensando/falando
+      const sg = rot * 5 + t * 0.15, cs = Math.cos(sg), sn = Math.sin(sg), CT = 0.93, ST = 0.37;
+      const vista = (x, y, z) => {
+        const x1 = x * cs + z * sn, z1 = -x * sn + z * cs;   // gira no próprio eixo
+        const x2 = x1 * CT - y * ST, y2 = x1 * ST + y * CT;  // eixo inclinado
+        return [m[0] * x2 + m[1] * y2 + m[2] * z1, m[3] * x2 + m[4] * y2 + m[5] * z1, m[6] * x2 + m[7] * y2 + m[8] * z1];
+      };
+      cc.save();
+      cc.beginPath(); cc.arc(cx, cy, rs, 0, Math.PI * 2); cc.clip();
+      cc.fillStyle = "rgb(34,0,0)";
+      for (const [x, y, z, r] of CRATERAS) {  // manchas grandes, achatadas perto da borda (dá a noção de giro)
+        const [vx, vy, vz] = vista(x, y, z);
+        if (vz <= 0.02) continue;
+        cc.globalAlpha = 0.28 * Math.min(1, vz * 1.6);
+        cc.beginPath();
+        cc.ellipse(cx + vx * rs, cy - vy * rs, r * rs, r * rs * Math.max(0.12, vz), Math.atan2(-vy, vx), 0, Math.PI * 2);
+        cc.fill();
+      }
+      for (const [x, y, z, tam, a, clara] of MANCHAS) {
+        const [vx, vy, vz] = vista(x, y, z);
+        if (vz <= 0) continue;
+        cc.fillStyle = clara ? "rgb(255,120,100)" : "rgb(30,0,0)";
+        cc.globalAlpha = a * Math.min(1, vz * 1.8) * (clara ? 0.8 : 1);
+        const l = tam * (0.4 + 0.6 * vz);
+        cc.fillRect(cx + vx * rs - l / 2, cy - vy * rs - l / 2, l, l);
+      }
+      cc.strokeStyle = escuro ? "rgb(255,90,70)" : "rgb(255,110,90)"; cc.lineWidth = 0.7;
+      for (const linha of GRADE) {  // grade bem leve: só a metade da frente
+        let ant = null;
+        for (const q of linha) {
+          const v = vista(q[0], q[1], q[2]);
+          if (ant && ant[2] > 0 && v[2] > 0) {
+            cc.globalAlpha = (0.1 + nivel * 0.25) * Math.min(ant[2], v[2]);
+            cc.beginPath(); cc.moveTo(cx + ant[0] * rs, cy - ant[1] * rs); cc.lineTo(cx + v[0] * rs, cy - v[1] * rs); cc.stroke();
+          }
+          ant = v;
+        }
+      }
+      cc.restore();
+      cc.globalAlpha = 0.55 + nivel * 0.45; cc.strokeStyle = VERMELHO; cc.lineWidth = 1.2;
+      cc.beginPath(); cc.arc(cx, cy, rs, 0, Math.PI * 2); cc.stroke();
+    }
+    camada(true);
+    // Impulsos: correm pelas ramificações do centro pra borda, com rastro. Com som, viram uma chuva de raios.
+    const IMP = quadro.impulsos || (quadro.impulsos = []);
+    const dtq = Math.min(0.1, t - (quadro.ultimoT || t));
+    quadro.ultimoT = t;
+    quadro.saldo = (quadro.saldo || 0) + dtq * (3 + ativo * 80);
+    while (quadro.saldo >= 1 && CAMINHOS_IMP.length) {
+      quadro.saldo -= 1;
+      const c = CAMINHOS_IMP[(Math.random() * CAMINHOS_IMP.length) | 0];
+      IMP.push({ c, ini: t, dur: (0.35 + c.length * 0.03) / (1 + ativo * 1.5) });
+    }
+    cc.strokeStyle = VERMELHO;
+    for (let k = IMP.length - 1; k >= 0; k--) {
+      const p = IMP[k], q = (t - p.ini) / p.dur;
+      if (q >= 1 || q < 0) { IMP.splice(k, 1); continue; }
+      const n = p.c.length - 1, pos = q * n, i0 = Math.floor(pos), fr = pos - i0;
+      const a = p.c[i0], b = p.c[Math.min(n, i0 + 1)];
+      const x = PX[a] + (PX[b] - PX[a]) * fr, y = PY[a] + (PY[b] - PY[a]) * fr;
+      if (tapada(a)) continue;
+      cc.globalAlpha = Math.min(1, Math.sin(q * Math.PI) * 1.1);
+      cc.lineWidth = 1.7;
+      cc.beginPath(); cc.moveTo(x, y);
+      for (let r = 0; r < 6 && i0 - r >= 0; r++) cc.lineTo(PX[p.c[i0 - r]], PY[p.c[i0 - r]]);
+      cc.stroke();
+      cc.fillRect(x - 1.4, y - 1.4, 2.8, 2.8);
+    }
+    }
+    const bc = quadro.bc;
+    bc.globalCompositeOperation = "copy";
+    bc.filter = "blur(3px)";
+    bc.drawImage(quadro.camada, 0, 0, quadro.bloom.width, quadro.bloom.height);
+    bc.filter = "none";
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalCompositeOperation = escuro ? "lighter" : "source-over";  // o bloom é vermelho puro: somar não vira branco
+    ctx.globalAlpha = escuro ? 0.95 + ativo * 0.5 : 0.5;
+    ctx.drawImage(quadro.bloom, 0, 0, tela.width, tela.height);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = 1;
+    ctx.drawImage(quadro.camada, 0, 0);
+    ctx.restore();
     ctx.globalAlpha = 1;
     requestAnimationFrame(quadro);
   }
@@ -296,7 +1374,15 @@
     if (!analisadorSaida) {
       analisadorSaida = audioCtx.createAnalyser();
       analisadorSaida.fftSize = 1024;
-      analisadorSaida.connect(audioCtx.destination);
+      // Compressor: segura os picos (quando ele "grita" no meio da frase).
+      compressor = audioCtx.createDynamicsCompressor();
+      compressor.threshold.value = -26;
+      compressor.knee.value = 10;
+      compressor.ratio.value = 8;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+      analisadorSaida.connect(compressor);
+      compressor.connect(audioCtx.destination);
     }
   }
   // Qualquer toque ou tecla destrava o som do navegador.
@@ -357,7 +1443,10 @@
       }
       const fonte = audioCtx.createBufferSource();
       fonte.buffer = buffer;
-      fonte.connect(analisadorSaida);
+      const ganho = audioCtx.createGain();
+      ganho.gain.value = ganhoDaFala(buffer);
+      fonte.connect(ganho);
+      ganho.connect(analisadorSaida);
       fonte.onended = () => {
         if (falaAtual === fonte) {
           falaAtual = null;
@@ -390,7 +1479,7 @@
 
   async function comecarGravacao() {
     if (gravando || querGravar) return;
-    if (["aquecendo", "iniciando"].includes(estado)) { avisar("Um momento, Senhor. Ainda estou ligando."); return; }
+    if (estado === "iniciando") { avisar("Um momento, " + nomeDono + ". Ainda estou ligando."); return; }  // aquecendo: pode falar, ele responde assim que ficar pronto
     interromper();
     querGravar = true;
     corpo.classList.add("usado");
@@ -398,7 +1487,7 @@
       await prepararAudio();
       if (!micStream) {
         micStream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: false },  // sem ganho automático: ele estourava o volume e a transcrição errava
         });
         analisadorMic = audioCtx.createAnalyser();
         analisadorMic.fftSize = 1024;
@@ -428,6 +1517,16 @@
     mudarEstado("ouvindo");
   }
 
+  // "Ultron, soltar microfone": fecha o microfone pra outros apps (Discord, Meet) usarem.
+  // Segurar o espaço de novo reabre ("Ultron, voltar").
+  const SOLTAR_MIC = /\b(solt\w*|liber\w*|larg\w*)\s+(o\s+)?micro\w*/i;
+  function soltarMicrofone() {
+    if (!micStream) return;
+    micStream.getTracks().forEach((faixa) => faixa.stop());
+    micStream = null;
+    analisadorMic = null;
+  }
+
   function pararGravacao() {
     querGravar = false;
     clearTimeout(limiteGravacao);
@@ -438,6 +1537,9 @@
   }
 
   async function enviarGravacao() {
+    // Solta o microfone assim que a fala acaba: o Windows deixa de tratar como "chamada"
+    // (que abafa e abaixa o som do PC) e outros apps podem usar o microfone.
+    soltarMicrofone();
     const curta = performance.now() - inicioGravacao < 350;
     const blob = new Blob(pedacos, { type: (gravador && gravador.mimeType) || "audio/webm" });
     if (curta || blob.size < 2000) { mudarEstado("parado"); return; }
@@ -474,7 +1576,7 @@
   }
 
   function ocupadoNoServidor() {
-    avisar("Um momento, Senhor. Ainda estou no pedido anterior.");
+    avisar("Um pedido de cada vez, " + nomeDono + ".");
     mudarEstado("pensando");  // o servidor avisa quando terminar
   }
 
@@ -483,7 +1585,7 @@
   setInterval(() => {
     if (["transcrevendo", "pensando"].includes(estado) && !tocando && performance.now() - ultimoEvento > 90000) {
       mudarEstado("parado");
-      avisar("Perdi o fio, Senhor. Pode repetir?");
+      avisar("Perdi o fio, " + nomeDono + ". Repita.");
     }
   }, 5000);
 
@@ -493,6 +1595,7 @@
 
   function novoTurno() {
     turnoAberto = true;
+    manterLegenda();
     rotulosTurno = new Set();
     el("ferramentas").innerHTML = "";
     el("voce").textContent = "";
@@ -517,6 +1620,106 @@
     avisoTimer = setTimeout(() => { el("aviso").textContent = ""; }, 6000);
   }
 
+  // ---------------------------------------------------------- painéis
+  const minimizados = new Set(JSON.parse(localStorage.getItem("paineisMin") || "[]"));
+  if (localStorage.getItem("semPaineis") === "1") corpo.classList.add("sem-paineis");
+  document.querySelectorAll(".painel").forEach((p) => {
+    const botao = p.querySelector(".minimizar");
+    const aplicar = () => {
+      const min = minimizados.has(p.dataset.painel);
+      p.classList.toggle("min", min);
+      botao.textContent = min ? "▾" : "–";  // minimizado mostra uma setinha, pra não virar um segundo "+" ao lado do "+" de novo item
+      botao.title = min ? "Expandir" : "Minimizar";
+    };
+    botao.addEventListener("click", () => {
+      if (minimizados.has(p.dataset.painel)) minimizados.delete(p.dataset.painel);
+      else minimizados.add(p.dataset.painel);
+      localStorage.setItem("paineisMin", JSON.stringify([...minimizados]));
+      aplicar();
+      botao.blur();  // senão o espaço (falar) apertaria o botão
+    });
+    aplicar();
+  });
+
+  function linhaPainel(principal, sub, classe) {
+    const d = document.createElement("div");
+    d.className = "linha-painel" + (classe ? " " + classe : "");
+    const a = document.createElement("div");
+    a.className = "principal";
+    a.textContent = principal;
+    d.appendChild(a);
+    if (sub) {
+      const b = document.createElement("div");
+      b.className = "sub";
+      b.textContent = sub;
+      d.appendChild(b);
+    }
+    return d;
+  }
+  function aviso(texto) {
+    const v = document.createElement("div");
+    v.className = "vazio";
+    v.textContent = texto;
+    return v;
+  }
+  function preencher(nome, itens, montar, vazio, contador) {
+    const p = document.querySelector('.painel[data-painel="' + nome + '"]');
+    const c = p.querySelector(".conteudo");
+    c.replaceChildren();
+    p.querySelector(".contador").textContent = contador || "";
+    if (itens === null || itens === undefined) { c.appendChild(aviso("Carregando...")); return; }
+    if (!itens.length) { c.appendChild(aviso(vazio)); return; }
+    itens.forEach((item, i) => c.appendChild(montar(item, i)));
+  }
+  function itemMercado(m) {
+    // Gráfico: barra da variação do dia saindo do centro (verde sobe, vermelho desce). Escala fixa: 6% enche a metade.
+    const l = document.createElement("div");
+    l.className = "linha-painel mercado-item";
+    const topo = document.createElement("div"); topo.className = "mercado-topo";
+    const nome = document.createElement("span");
+    nome.textContent = m.nome.charAt(0).toUpperCase() + m.nome.slice(1);
+    const valor = document.createElement("span");
+    valor.textContent = m.valor + " ";
+    const desce = String(m.variacao).startsWith("-");
+    const v = document.createElement("span");
+    v.className = desce ? "desce" : "sobe";
+    v.textContent = m.variacao;
+    valor.appendChild(v);
+    topo.append(nome, valor);
+    const pct = Math.abs(parseFloat(String(m.variacao).replace(",", ".").replace(/[^\d.\-+]/g, ""))) || 0;
+    const trilho = document.createElement("div"); trilho.className = "mercado-trilho";
+    const barra = document.createElement("div");
+    barra.className = "mercado-barra " + (desce ? "desce" : "sobe");
+    barra.style.width = Math.max(1, Math.min(pct / 6, 1) * 50) + "%";
+    trilho.appendChild(barra);
+    l.append(topo, trilho);
+    return l;
+  }
+  async function carregarPaineis() {
+    let d;
+    try { d = await (await fetch("/api/paineis")).json(); } catch (e) { return; }
+    const naoLidos = d.nao_lidos > 999 ? "999+ não lidos" : d.nao_lidos ? d.nao_lidos + " não lidos" : "";
+    preencher("emails", d.google_erro && !d.emails ? [] : d.emails,
+      (m) => {
+        const l = linhaPainel(m.assunto || "(sem assunto)", [m.de, m.quando].filter(Boolean).join(" · "), "clicavel" + (m.nao_lido ? " nao-lido" : ""));
+        if (m.trecho) { const tr = document.createElement("div"); tr.className = "trecho"; tr.textContent = m.trecho; l.appendChild(tr); }
+        l.title = "Abrir e-mail";
+        l.addEventListener("click", () => abrirEmail(m));
+        return l;
+      },
+      d.google_erro || "Nada não lido.", naoLidos);
+    eventosAgenda = d.agenda || [];
+    agendaErro = d.google_erro && !d.agenda ? d.google_erro : "";
+    agendaCarregando = d.agenda === null || d.agenda === undefined;
+    document.querySelector('.painel[data-painel="agenda"] .contador').textContent = d.google_quando ? "às " + d.google_quando : "";
+    desenharCalendario();
+    preencher("mercado", d.mercado, itemMercado, "Sem cotação agora.");
+    atualizarQuadro(d.tarefas);
+    if (editandoTarefa) { tarefasGuardadas = d.tarefas; return; }  // não apaga o campo de edição no meio
+    desenharTarefas(d.tarefas);
+  }
+  carregarPaineis();
+
   function conectar() {
     const fonte = new EventSource("/api/eventos");
     fonte.onmessage = (ev) => {
@@ -527,9 +1730,26 @@
         if (e.estado === "parado" && estado === "ouvindo") return;
         if (estado === "ouvindo" && e.estado !== "aquecendo") return;
         mudarEstado(e.estado);
+      } else if (e.tipo === "provas") {
+        if (!provasEl.hidden) {
+          const digitandoCorrecao = document.activeElement && document.activeElement.closest && document.activeElement.closest("#provasLista textarea");
+          if (digitandoCorrecao) provasPendente = true; else carregarProvas();
+        }
+        fetch("/api/config").then((r) => r.json()).then((c) => { config = c; atualizarBotaoProvas(); }).catch(() => {});
+      } else if (e.tipo === "tarefas") {  // "abre o quadro de tarefas" por voz
+        if (e.abrir) abrirQuadro(); else fecharQuadro();
+      } else if (e.tipo === "limpeza") {
+        podarHistorico();
+        if (chatAberto()) desenharChat();
+      } else if (e.tipo === "paineis") {
+        carregarPaineis();
       } else if (e.tipo === "voce") {
         turnoAberto = true;
+        manterLegenda();
         el("voce").textContent = "“" + e.texto + "”";
+        addMsg("eu", e.texto);
+        el("chatDigitando").textContent = "Ultron está escrevendo...";
+        if (SOLTAR_MIC.test(e.texto)) soltarMicrofone();
       } else if (e.tipo === "ferramenta") {
         chip(e.rotulo);
       } else if (e.tipo === "fala") {
@@ -537,8 +1757,13 @@
       } else if (e.tipo === "resposta") {
         turnoAberto = false;
         document.querySelectorAll(".chip").forEach((c) => c.classList.add("feito"));
-        el("resposta").textContent = e.texto;
+        // modo texto: a resposta fica só no chat, sem o textão em cima da esfera
+        el("resposta").textContent = (config && config.modo_texto) ? "" : e.texto;
+        addMsg("ele", e.texto);
+        el("chatDigitando").textContent = "";
         el("tempo").textContent = "respondeu em " + String(e.segundos).replace(".", ",") + " s";
+        manterLegenda();
+        if (!e.audio) apagarLegenda(Math.min(15000, 4000 + 55 * (e.texto || "").length));  // sem voz: dá tempo de ler e some
         falar(e.audio);
       } else if (e.tipo === "aviso") {
         avisar(e.texto);
@@ -550,7 +1775,7 @@
 
   // ---------------------------------------------------------- configurações (engrenagem)
   const painel = el("config");
-  const configAberta = () => !painel.hidden;
+  const configAberta = () => !painel.hidden || !el("chat").hidden || !el("perfil").hidden || !el("leitor").hidden || !el("novoEvento").hidden || !el("recorte").hidden || !el("provas").hidden || !el("quadro").hidden;
   let config = null;
   let mouseTimer = null;
 
@@ -600,6 +1825,7 @@
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(mudanca),
     });
     config = await r.json();
+    if (config.nome) nomeDono = config.nome;
     desenharVozes();
   }
 
@@ -633,12 +1859,1094 @@
     tocarAmostra(config.voz);
   });
 
+  // ---------------------------------------------------------- calendário da agenda
+  let eventosAgenda = [], agendaErro = "", agendaCarregando = true;
+  const hojeCal = new Date();
+  let mesCal = new Date(hojeCal.getFullYear(), hojeCal.getMonth(), 1);
+  let diaEscolhido = chaveDia(hojeCal);
+  function chaveDia(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function eventosDoDia(chave) {
+    return eventosAgenda.filter((ev) => {
+      const ini = (ev.inicio || "").slice(0, 10), fim = (ev.fim || ev.inicio || "").slice(0, 10);
+      if (!ini) return false;
+      // evento de dia todo termina no dia seguinte (exclusivo)
+      return ev.dia_todo ? chave >= ini && (chave < fim || chave === ini) : chave >= ini && chave <= fim;
+    });
+  }
+  function desenharCalendario() {
+    const c = document.querySelector('.painel[data-painel="agenda"] .conteudo');
+    c.replaceChildren();
+    const topo = document.createElement("div"); topo.className = "cal-topo";
+    const ant = document.createElement("button"); ant.textContent = "‹"; ant.title = "Mês anterior";
+    const prox = document.createElement("button"); prox.textContent = "›"; prox.title = "Próximo mês";
+    const nome = document.createElement("span");
+    nome.textContent = mesCal.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    const mesAtual = new Date(hojeCal.getFullYear(), hojeCal.getMonth(), 1);
+    ant.disabled = mesCal <= mesAtual;                       // o painel carrega este mês e o próximo
+    prox.disabled = mesCal > mesAtual;
+    ant.addEventListener("click", (e) => { e.currentTarget.blur(); mesCal = new Date(mesCal.getFullYear(), mesCal.getMonth() - 1, 1); desenharCalendario(); });
+    prox.addEventListener("click", (e) => { e.currentTarget.blur(); mesCal = new Date(mesCal.getFullYear(), mesCal.getMonth() + 1, 1); desenharCalendario(); });
+    topo.append(ant, nome, prox);
+    c.appendChild(topo);
+    const grade = document.createElement("div"); grade.className = "cal-grade";
+    ["D", "S", "T", "Q", "Q", "S", "S"].forEach((s) => { const x = document.createElement("div"); x.className = "sem"; x.textContent = s; grade.appendChild(x); });
+    const inicio = new Date(mesCal.getFullYear(), mesCal.getMonth(), 1 - mesCal.getDay());
+    for (let i = 0; i < 42; i++) {
+      const dia = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
+      if (i >= 35 && dia.getMonth() !== mesCal.getMonth()) break;
+      const chave = chaveDia(dia);
+      const b = document.createElement("div");
+      b.className = "cal-dia" + (dia.getMonth() !== mesCal.getMonth() ? " fora" : "") + (chave === chaveDia(hojeCal) ? " hoje" : "")
+        + (chave === diaEscolhido ? " escolhido" : "") + (eventosDoDia(chave).length ? " tem" : "");
+      b.textContent = dia.getDate();
+      b.addEventListener("click", () => { diaEscolhido = chave; desenharCalendario(); });
+      grade.appendChild(b);
+    }
+    c.appendChild(grade);
+    const [a, m, d] = diaEscolhido.split("-").map(Number);
+    const titulo = document.createElement("div"); titulo.className = "cal-lista-titulo";
+    titulo.textContent = new Date(a, m - 1, d).toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+    c.appendChild(titulo);
+    if (agendaCarregando) { c.appendChild(aviso("Carregando...")); return; }
+    if (agendaErro) { c.appendChild(aviso(agendaErro)); return; }
+    const lista = eventosDoDia(diaEscolhido);
+    if (!lista.length) { c.appendChild(aviso("Nada neste dia. Use o + pra criar.")); return; }
+    lista.forEach((ev) => {
+      const hora = ev.dia_todo ? "Dia todo" : (ev.inicio || "").slice(11, 16) + ((ev.fim || "").length >= 16 ? " – " + ev.fim.slice(11, 16) : "");
+      const l = linhaPainel(ev.titulo, [hora, ev.local, ev.salvando ? "salvando..." : ""].filter(Boolean).join(" · "), "clicavel");
+      l.title = "Editar compromisso";
+      l.addEventListener("click", () => abrirEvento(ev));
+      c.appendChild(l);
+    });
+  }
+
+  // ---------------------------------------------------------- painéis: arrastar
+  const posicoes = JSON.parse(localStorage.getItem("paineisPos") || "{}");
+  const colunaDe = (p) => document.querySelector(p.dataset.painel === "emails" || p.dataset.painel === "agenda" ? ".paineis.esq" : ".paineis.dir");
+  // A posição fica salva em proporção da tela (0 a 1), não em pixels: assim funciona em qualquer monitor.
+  function soltar(p, x, y) {
+    if (!p.classList.contains("solto")) { p.classList.add("solto"); document.body.appendChild(p); }
+    const larg = p.offsetWidth || 310;
+    x = Math.max(8, Math.min(innerWidth - larg - 8, x));      // o painel inteiro fica dentro da tela
+    y = Math.max(8, Math.min(innerHeight - 48, y));            // pelo menos o título fica visível
+    p.style.left = x + "px";
+    p.style.top = y + "px";
+  }
+  function posicaoSalva(pos) {
+    if (!pos) return null;
+    if (pos.fx !== undefined) return { x: pos.fx * innerWidth, y: pos.fy * innerHeight };
+    return { x: pos.x, y: pos.y };  // posição antiga, em pixels
+  }
+  function guardarPosicao(p) {
+    posicoes[p.dataset.painel] = { fx: parseFloat(p.style.left) / innerWidth, fy: parseFloat(p.style.top) / innerHeight };
+    localStorage.setItem("paineisPos", JSON.stringify(posicoes));
+  }
+  let reajuste = null;
+  addEventListener("resize", () => {  // trocou de monitor ou mudou o tamanho da janela: reposiciona
+    clearTimeout(reajuste);
+    reajuste = setTimeout(() => {
+      document.querySelectorAll(".painel.solto").forEach((p) => {
+        const salva = posicaoSalva(posicoes[p.dataset.painel]);
+        if (salva) soltar(p, salva.x, salva.y);
+      });
+    }, 120);
+  });
+  document.querySelectorAll(".painel").forEach((p) => {
+    const pos = posicoes[p.dataset.painel];
+    const salva = posicaoSalva(pos);
+    if (salva) { soltar(p, salva.x, salva.y); if (pos.fx === undefined) guardarPosicao(p); }
+    const cab = p.querySelector("header");
+    cab.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button")) return;
+      const r = p.getBoundingClientRect();
+      const dx = e.clientX - r.left, dy = e.clientY - r.top;
+      soltar(p, r.left, r.top);
+      p.classList.add("arrastando");
+      cab.setPointerCapture(e.pointerId);
+      const mover = (ev) => soltar(p, ev.clientX - dx, ev.clientY - dy);
+      const fim = () => {
+        p.classList.remove("arrastando");
+        cab.removeEventListener("pointermove", mover);
+        guardarPosicao(p);
+      };
+      cab.addEventListener("pointermove", mover);
+      cab.addEventListener("pointerup", fim, { once: true });
+    });
+    cab.addEventListener("dblclick", (e) => {  // dois cliques no título: volta pro lugar
+      if (e.target.closest("button")) return;
+      delete posicoes[p.dataset.painel];
+      localStorage.setItem("paineisPos", JSON.stringify(posicoes));
+      p.classList.remove("solto");
+      p.style.left = p.style.top = "";
+      colunaDe(p).appendChild(p);
+    });
+  });
+
+  // Painéis soltos não se sobrepõem: se um cresce (expandiu, puxou o tamanho), os que estão embaixo dele, na mesma faixa,
+  // descem junto. Quando ele diminui, eles voltam pro lugar onde você deixou (a posição salva não muda).
+  const VAO = 12;
+  function empilhar() {
+    if (document.body.classList.contains("redimensionando") || document.querySelector(".painel.arrastando")) return;
+    const itens = [...document.querySelectorAll(".painel.solto")].map((p) => {
+      const salva = posicaoSalva(posicoes[p.dataset.painel]);
+      return { p, x: parseFloat(p.style.left) || 0, w: p.offsetWidth, h: p.offsetHeight, base: salva ? salva.y : parseFloat(p.style.top) || 0 };
+    }).sort((a, b) => a.base - b.base);
+    const postos = [];
+    for (const it of itens) {
+      let y = it.base, mexeu = true;
+      while (mexeu) {
+        mexeu = false;
+        for (const q of postos) {
+          const mesmaFaixa = it.x < q.x + q.w - 4 && q.x < it.x + it.w - 4;
+          if (mesmaFaixa && y < q.y + q.h + VAO && y + it.h > q.y) { y = q.y + q.h + VAO; mexeu = true; }
+        }
+      }
+      y = Math.max(8, Math.min(innerHeight - 48, y));
+      it.y = y;
+      if (Math.abs((parseFloat(it.p.style.top) || 0) - y) > 0.5) it.p.style.top = y + "px";
+      postos.push(it);
+    }
+  }
+  let empilhando = 0;
+  const pedirEmpilhar = () => { cancelAnimationFrame(empilhando); empilhando = requestAnimationFrame(empilhar); };
+  const obsEmpilhar = new ResizeObserver(pedirEmpilhar);
+  document.querySelectorAll(".painel").forEach((p) => obsEmpilhar.observe(p));
+  addEventListener("pointerup", () => setTimeout(pedirEmpilhar, 0));  // soltou um painel arrastado ou redimensionado
+  addEventListener("resize", () => setTimeout(pedirEmpilhar, 150));
+  pedirEmpilhar();
+
+  // ---------------------------------------------------------- tamanho dos painéis (puxador no canto)
+  const tamanhos = JSON.parse(localStorage.getItem("paineisTam") || "{}");
+  document.querySelectorAll(".painel").forEach((p) => {
+    const tam = tamanhos[p.dataset.painel];
+    if (tam) {
+      p.style.width = Math.min(tam.w, innerWidth * 0.92) + "px";
+      if (tam.h) p.style.height = Math.min(tam.h, innerHeight * 0.9) + "px";
+      p.classList.add("dimensionado");
+    }
+  });
+  let guardaTam = null;
+  const larguraPadrao = () => Math.max(260, Math.min(400, innerWidth * 0.19));  // a mesma do CSS
+  function aplicarEscala(p) {
+    const escala = p.classList.contains("dimensionado") || p.style.width
+      ? Math.max(0.85, Math.min(2.2, p.offsetWidth / larguraPadrao())) : 1;
+    p.style.setProperty("--escala", escala.toFixed(3));
+  }
+  addEventListener("resize", () => document.querySelectorAll(".painel").forEach(aplicarEscala));
+  const observador = new ResizeObserver((entradas) => {
+    entradas.forEach(({ target: p }) => aplicarEscala(p));
+    clearTimeout(guardaTam);
+    guardaTam = setTimeout(() => {
+      entradas.forEach(({ target: p }) => {
+        if (p.classList.contains("min") || !p.style.width) return;  // só guarda quando você puxou o canto
+        p.classList.add("dimensionado");
+        tamanhos[p.dataset.painel] = { w: p.offsetWidth, h: p.style.height ? p.offsetHeight : 0 };
+      });
+      localStorage.setItem("paineisTam", JSON.stringify(tamanhos));
+    }, 250);
+  });
+  document.querySelectorAll(".painel").forEach((p) => observador.observe(p));
+  // Dois cliques no título também voltam o tamanho ao normal
+  document.querySelectorAll(".painel header").forEach((cab) => cab.addEventListener("dblclick", (e) => {
+    if (e.target.closest("button")) return;
+    const p = cab.closest(".painel");
+    delete tamanhos[p.dataset.painel];
+    localStorage.setItem("paineisTam", JSON.stringify(tamanhos));
+    p.style.width = p.style.height = "";
+    p.classList.remove("dimensionado");
+    aplicarEscala(p);
+  }));
+
+  // ---------------------------------------------------------- redimensionar por qualquer borda ou canto
+  document.querySelectorAll(".painel").forEach((p) => {
+    ["n", "s", "e", "w", "ne", "nw", "se", "sw"].forEach((lado) => {
+      const a = document.createElement("div");
+      a.className = "alca " + lado;
+      a.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const r = p.getBoundingClientRect();
+        soltar(p, r.left, r.top);                   // vira painel solto (posição livre), no mesmo lugar
+        p.style.width = r.width + "px";
+        if (!p.classList.contains("min")) p.style.height = r.height + "px";
+        p.classList.add("dimensionado");
+        document.body.classList.add("redimensionando");
+        a.setPointerCapture(e.pointerId);
+        const x0 = e.clientX, y0 = e.clientY;
+        const MIN_L = 220, MIN_A = 44;
+        const mover = (ev) => {
+          const dx = ev.clientX - x0, dy = ev.clientY - y0;
+          let { left: x, top: y, width: w, height: h } = r;
+          if (lado.includes("e")) w = Math.max(MIN_L, Math.min(innerWidth - x - 4, r.width + dx));
+          if (lado.includes("s")) h = Math.max(MIN_A, Math.min(innerHeight - y - 4, r.height + dy));
+          if (lado.includes("w")) { w = Math.max(MIN_L, Math.min(r.right - 4, r.width - dx)); x = r.right - w; }
+          if (lado.includes("n")) { h = Math.max(MIN_A, Math.min(r.bottom - 4, r.height - dy)); y = r.bottom - h; }
+          p.style.left = x + "px";
+          p.style.top = y + "px";
+          p.style.width = w + "px";
+          if (!p.classList.contains("min")) p.style.height = h + "px";
+        };
+        a.addEventListener("pointermove", mover);
+        a.addEventListener("pointerup", () => {
+          a.removeEventListener("pointermove", mover);
+          document.body.classList.remove("redimensionando");
+          guardarPosicao(p);
+          tamanhos[p.dataset.painel] = { w: p.offsetWidth, h: p.style.height ? p.offsetHeight : 0 };
+          localStorage.setItem("paineisTam", JSON.stringify(tamanhos));
+        }, { once: true });
+      });
+      p.appendChild(a);
+    });
+  });
+
+  // ---------------------------------------------------------- ler e-mail
+  const leitorEl = el("leitor");
+  async function abrirEmail(m) {
+    el("leitorCab").textContent = [m.de, m.quando].filter(Boolean).join(" · ");
+    el("leitorAssunto").textContent = m.assunto || "(sem assunto)";
+    el("leitorTexto").textContent = "Abrindo o e-mail...";
+    leitorEl.hidden = false;
+    if (!m.id) { el("leitorTexto").textContent = "Esse e-mail veio sem identificação. Espere a próxima atualização do painel."; return; }
+    try {
+      const r = await fetch("/api/email/" + encodeURIComponent(m.id));
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.erro || "erro");
+      if (d.de || d.data) el("leitorCab").textContent = [d.de, d.data].filter(Boolean).join(" · ");
+      if (d.assunto) el("leitorAssunto").textContent = d.assunto;
+      el("leitorTexto").textContent = d.texto || "(sem texto)";
+    } catch (e) {
+      el("leitorTexto").textContent = "Não consegui abrir esse e-mail agora.";
+    }
+  }
+  el("fecharLeitor").addEventListener("click", () => { leitorEl.hidden = true; });
+  leitorEl.addEventListener("click", (e) => { if (e.target === leitorEl) leitorEl.hidden = true; });
+
+  // ---------------------------------------------------------- novo compromisso
+  const eventoEl = el("novoEvento");
+  let eventoId = "";
+  function abrirEvento(ev) {  // sem ev = novo; com ev = editar o que já existe (inclusive o que o Ultron criou)
+    const hoje = new Date();
+    const dois = (n) => String(n).padStart(2, "0");
+    eventoId = ev && ev.id ? ev.id : "";
+    el("evTituloModal").textContent = eventoId ? "Editar compromisso" : "Novo compromisso";
+    el("criarEvento").textContent = eventoId ? "Salvar" : "Criar";
+    el("excluirEvento").hidden = !eventoId;
+    el("evTitulo").value = ev ? ev.titulo || "" : "";
+    el("evLocal").value = ev ? ev.local || "" : "";
+    el("evStatus").textContent = "";
+    const inicio = ev && ev.inicio ? ev.inicio : "";
+    el("evData").value = inicio ? inicio.slice(0, 10) : hoje.getFullYear() + "-" + dois(hoje.getMonth() + 1) + "-" + dois(hoje.getDate());
+    el("evHora").value = inicio && inicio.length >= 16 ? inicio.slice(11, 16) : dois(Math.min(23, hoje.getHours() + 1)) + ":00";
+    el("evDiaTodo").checked = !!(ev && ev.dia_todo);
+    if (ev && ev.inicio && ev.fim && !ev.dia_todo) {
+      const minutos = Math.round((new Date(ev.fim) - new Date(ev.inicio)) / 60000);
+      const opcao = [...el("evDuracao").options].find((o) => Number(o.value) === minutos);
+      if (opcao) el("evDuracao").value = opcao.value;
+    } else el("evDuracao").value = "60";
+    atualizarDiaTodo();
+    el("criarEvento").disabled = false;
+    el("excluirEvento").disabled = false;
+    eventoEl.hidden = false;
+    el("evTitulo").focus();
+  }
+  function atualizarDiaTodo() {
+    const todo = el("evDiaTodo").checked;
+    el("evHora").disabled = el("evDuracao").disabled = todo;
+  }
+  el("evDiaTodo").addEventListener("change", atualizarDiaTodo);
+  el("maisEvento").addEventListener("click", (e) => {
+    e.currentTarget.blur();
+    abrirEvento(null);
+    if (diaEscolhido >= chaveDia(hojeCal)) el("evData").value = diaEscolhido;
+  });
+  el("excluirEvento").addEventListener("click", async () => {
+    if (!eventoId || !confirm("Excluir este compromisso da sua agenda?")) return;
+    el("excluirEvento").disabled = el("criarEvento").disabled = true;
+    el("evStatus").textContent = "Excluindo...";
+    try {
+      const r = await fetch("/api/evento", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: eventoId, excluir: true }) });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || "erro");
+      eventoEl.hidden = true;
+      avisar("Compromisso excluído, " + nomeDono + ".");
+    } catch (e) {
+      el("evStatus").textContent = "Não consegui excluir.";
+      el("excluirEvento").disabled = el("criarEvento").disabled = false;
+    }
+  });
+  el("fecharEvento").addEventListener("click", () => { eventoEl.hidden = true; });
+  eventoEl.addEventListener("click", (e) => { if (e.target === eventoEl) eventoEl.hidden = true; });
+  el("criarEvento").addEventListener("click", async () => {
+    if (!el("formEvento").reportValidity()) return;
+    if (!el("evDiaTodo").checked && !el("evHora").value) { el("evStatus").textContent = "Escolha a hora ou marque Dia todo."; return; }
+    el("criarEvento").disabled = true;
+    el("evStatus").textContent = eventoId ? "Salvando na sua agenda..." : "Criando na sua agenda...";
+    try {
+      const r = await fetch("/api/evento", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: eventoId, titulo: el("evTitulo").value.trim(), data: el("evData").value, hora: el("evHora").value,
+                               duracao: Number(el("evDuracao").value), dia_todo: el("evDiaTodo").checked, local: el("evLocal").value.trim() }),
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || "erro");
+      eventoEl.hidden = true;
+      avisar((eventoId ? "Compromisso atualizado, " : "Compromisso criado, ") + nomeDono + ".");
+    } catch (e) {
+      el("evStatus").textContent = (e.message && e.message !== "erro") ? e.message : "Não consegui criar o compromisso.";
+      el("criarEvento").disabled = false;
+    }
+  });
+
+  // ---------------------------------------------------------- tarefas
+  function mexerTarefa(dados) {
+    return fetch("/api/tarefa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dados) });
+  }
+  // Dificuldade de 1 a 5: o Ultron dá a nota sozinho; clicar no número abre a caixinha pra conferir ou trocar.
+  // As pendentes aparecem pela urgência (prioridade + prazo, depois dificuldade); as feitas vão pro fim.
+  var NOMES_DIF = ["", "muito fácil", "fácil", "média", "difícil", "muito difícil"];
+  var editandoTarefa = false, tarefasGuardadas;  // var: o carregarPaineis lá em cima já lê isso
+  // Filtro do painel (todas, pendentes, feitas), lembrado entre sessões. Só muda o que aparece, não o tarefas.md.
+  var FILTROS_TAREFA = ["todas", "pendentes", "feitas"];
+  var filtroTarefa = FILTROS_TAREFA.includes(localStorage.getItem("filtroTarefa")) ? localStorage.getItem("filtroTarefa") : "todas";
+  var ultimasTarefas;
+  function desenharTarefas(lista) {
+    ultimasTarefas = lista;
+    const ordem = ordenarTarefas((lista || []).map((x, i) => Object.assign({ indice: i }, x)), "prioridade");
+    const pendentes = ordem.filter((x) => !x.feita).length;
+    const vistas = ordem.filter((x) => filtroTarefa === "todas" || (filtroTarefa === "feitas") === !!x.feita);
+    preencher("tarefas", lista ? vistas : lista, (x) => itemTarefa(x, x.indice),
+      filtroTarefa === "todas" ? "Nenhuma tarefa." : "Nenhuma tarefa " + (filtroTarefa === "feitas" ? "feita." : "pendente."),
+      lista ? pendentes + " pendentes" + (filtroTarefa === "todas" ? "" : " · " + filtroTarefa) : "");
+    el("filtroTarefa").title = "Filtro: " + filtroTarefa + ". Clique pra trocar";
+    el("filtroTarefa").classList.toggle("ligado", filtroTarefa !== "todas");
+  }
+  // Etiquetas: escreva #casa, #estudo, #trabalho (ou qualquer #palavra) na tarefa e ela vira um selo colorido.
+  const CORES_ETIQUETA = { casa: 140, estudo: 215, trabalho: 28 };
+  function matizEtiqueta(nome) {
+    if (CORES_ETIQUETA[nome] !== undefined) return CORES_ETIQUETA[nome];
+    let h = 0; for (const ch of nome) h = (h * 31 + ch.charCodeAt(0)) % 360;
+    return h;
+  }
+  function etiquetasDe(texto) {
+    return [...String(texto).matchAll(/(?:^|\s)#([\p{L}\d_-]+)/gu)].map((m) => m[1].toLowerCase());
+  }
+  function semEtiquetas(texto) {
+    return String(texto).replace(/(?:^|\s)#[\p{L}\d_-]+/gu, "").trim() || texto;
+  }
+  function itemTarefa(x, i) {
+    const d = document.createElement("div");
+    d.className = "linha-painel tarefa clicavel" + (x.feita ? " feita" : "");
+    d.title = x.feita ? "Desmarcar" : "Marcar como feita";
+    const c = document.createElement("span"); c.className = "caixinha";
+    const dif = document.createElement("button");
+    dif.className = "dif" + (x.dif ? " dif-" + x.dif : " avaliando");
+    dif.textContent = x.dif || "·";
+    dif.title = x.dif ? "Dificuldade " + x.dif + " de 5 (" + NOMES_DIF[x.dif] + "). Clique pra mudar" : "O Ultron está avaliando a dificuldade…";
+    dif.addEventListener("click", (e) => { e.stopPropagation(); abrirEscolhaDif(dif, x, i); });
+    const tx = document.createElement("span"); tx.className = "principal"; tx.textContent = semEtiquetas(x.texto);
+    etiquetasDe(x.texto).forEach((nome) => {
+      const s = document.createElement("span"); s.className = "etiqueta"; s.textContent = nome;
+      s.style.setProperty("--h", matizEtiqueta(nome));
+      tx.append(" ", s);
+    });
+    const ed = document.createElement("button"); ed.className = "editar"; ed.textContent = "✎"; ed.title = "Editar";
+    ed.addEventListener("click", (e) => { e.stopPropagation(); editarTarefa(d, tx, x, i); });
+    const ap = document.createElement("button"); ap.className = "apagar"; ap.textContent = "×"; ap.title = "Apagar";
+    ap.addEventListener("click", (e) => { e.stopPropagation(); mexerTarefa({ acao: "apagar", indice: i }); });
+    d.append(c, dif, tx, ed, ap);
+    d.addEventListener("click", () => { if (!editandoTarefa) mexerTarefa({ acao: "marcar", indice: i }); });
+    return d;
+  }
+  // Caixinha da dificuldade: o Ultron dá a nota sozinho; aqui você confere e, se quiser, troca.
+  var escolhaDif = null;
+  function fecharEscolhaDif() {
+    if (!escolhaDif) return;
+    escolhaDif.remove(); escolhaDif = null;
+    document.removeEventListener("mousedown", foraEscolhaDif, true);
+    document.removeEventListener("keydown", teclaEscolhaDif, true);
+    window.removeEventListener("resize", fecharEscolhaDif);
+  }
+  function foraEscolhaDif(e) {
+    if (!escolhaDif || escolhaDif.contains(e.target)) return;
+    if (e.target.closest && e.target.closest(".tarefa .dif, .card-meta .dif")) return;  // o clique no número decide (abre outra ou fecha)
+    fecharEscolhaDif();
+  }
+  function teclaEscolhaDif(e) {
+    if (e.key === "Escape") { e.stopPropagation(); fecharEscolhaDif(); }
+    else if (/^[1-5]$/.test(e.key) && escolhaDif) { e.stopPropagation(); e.preventDefault(); escolhaDif.querySelector('[data-dif="' + e.key + '"]').click(); }
+  }
+  function abrirEscolhaDif(botao, x, i) {
+    const mesmo = escolhaDif && escolhaDif.dataset.indice === String(i);
+    fecharEscolhaDif();
+    if (mesmo) return;  // clicar de novo no número fecha
+    const caixa = document.createElement("div");
+    caixa.className = "escolha-dif"; caixa.dataset.indice = i;
+    const cab = document.createElement("div"); cab.className = "cab";
+    cab.textContent = x.dif ? "Dificuldade (nota do Ultron ou sua)" : "O Ultron ainda está avaliando";
+    const qual = document.createElement("div"); qual.className = "qual"; qual.textContent = x.texto;
+    caixa.append(cab, qual);
+    const escolher = (n) => { fecharEscolhaDif(); mexerTarefa({ acao: "dificuldade", indice: i, dif: n }); };
+    for (let n = 1; n <= 5; n++) {
+      const op = document.createElement("button");
+      op.className = "op" + (x.dif === n ? " atual" : ""); op.dataset.dif = n;
+      const bola = document.createElement("span"); bola.className = "dif dif-" + n; bola.textContent = n;
+      const nome = document.createElement("span"); nome.textContent = NOMES_DIF[n].charAt(0).toUpperCase() + NOMES_DIF[n].slice(1);
+      op.append(bola, nome);
+      if (x.dif === n) { const m = document.createElement("span"); m.className = "marca"; m.textContent = "atual"; op.append(m); }
+      op.addEventListener("click", (e) => { e.stopPropagation(); if (x.dif !== n) escolher(n); else fecharEscolhaDif(); });
+      caixa.append(op);
+    }
+    if (x.dif) {
+      const rod = document.createElement("div"); rod.className = "refazer";
+      const op = document.createElement("button"); op.className = "op"; op.textContent = "↻ Pedir pro Ultron avaliar de novo";
+      op.addEventListener("click", (e) => { e.stopPropagation(); escolher(0); });
+      rod.append(op); caixa.append(rod);
+    }
+    caixa.addEventListener("click", (e) => e.stopPropagation());
+    document.body.append(caixa);
+    // Posiciona ao lado do número, sem sair da tela
+    const r = botao.getBoundingClientRect(), w = caixa.offsetWidth, h = caixa.offsetHeight;
+    let left = r.right + 8, top = r.top - 10;
+    if (left + w > innerWidth - 8) left = r.left - w - 8;
+    left = Math.max(8, Math.min(left, innerWidth - w - 8));
+    top = Math.max(8, Math.min(top, innerHeight - h - 8));
+    caixa.style.left = left + "px"; caixa.style.top = top + "px";
+    escolhaDif = caixa;
+    document.addEventListener("mousedown", foraEscolhaDif, true);
+    document.addEventListener("keydown", teclaEscolhaDif, true);
+    window.addEventListener("resize", fecharEscolhaDif);
+  }
+  function editarTarefa(linha, tx, x, i) {
+    if (editandoTarefa) return;
+    editandoTarefa = true;
+    tarefasGuardadas = undefined;
+    const campo = document.createElement("input");
+    campo.className = "nova-tarefa editando"; campo.value = x.texto; campo.maxLength = 200;
+    let terminou = false;
+    const fim = (salvar) => {
+      if (terminou) return;
+      terminou = true;
+      editandoTarefa = false;
+      const novo = campo.value.trim();
+      if (salvar && novo && novo !== x.texto) {
+        tx.textContent = novo; campo.replaceWith(tx);
+        mexerTarefa({ acao: "editar", indice: i, texto: novo });
+      } else {
+        campo.replaceWith(tx);
+        if (tarefasGuardadas !== undefined) desenharTarefas(tarefasGuardadas);
+      }
+    };
+    campo.addEventListener("keydown", (ev) => {
+      ev.stopPropagation();  // espaço aqui é espaço, não fala
+      if (ev.key === "Enter") fim(true);
+      if (ev.key === "Escape") fim(false);
+    });
+    campo.addEventListener("keyup", (ev) => ev.stopPropagation());
+    campo.addEventListener("click", (ev) => ev.stopPropagation());
+    campo.addEventListener("blur", () => fim(true));
+    tx.replaceWith(campo);
+    campo.focus(); campo.select();
+  }
+  el("filtroTarefa").addEventListener("click", (e) => {
+    e.currentTarget.blur();
+    filtroTarefa = FILTROS_TAREFA[(FILTROS_TAREFA.indexOf(filtroTarefa) + 1) % FILTROS_TAREFA.length];
+    localStorage.setItem("filtroTarefa", filtroTarefa);
+    if (!editandoTarefa) desenharTarefas(ultimasTarefas);
+  });
+  el("maisTarefa").addEventListener("click", (e) => {
+    e.currentTarget.blur();
+    const p = document.querySelector('.painel[data-painel="tarefas"]');
+    if (minimizados.has("tarefas")) p.querySelector(".minimizar").click();
+    let campo = p.querySelector(".nova-tarefa");
+    if (!campo) {
+      campo = document.createElement("input");
+      campo.className = "nova-tarefa";
+      campo.placeholder = "Nova tarefa e Enter";
+      campo.maxLength = 200;
+      campo.addEventListener("keydown", (ev) => {
+        ev.stopPropagation();  // espaço aqui é espaço, não fala
+        if (ev.key === "Enter" && campo.value.trim()) { mexerTarefa({ acao: "adicionar", texto: campo.value.trim() }); campo.value = ""; }
+        if (ev.key === "Escape") campo.remove();
+      });
+      campo.addEventListener("keyup", (ev) => ev.stopPropagation());
+      p.insertBefore(campo, p.querySelector(".conteudo"));
+      campo.style.margin = "0 14px 8px"; campo.style.width = "calc(100% - 28px)";
+    }
+    campo.focus();
+  });
+
+  // ---------------------------------------------------------- quadro de tarefas (modal com cards)
+  // Cada card: título, dificuldade, prioridade, prazo, tempo estimado, resumo e o prompt que o Ultron escreveu
+  // (copiar e colar num assistente). Os campos ficam no tarefas.md; o prompt, em .estado/tarefas-detalhes.json.
+  var quadroEl = el("quadro"), quadroFiltro = "pendentes", quadroPendente = false;
+  var NOMES_PRIO = { alta: "Alta", media: "Média", baixa: "Baixa" }, PESO_PRIO = { alta: 3, media: 2, baixa: 1 };
+  function diasAte(prazo) {
+    if (!prazo) return null;
+    const [a, m, d] = prazo.split("-").map(Number), hoje = new Date();
+    return Math.round((new Date(a, m - 1, d) - new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())) / 864e5);
+  }
+  function textoPrazo(prazo) {
+    const n = diasAte(prazo);
+    if (n === null) return "";
+    if (n < 0) return n === -1 ? "atrasada 1 dia" : "atrasada " + -n + " dias";
+    if (n === 0) return "vence hoje";
+    if (n === 1) return "vence amanhã";
+    return "vence em " + n + " dias";
+  }
+  function ordenarTarefas(lista, modo) {
+    const semPrazo = 1e9;
+    const prazo = (x) => { const n = diasAte(x.prazo); return n === null ? semPrazo : n; };
+    const urgencia = (x) => (PESO_PRIO[x.prio] || 0) * 10 + (prazo(x) <= 0 ? 15 : prazo(x) <= 2 ? 8 : prazo(x) <= 7 ? 3 : 0);
+    const cmp = {
+      prioridade: (a, b) => (urgencia(b) - urgencia(a)) || (prazo(a) - prazo(b)) || ((b.dif || 0) - (a.dif || 0)),
+      prazo: (a, b) => (prazo(a) - prazo(b)) || ((PESO_PRIO[b.prio] || 0) - (PESO_PRIO[a.prio] || 0)),
+      dificuldade: (a, b) => ((b.dif || 0) - (a.dif || 0)) || (urgencia(b) - urgencia(a)),
+      ordem: () => 0,
+    }[modo] || (() => 0);
+    return lista.slice().sort((a, b) => (a.feita - b.feita) || cmp(a, b) || (a.indice - b.indice));
+  }
+  async function copiarTexto(texto) {
+    try { await navigator.clipboard.writeText(texto); return true; } catch (e) {}
+    const t = document.createElement("textarea");  // sem permissão de área de transferência: jeito antigo
+    t.value = texto; t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.append(t); t.select();
+    const ok = document.execCommand("copy"); t.remove();
+    return ok;
+  }
+  function cardTarefa(x) {
+    const i = x.indice;
+    const c = document.createElement("article");
+    c.className = "card-tarefa" + (x.feita ? " feita" : "") + (x.prio ? " prio-" + x.prio : "");
+    // título + marcar feita + editar/apagar
+    const topo = document.createElement("div"); topo.className = "card-titulo";
+    const check = document.createElement("button"); check.className = "card-check"; check.type = "button";
+    check.title = x.feita ? "Desmarcar" : "Marcar como feita";
+    check.addEventListener("click", () => mexerTarefa({ acao: "marcar", indice: i }));
+    const tit = document.createElement("span"); tit.textContent = x.texto;
+    const acoes = document.createElement("div"); acoes.className = "card-acoes";
+    const ed = document.createElement("button"); ed.type = "button"; ed.textContent = "✎"; ed.title = "Editar o título";
+    ed.addEventListener("click", () => editarTituloCard(tit, x));
+    const ap = document.createElement("button"); ap.type = "button"; ap.textContent = "×"; ap.title = "Apagar";
+    ap.addEventListener("click", () => { if (confirm("Apagar a tarefa \"" + x.texto + "\"?")) mexerTarefa({ acao: "apagar", indice: i }); });
+    acoes.append(ed, ap);
+    topo.append(check, tit, acoes);
+    c.append(topo);
+    if (x.resumo) { const r = document.createElement("div"); r.className = "card-resumo"; r.textContent = x.resumo; c.append(r); }
+    // dificuldade · prioridade · prazo · tempo
+    const meta = document.createElement("div"); meta.className = "card-meta";
+    const chip = (cls, ...filhos) => { const s = document.createElement("span"); s.className = "chip " + cls; s.append(...filhos); meta.append(s); return s; };
+    const dif = document.createElement("button"); dif.type = "button";
+    dif.className = "dif" + (x.dif ? " dif-" + x.dif : " avaliando"); dif.textContent = x.dif || "·";
+    dif.title = x.dif ? "Clique pra mudar a dificuldade" : "O Ultron está avaliando…";
+    dif.addEventListener("click", (e) => { e.stopPropagation(); abrirEscolhaDif(dif, x, i); });
+    chip("dificuldade", dif, x.dif ? NOMES_DIF[x.dif] : "avaliando");
+    const prio = document.createElement("select"); prio.title = "Prioridade";
+    [["", x.prio ? "↻ Ultron decide" : "Prioridade…"], ["alta", "Prioridade alta"], ["media", "Prioridade média"], ["baixa", "Prioridade baixa"]]
+      .forEach(([v, t]) => prio.append(new Option(t, v, false, v === (x.prio || ""))));
+    prio.addEventListener("change", () => { prio.blur(); mexerTarefa({ acao: "prioridade", indice: i, prio: prio.value }); });
+    chip("prioridade", prio);
+    const data = document.createElement("input"); data.type = "date"; data.value = x.prazo || ""; data.title = "Prazo (apague pra tirar)";
+    data.addEventListener("change", () => mexerTarefa({ acao: "prazo", indice: i, prazo: data.value }));
+    const dias = diasAte(x.prazo);
+    const pz = chip("prazo" + (dias !== null && dias < 0 && !x.feita ? " atrasada" : dias !== null && dias <= 2 && !x.feita ? " logo" : ""), "📅", data);
+    if (x.prazo && !x.feita) pz.append(textoPrazo(x.prazo));
+    if (x.tempo) chip("tempo", "⏱ " + x.tempo);
+    c.append(meta);
+    // prompt
+    const bloco = document.createElement("div"); bloco.className = "card-prompt";
+    const rot = document.createElement("div"); rot.className = "rotulo";
+    const nome = document.createElement("span"); nome.textContent = "Prompt";
+    rot.append(nome);
+    const pre = document.createElement("pre");
+    if (x.prompt) {
+      pre.textContent = x.prompt;
+      const refazer = document.createElement("button"); refazer.type = "button"; refazer.className = "botao-claro"; refazer.textContent = "↻ Refazer";
+      refazer.title = "Pedir pro Ultron escrever outro prompt";
+      refazer.addEventListener("click", () => { pre.className = "escrevendo"; pre.textContent = "O Ultron está escrevendo outro prompt…"; mexerTarefa({ acao: "refazer", indice: i }); });
+      const copiar = document.createElement("button"); copiar.type = "button"; copiar.className = "botao-claro copiar"; copiar.textContent = "Copiar";
+      copiar.addEventListener("click", async () => {
+        const ok = await copiarTexto(x.prompt);
+        copiar.textContent = ok ? "Copiado ✓" : "Não deu: selecione e Ctrl+C";
+        copiar.classList.toggle("copiado", ok);
+        setTimeout(() => { copiar.textContent = "Copiar"; copiar.classList.remove("copiado"); }, 1800);
+      });
+      rot.append(refazer, copiar);
+    } else {
+      pre.className = "escrevendo";
+      pre.textContent = x.feita ? "Tarefa feita, sem prompt." : "O Ultron está escrevendo o prompt…";
+    }
+    bloco.append(rot, pre);
+    c.append(bloco);
+    return c;
+  }
+  function editarTituloCard(tit, x) {
+    const campo = document.createElement("input");
+    campo.className = "nova-tarefa editando"; campo.value = x.texto; campo.maxLength = 200;
+    let terminou = false;
+    const fim = (salvar) => {
+      if (terminou) return;
+      terminou = true;
+      const novo = campo.value.trim();
+      campo.replaceWith(tit);
+      if (salvar && novo && novo !== x.texto) { tit.textContent = novo; mexerTarefa({ acao: "editar", indice: x.indice, texto: novo }); }
+      if (quadroPendente) desenharQuadro();
+    };
+    campo.addEventListener("keydown", (ev) => {
+      ev.stopPropagation();
+      if (ev.key === "Enter") fim(true);
+      if (ev.key === "Escape") fim(false);
+    });
+    campo.addEventListener("keyup", (ev) => ev.stopPropagation());
+    campo.addEventListener("blur", () => fim(true));
+    tit.replaceWith(campo);
+    campo.focus(); campo.select();
+  }
+  function desenharQuadro() {
+    quadroPendente = false;
+    const todas = (tarefasAtuais || []).map((x, i) => Object.assign({ indice: i }, x));
+    const pendentes = todas.filter((x) => !x.feita);
+    const atrasadas = pendentes.filter((x) => { const n = diasAte(x.prazo); return n !== null && n < 0; }).length;
+    el("quadroResumo").textContent = pendentes.length + " pendentes" + (atrasadas ? " · " + atrasadas + " atrasada" + (atrasadas > 1 ? "s" : "") : "")
+      + " · " + (todas.length - pendentes.length) + " feitas";
+    const lista = todas.filter((x) => quadroFiltro === "todas" || (quadroFiltro === "feitas" ? x.feita : !x.feita));
+    const area = el("quadroCards");
+    const rolagem = area.scrollTop;
+    area.replaceChildren();
+    if (tarefasAtuais === null || tarefasAtuais === undefined) { area.append(Object.assign(document.createElement("div"), { className: "quadro-vazio", textContent: "Carregando..." })); return; }
+    if (!lista.length) {
+      area.append(Object.assign(document.createElement("div"), { className: "quadro-vazio",
+        textContent: quadroFiltro === "feitas" ? "Nenhuma tarefa feita ainda." : "Nenhuma tarefa. Escreva uma aí em cima." }));
+      return;
+    }
+    ordenarTarefas(lista, el("quadroOrdem").value).forEach((x) => area.append(cardTarefa(x)));
+    area.scrollTop = rolagem;
+  }
+  var tarefasAtuais;
+  function atualizarQuadro(lista) {  // chamado a cada atualização dos painéis
+    tarefasAtuais = lista;
+    if (quadroEl.hidden) return;
+    const ativo = document.activeElement;
+    if (ativo && quadroEl.contains(ativo) && ativo.matches("input.editando, select, input[type=date]")) { quadroPendente = true; return; }
+    desenharQuadro();
+  }
+  function abrirQuadro() {
+    fecharEscolhaDif();
+    quadroEl.hidden = false;
+    desenharQuadro();
+    el("quadroNova").focus();
+  }
+  function fecharQuadro() { fecharEscolhaDif(); quadroEl.hidden = true; }
+  el("abrirQuadro").addEventListener("click", (e) => { e.currentTarget.blur(); abrirQuadro(); });
+  el("fecharQuadro").addEventListener("click", fecharQuadro);
+  quadroEl.addEventListener("click", (e) => { if (e.target === quadroEl) fecharQuadro(); });
+  quadroEl.querySelectorAll("[data-filtro]").forEach((b) => b.addEventListener("click", () => {
+    quadroFiltro = b.dataset.filtro;
+    quadroEl.querySelectorAll("[data-filtro]").forEach((o) => o.classList.toggle("ativo", o === b));
+    desenharQuadro();
+  }));
+  el("quadroOrdem").addEventListener("change", () => { localStorage.setItem("quadroOrdem", el("quadroOrdem").value); desenharQuadro(); });
+  el("quadroOrdem").value = localStorage.getItem("quadroOrdem") || "prioridade";
+  quadroEl.addEventListener("focusout", () => setTimeout(() => {
+    const a = document.activeElement;
+    if (quadroPendente && !(a && quadroEl.contains(a) && a.matches("input.editando, select, input[type=date]"))) desenharQuadro();
+  }, 0));
+  const novaQuadro = el("quadroNova");
+  novaQuadro.addEventListener("keydown", (ev) => {
+    ev.stopPropagation();  // espaço aqui é espaço, não fala
+    if (ev.key === "Enter" && novaQuadro.value.trim()) { mexerTarefa({ acao: "adicionar", texto: novaQuadro.value.trim() }); novaQuadro.value = ""; }
+    if (ev.key === "Escape") { if (novaQuadro.value) novaQuadro.value = ""; else fecharQuadro(); }
+  });
+  novaQuadro.addEventListener("keyup", (ev) => ev.stopPropagation());
+
+  // ---------------------------------------------------------- tema e detalhes
+  function aplicarTema(tema) {
+    corpo.classList.toggle("escuro", tema === "escuro");
+    localStorage.setItem("tema", tema);
+    document.querySelectorAll(".temas button[data-tema]").forEach((b) => b.classList.toggle("ativo", b.dataset.tema === tema));
+  }
+  aplicarTema(localStorage.getItem("tema") || "prata");
+  document.querySelectorAll(".temas button[data-tema]").forEach((b) => b.addEventListener("click", () => { aplicarTema(b.dataset.tema); b.blur(); }));
+  // Estilo da esfera: Rede (pontos ligados), Fluxo (linhas de corrente) ou Órbitas (átomo com anéis). Fica guardado neste navegador.
+  function marcarEstiloEsfera() { document.querySelectorAll(".estilos-esfera button").forEach((b) => b.classList.toggle("ativo", b.dataset.esfera === estiloEsfera)); }
+  document.querySelectorAll(".estilos-esfera button").forEach((b) => b.addEventListener("click", () => {
+    estiloEsfera = b.dataset.esfera; localStorage.setItem("estiloEsferaV2", estiloEsfera); marcarEstiloEsfera(); b.blur();
+  }));
+  marcarEstiloEsfera();
+
+  // Detalhes já vêm ligados. H minimiza os detalhes e os painéis juntos (e mostra de novo).
+  function aplicarDetalhes(ligado) {
+    corpo.classList.toggle("detalhes", ligado);
+    corpo.classList.toggle("sem-paineis", !ligado);
+    localStorage.setItem("detalhes", ligado ? "1" : "0");
+    localStorage.setItem("semPaineis", ligado ? "0" : "1");
+    el("dicaH").textContent = ligado ? "minimizar detalhes" : "mostrar detalhes";
+  }
+  aplicarDetalhes(localStorage.getItem("detalhes") !== "0");
+
+  // ---------------------------------------------------------- conversa por texto
+  const chatEl = el("chat"), perfilEl = el("perfil");
+  const chatAberto = () => !chatEl.hidden;
+  const SETE_DIAS = 7 * 86400000;
+  let historico = JSON.parse(localStorage.getItem("chatHistorico") || "[]");
+  function podarHistorico() {  // mensagens com mais de 7 dias saem da janela (o backup fica em historico/ na sua pasta)
+    const agora = Date.now();
+    historico = historico.map((m) => (m.ts ? m : { ...m, ts: agora })).filter((m) => agora - m.ts < SETE_DIAS);
+    localStorage.setItem("chatHistorico", JSON.stringify(historico));
+  }
+  podarHistorico();
+
+  function iniciais(nome) { return (nome || "?").trim().charAt(0).toUpperCase() || "?"; }
+  function fotoDono() { return localStorage.getItem("fotoPerfil") || ""; }
+
+  function bolinhaDono() {
+    const foto = fotoDono();
+    if (foto) { const i = document.createElement("img"); i.src = foto; i.className = "avatar"; i.alt = ""; return i; }
+    const s = document.createElement("span"); s.className = "avatar-vazio"; s.textContent = iniciais(nomeDono); return s;
+  }
+
+  function desenharMsg(m) {
+    const d = document.createElement("div");
+    d.className = "msg " + m.quem;
+    const q = document.createElement("div");
+    q.className = "quem";
+    if (m.quem === "eu") q.appendChild(bolinhaDono());
+    else if (localStorage.getItem("fotoUltron")) { const i = document.createElement("img"); i.src = localStorage.getItem("fotoUltron"); i.alt = ""; q.appendChild(i); }
+    const b = document.createElement("div");
+    b.className = "balao";
+    b.textContent = m.texto;
+    d.append(q, b);
+    el("chatLista").appendChild(d);
+  }
+  function desenharChat() {
+    el("chatLista").replaceChildren();
+    historico.forEach(desenharMsg);
+    el("chatLista").scrollTop = el("chatLista").scrollHeight;
+  }
+  function addMsg(quem, texto) {
+    if (!texto) return;
+    const m = { quem, texto, ts: Date.now() };
+    historico.push(m);
+    historico = historico.slice(-80);
+    localStorage.setItem("chatHistorico", JSON.stringify(historico));
+    if (chatAberto()) { desenharMsg(m); el("chatLista").scrollTop = el("chatLista").scrollHeight; }
+  }
+
+  let janelaChat = null;
+  function abrirChat() {
+    if (janelaChat && !janelaChat.closed) { janelaChat.focus(); return; }
+    desenharChat();
+    el("modoProvaChat").checked = !!(config && config.modo_prova);
+    el("modoTexto").checked = !!(config && config.modo_texto);
+    chatEl.hidden = false;
+    el("chatEntrada").focus();
+  }
+  function fecharChat() { chatEl.hidden = true; el("chatEntrada").blur(); }
+  el("botaoChat").addEventListener("click", (e) => { e.currentTarget.blur(); abrirChat(); });
+  el("fecharChat").addEventListener("click", fecharChat);
+  chatEl.addEventListener("click", (e) => { if (e.target === chatEl) fecharChat(); });
+  el("chatForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const texto = el("chatEntrada").value.trim();
+    if (!texto) return;
+    el("chatEntrada").value = "";
+    enviarTexto(texto);
+  });
+  el("modoTexto").addEventListener("change", async (e) => {
+    await salvarConfig({ modo_texto: e.target.checked });
+    if (e.target.checked) { pararFala(); el("resposta").textContent = ""; }  // tira o texto que já estava na tela
+    el("chatEntrada").focus();
+  });
+
+  // ---------------------------------------------------------- destacar a conversa
+  function destacarChat() {
+    const larg = 440, alt = Math.min(720, screen.availHeight - 80);
+    const x = (window.screenX || 0) + window.outerWidth - larg - 40, y = (window.screenY || 0) + 60;
+    janelaChat = window.open("/chat.html", "ultronConversa", `popup=yes,width=${larg},height=${alt},left=${x},top=${y}`);
+    if (!janelaChat) { avisar("O navegador bloqueou a janela. Libere pop-ups pra esta página."); return; }
+    fecharChat();  // a tela volta pra esfera e os painéis
+  }
+  el("destacarChat").addEventListener("click", (e) => { e.currentTarget.blur(); destacarChat(); });
+  addEventListener("message", (e) => {  // "Voltar pra tela" na janela destacada
+    if (e.origin === location.origin && e.data === "voltarChat") { janelaChat = null; setTimeout(abrirChat, 150); }
+  });
+  // Arrastar a conversa pela barra do título: soltou perto da borda da tela = destaca
+  (() => {
+    const caixa = chatEl.querySelector(".chat-caixa"), barra = caixa.querySelector(".config-topo");
+    barra.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button")) return;
+      const x0 = e.clientX, y0 = e.clientY;
+      barra.setPointerCapture(e.pointerId);
+      caixa.classList.add("arrastando");
+      const borda = (ev) => ev.clientX < 30 || ev.clientY < 30 || ev.clientX > innerWidth - 30 || ev.clientY > innerHeight - 30;
+      const mover = (ev) => {
+        caixa.style.transform = `translate(${ev.clientX - x0}px, ${ev.clientY - y0}px)`;
+        caixa.classList.toggle("perto-da-borda", borda(ev));
+      };
+      barra.addEventListener("pointermove", mover);
+      barra.addEventListener("pointerup", (ev) => {
+        barra.removeEventListener("pointermove", mover);
+        caixa.classList.remove("arrastando", "perto-da-borda");
+        caixa.style.transform = "";
+        if (borda(ev)) destacarChat();
+      }, { once: true });
+    });
+  })();
+  el("modoProvaChat").addEventListener("change", async (e) => { await salvarConfig({ modo_prova: e.target.checked }); atualizarBotaoProvas(); });
+
+  // ---------------------------------------------------------- painel de provas
+  const provasEl = el("provas");
+  let focarCorrecao = null;
+  let provasPendente = false;  // chegou atualização enquanto você digitava: redesenha quando sair da caixa  // questão que acabou de ser marcada errada: a caixa "por que errou" já abre pronta
+  function atualizarBotaoProvas() { el("botaoProvas").classList.toggle("ativo", !!(config && config.modo_prova)); }
+  function marcarProva(id, mudanca) {
+    return fetch("/api/provas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...mudanca }) });
+  }
+  async function carregarProvas() {
+    let d;
+    try { d = await (await fetch("/api/provas")).json(); } catch (e) { return; }
+    if (config) config.modo_prova = d.modo_prova;
+    el("provaLigada").checked = !!d.modo_prova;
+    atualizarBotaoProvas();
+    const lista = d.provas || [];
+    const certas = lista.filter((q) => q.status === "certa").length, erradas = lista.filter((q) => q.status === "errada").length;
+    const placar = el("placar");
+    placar.replaceChildren();
+    const b = (cls, txt) => { const s = document.createElement("b"); s.className = cls; s.textContent = txt; return s; };
+    placar.append(b("c", certas + " certas"), " · ", b("e", erradas + " erradas"), " · ", (lista.length - certas - erradas) + " sem marcar",
+      lista.length ? " · acerto de " + Math.round(100 * certas / Math.max(1, certas + erradas)) + "%" : "");
+    const c = el("provasLista");
+    c.replaceChildren();
+    if (!lista.length) {
+      c.appendChild(aviso("Nenhuma questão ainda. Ligue o modo prova e mande as questões pra ele: cada uma aparece aqui com a resposta dele."));
+      return;
+    }
+    lista.slice().reverse().forEach((q) => {
+      const linha = document.createElement("div");
+      linha.className = "prova" + (q.status ? " " + q.status : "");
+      const coluna = (titulo, texto) => {
+        const col = document.createElement("div"); col.className = "col";
+        const h = document.createElement("h4"); h.textContent = titulo;
+        const tx = document.createElement("div"); tx.className = "txt"; tx.textContent = texto;
+        col.append(h, tx); return col;
+      };
+      const rod = document.createElement("div"); rod.className = "rodape";
+      const quando = document.createElement("span"); quando.className = "quando";
+      quando.textContent = q.quando.slice(8, 10) + "/" + q.quando.slice(5, 7) + " " + q.quando.slice(11, 16);
+      const botao = (cls, txt, status) => {
+        const bt = document.createElement("button"); bt.type = "button"; bt.className = "botao-claro " + cls + (q.status === status ? " ativo" : "");
+        bt.textContent = txt;
+        bt.addEventListener("click", () => {
+          bt.blur();
+          if (status === "errada" && q.status !== "errada") focarCorrecao = q.id;
+          marcarProva(q.id, { status: q.status === status ? null : status });
+        });
+        return bt;
+      };
+      const apagar = document.createElement("button"); apagar.type = "button"; apagar.className = "botao-claro"; apagar.textContent = "Apagar";
+      apagar.addEventListener("click", () => { if (confirm("Apagar esta questão do histórico?")) marcarProva(q.id, { apagar: true }); });
+      rod.append(quando, botao("marcar-certa", "✓ Certa", "certa"), botao("marcar-errada", "✗ Errada", "errada"), apagar);
+      linha.append(coluna("Questão", q.questao), coluna("Resposta do Ultron", q.resposta), rod);
+      if (q.status === "errada") {  // a correção vai pro arquivo que ele lê antes de cada questão
+        const area = document.createElement("textarea");
+        area.placeholder = "Por que errou? Qual era a resposta certa e por quê (ele respeita isso nas próximas questões)";
+        area.value = q.correcao || "";
+        area.addEventListener("keydown", (ev) => ev.stopPropagation());
+        area.addEventListener("keyup", (ev) => ev.stopPropagation());
+        // Salva sozinha: um instante depois de parar de digitar e ao sair da caixa (sem botão).
+        // Vai junto o "errada", pra questão continuar contando nos erros.
+        let espera = null, salvo = q.correcao || "";
+        const salvarCorrecao = () => {
+          clearTimeout(espera);
+          if (area.value === salvo) return;
+          salvo = area.value;
+          marcarProva(q.id, { status: "errada", correcao: area.value });
+        };
+        area.addEventListener("input", () => { clearTimeout(espera); espera = setTimeout(salvarCorrecao, 800); });
+        area.addEventListener("blur", () => { salvarCorrecao(); if (provasPendente) { provasPendente = false; setTimeout(carregarProvas, 50); } });
+        linha.append(area);
+        if (focarCorrecao === q.id) { focarCorrecao = null; setTimeout(() => area.focus(), 50); }
+      }
+      c.appendChild(linha);
+    });
+  }
+  el("botaoProvas").addEventListener("click", (e) => { e.currentTarget.blur(); carregarProvas(); provasEl.hidden = false; });
+  el("fecharProvas").addEventListener("click", () => { provasEl.hidden = true; });
+  provasEl.addEventListener("click", (e) => { if (e.target === provasEl) provasEl.hidden = true; });
+  el("provaLigada").addEventListener("change", async (e) => { await salvarConfig({ modo_prova: e.target.checked }); atualizarBotaoProvas(); });
+  fetch("/api/provas").then((r) => r.json()).then((d) => { if (config) config.modo_prova = d.modo_prova; el("botaoProvas").classList.toggle("ativo", !!d.modo_prova); }).catch(() => {});
+
+  // ---------------------------------------------------------- perfil
+  function desenharAvatarTopo() {
+    el("avatarTopo").replaceWith(Object.assign(bolinhaDono(), { id: "avatarTopo" }));
+  }
+  function desenharFotoGrande(foto) {
+    const g = el("fotoGrande");
+    if (foto) {
+      const i = document.createElement("img");
+      i.src = foto; i.id = "fotoGrande"; i.className = "grande"; i.alt = "";
+      g.replaceWith(i);
+    } else {
+      const d = document.createElement("div");
+      d.id = "fotoGrande"; d.className = "grande"; d.textContent = iniciais(el("perfilNome").value || nomeDono);
+      g.replaceWith(d);
+    }
+  }
+  let fotoNova = null;  // null = não mexeu; "" = removeu
+  function abrirPerfil() {
+    fotoNova = null;
+    originalNova = null;
+    fotoUltronNova = null;
+    originalUltronNova = null;
+    desenharFotoUltron(localStorage.getItem("fotoUltron") || "");
+    el("perfilNome").value = nomeDono;
+    desenharFotoGrande(fotoDono());
+    perfilEl.hidden = false;
+  }
+  function fecharPerfil() { perfilEl.hidden = true; }
+  el("botaoPerfil").addEventListener("click", (e) => { e.currentTarget.blur(); abrirPerfil(); });
+  el("fecharPerfil").addEventListener("click", fecharPerfil);
+  perfilEl.addEventListener("click", (e) => { if (e.target === perfilEl) fecharPerfil(); });
+  let alvoRecorte = "dono";  // qual foto o recorte está ajustando: "dono" ou "ultron"
+  let fotoUltronNova = null, originalUltronNova = null;
+  function desenharFotoUltron(foto) {
+    const g = el("fotoUltronGrande");
+    const novo = foto ? Object.assign(document.createElement("img"), { src: foto, alt: "" }) : document.createElement("div");
+    novo.id = "fotoUltronGrande";
+    novo.className = "grande" + (foto ? "" : " avatar-ultron");
+    g.replaceWith(novo);
+  }
+  el("trocarFoto").addEventListener("click", () => { alvoRecorte = "dono"; el("arquivoFoto").click(); });
+  el("trocarFotoUltron").addEventListener("click", () => { alvoRecorte = "ultron"; el("arquivoFoto").click(); });
+  el("removerFotoUltron").addEventListener("click", () => { fotoUltronNova = ""; originalUltronNova = null; desenharFotoUltron(""); });
+  el("fotoUltronEditar").addEventListener("click", () => {
+    alvoRecorte = "ultron";
+    const original = originalUltronNova || localStorage.getItem("fotoUltronOriginal") || (fotoUltronNova !== "" && (fotoUltronNova || localStorage.getItem("fotoUltron")));
+    if (original) abrirRecorte(original); else el("arquivoFoto").click();
+  });
+  el("removerFoto").addEventListener("click", () => { fotoNova = ""; desenharFotoGrande(""); });
+  // Recorte: a foto escolhida abre aqui; você arrasta e dá zoom, e o que fica dentro do círculo vira a foto.
+  const recorteEl = el("recorte"), area = el("recorteArea"), rImg = el("recorteImg");
+  const LADO = 280, MARGEM = 10, CIRC = LADO - 2 * MARGEM;  // o círculo tem 260 px
+  let rc = { base: 1, zoom: 1, x: 0, y: 0, w: 0, h: 0 };
+  const escala = () => rc.base * rc.zoom;
+  function limitar() {  // a foto sempre cobre o círculo inteiro
+    const s = escala();
+    rc.x = Math.min(MARGEM, Math.max(MARGEM + CIRC - rc.w * s, rc.x));
+    rc.y = Math.min(MARGEM, Math.max(MARGEM + CIRC - rc.h * s, rc.y));
+  }
+  function desenharRecorte() {
+    limitar();
+    rImg.style.transform = "translate(" + rc.x + "px," + rc.y + "px) scale(" + escala() + ")";
+  }
+  function zoomEm(novo, cx, cy) {  // zoom mantendo o ponto (cx, cy) parado
+    novo = Math.max(1, Math.min(4, novo));
+    const s0 = escala();
+    rc.zoom = novo;
+    const s1 = escala();
+    rc.x = cx - (cx - rc.x) * (s1 / s0);
+    rc.y = cy - (cy - rc.y) * (s1 / s0);
+    el("recorteZoom").value = novo;
+    desenharRecorte();
+  }
+  let originalNova = null;  // a foto inteira, pra poder reajustar depois
+  function abrirRecorte(src) {
+    rImg.onload = () => {
+        rc.w = rImg.naturalWidth; rc.h = rImg.naturalHeight;
+        rc.base = Math.max(CIRC / rc.w, CIRC / rc.h);  // começa cobrindo o círculo
+        rc.zoom = 1;
+        rc.x = MARGEM + (CIRC - rc.w * rc.base) / 2;
+        rc.y = MARGEM + (CIRC - rc.h * rc.base) / 2;
+        el("recorteZoom").value = 1;
+        desenharRecorte();
+        recorteEl.hidden = false;
+    };
+    rImg.src = src;
+  }
+  el("arquivoFoto").addEventListener("change", (e) => {
+    const arquivo = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!arquivo) return;
+    const img = new Image();
+    img.onload = () => {  // guarda a original reduzida (até 1200 px) pra caber no navegador
+      const s = Math.min(1, 1200 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      const original = c.toDataURL("image/jpeg", 0.9);
+      if (alvoRecorte === "ultron") originalUltronNova = original; else originalNova = original;
+      URL.revokeObjectURL(img.src);
+      abrirRecorte(original);
+    };
+    img.src = URL.createObjectURL(arquivo);
+  });
+  el("fotoEditar").addEventListener("click", () => {
+    alvoRecorte = "dono";
+    const original = originalNova || localStorage.getItem("fotoOriginal") || (fotoNova !== "" && (fotoNova || fotoDono()));
+    if (original) abrirRecorte(original); else el("arquivoFoto").click();
+  });
+  area.addEventListener("pointerdown", (e) => {
+    const x0 = e.clientX - rc.x, y0 = e.clientY - rc.y;
+    area.setPointerCapture(e.pointerId);
+    area.classList.add("arrastando");
+    const mover = (ev) => { rc.x = ev.clientX - x0; rc.y = ev.clientY - y0; desenharRecorte(); };
+    area.addEventListener("pointermove", mover);
+    area.addEventListener("pointerup", () => { area.removeEventListener("pointermove", mover); area.classList.remove("arrastando"); }, { once: true });
+  });
+  area.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const r = area.getBoundingClientRect();
+    zoomEm(rc.zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08), e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+  el("recorteZoom").addEventListener("input", (e) => zoomEm(Number(e.target.value), LADO / 2, LADO / 2));
+  const fecharRecorte = () => { recorteEl.hidden = true; };
+  el("fecharRecorte").addEventListener("click", fecharRecorte);
+  el("cancelarRecorte").addEventListener("click", fecharRecorte);
+  el("usarRecorte").addEventListener("click", () => {
+    const s = escala();
+    const c = document.createElement("canvas");
+    c.width = c.height = 256;
+    c.getContext("2d").drawImage(rImg, (MARGEM - rc.x) / s, (MARGEM - rc.y) / s, CIRC / s, CIRC / s, 0, 0, 256, 256);
+    const resultado = c.toDataURL("image/jpeg", 0.9);
+    if (alvoRecorte === "ultron") { fotoUltronNova = resultado; desenharFotoUltron(resultado); }
+    else { fotoNova = resultado; desenharFotoGrande(fotoNova); }
+    fecharRecorte();
+  });
+  el("salvarPerfil").addEventListener("click", async () => {
+    if (fotoNova !== null) {
+      if (fotoNova) localStorage.setItem("fotoPerfil", fotoNova); else localStorage.removeItem("fotoPerfil");
+      if (!fotoNova) localStorage.removeItem("fotoOriginal");
+      else if (originalNova) { try { localStorage.setItem("fotoOriginal", originalNova); } catch (e) {} }
+    }
+    if (fotoUltronNova !== null) {
+      if (fotoUltronNova) localStorage.setItem("fotoUltron", fotoUltronNova); else localStorage.removeItem("fotoUltron");
+      if (!fotoUltronNova) localStorage.removeItem("fotoUltronOriginal");
+      else if (originalUltronNova) { try { localStorage.setItem("fotoUltronOriginal", originalUltronNova); } catch (e) {} }
+      if (chatAberto()) desenharChat();
+    }
+    const nome = el("perfilNome").value.trim();
+    if (nome && nome !== nomeDono) await salvarConfig({ nome });
+    if (nome) nomeDono = nome;
+    desenharAvatarTopo();
+    fecharPerfil();
+    avisar("Perfil salvo, " + nomeDono + ".");
+  });
+
+  // Nome e modo texto vêm do servidor quando a tela abre.
+  fetch("/api/config").then((r) => r.json()).then((c) => {
+    config = c;
+    if (c.nome) nomeDono = c.nome;
+    desenharAvatarTopo();
+  }).catch(() => desenharAvatarTopo());
+
   // ---------------------------------------------------------- atalhos
   const digitando = () => corpo.classList.contains("digitando");
 
   addEventListener("keydown", (e) => {
     if (configAberta()) {  // com as configurações abertas, o espaço não grava
-      if (e.key === "Escape") fecharConfig();
+      if (e.key === "Escape") {
+        if (!el("recorte").hidden) { el("recorte").hidden = true; return; }  // Esc no recorte volta pro perfil
+        fecharConfig(); fecharChat(); fecharPerfil(); el("leitor").hidden = true; el("novoEvento").hidden = true; el("provas").hidden = true; fecharQuadro();
+      }
       return;
     }
     if (digitando()) {
@@ -648,7 +2956,9 @@
     if (e.code === "Space") { e.preventDefault(); if (!e.repeat) comecarGravacao(); return; }
     const k = e.key.toLowerCase();
     if (k === "t") { e.preventDefault(); corpo.classList.add("digitando"); el("entrada").focus(); }
-    if (k === "h") corpo.classList.toggle("detalhes");
+    if (k === "h") aplicarDetalhes(!corpo.classList.contains("detalhes"));
+    if (k === "c") { e.preventDefault(); abrirChat(); }
+    if (k === "p") { corpo.classList.toggle("sem-paineis"); localStorage.setItem("semPaineis", corpo.classList.contains("sem-paineis") ? "1" : "0"); }
     if (k === "n") { novoTurno(); fetch("/api/reiniciar", { method: "POST" }); avisar("Conversa nova."); }
   });
   addEventListener("keyup", (e) => { if (e.code === "Space" && !digitando() && !configAberta()) { e.preventDefault(); pararGravacao(); } });
