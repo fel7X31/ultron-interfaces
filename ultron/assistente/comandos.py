@@ -72,17 +72,14 @@ def ligar_prova(fala):
         return f"Modo prova ativado, {CFG['nome']}. Cada questão será revisada duas vezes."
 
 
-# ---------------------------------------------------------------- música (player do painel)
-# "toca Wonderwall do Oasis": pesquisa no YouTube e toca no painel (o resto da frase é o que pesquisar)
 TOCAR_BUSCA = re.compile(r"^(?:ultron |ei ultron |ultron por favor )?(?:toca|toque|tocar|coloca|bota|poe|quero ouvir|"
                          r"quero escutar|bota pra tocar|coloca pra tocar) (.+)$")
 GENERICAS = {"musica", "musicas", "uma", "um", "som", "a", "o", "ai", "de", "novo", "pra", "mim", "alguma", "qualquer", "lofi",
              "playlist", "radio", "ela", "essa", "isso", "ali", "aqui", "por", "favor", "la", "tocar", "player", "minha", "minhas"}
 NAO_MUSICA = {"agenda", "tarefa", "tarefas", "lembrete", "lembra", "lista", "alarme", "email", "calendario", "nota", "notas",
               "compromisso", "evento", "arquivo", "pasta", "curriculo", "tela", "volume", "brilho", "timer", "despertador"}
-# Precisa citar música/som/playlist pra não confundir com outras frases.
 MUSICA = re.compile(r"\b(musica\w*|som|playlist|lofi|radio|player|faixa)\b")
-MUSICA_ACOES = [  # (ação que a tela entende, palavras, o que ele fala)
+MUSICA_ACOES = [
     ("proxima", re.compile(r"\b(proxim\w*|pula\w*|pular|passa\w*|troca\w*|outra)\b"), "Próxima."),
     ("anterior", re.compile(r"\b(anterior|volta\w*|voltar)\b"), "Voltando uma."),
     ("parar", re.compile(r"\b(para|parar|desliga\w*|chega)\b"), "Música desligada."),

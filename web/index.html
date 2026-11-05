@@ -238,11 +238,9 @@
   #botaoProvas { right: 162px; }
   #botaoProvas:hover { transform: none; }
   #botaoProvas.ativo { color: #d7141e; }
-  /* Painel de música (card fixo na coluna da direita). O som vem do player do YouTube, escondido fora da tela. */
   .painel[data-painel="musica"] .conteudo { max-height: none; overflow: hidden; display: flex; flex-direction: column; }
   .painel[data-painel="musica"] .conteudo > * { flex: none; }
   .painel[data-painel="musica"] .conteudo > .mu-fila { flex: 1 1 auto; min-height: 0; }
-  /* fila fechada: o painel volta pra altura natural, mesmo que você tenha puxado o tamanho */
   .painel[data-painel="musica"]:not(.fila-aberta) { height: auto !important; }
   .mu-player { position: fixed; left: -10000px; top: 0; width: 200px; height: 200px; pointer-events: none; }
   .mu-abas { display: flex; gap: .4em; margin-bottom: .6em; overflow-x: auto; scrollbar-width: none; }
@@ -251,7 +249,6 @@
   .mu-abas .x { display: none; margin-left: .4em; opacity: .75; }
   .mu-abas button:hover .x { display: inline; }
   .mu-abas .x:hover { opacity: 1; }
-  /* busca: pesquisa no YouTube ou cola link de música/playlist */
   .mu-busca { display: flex; align-items: center; gap: .45em; border: 1px solid var(--linha); border-radius: 999px; padding: 0 .3em 0 .75em;
     margin-bottom: .7em; color: var(--suave); transition: border-color .15s; }
   .mu-busca:focus-within { border-color: #d7141e; color: var(--texto); }
@@ -311,7 +308,6 @@
   .mu-fila-cab.fechada .seta { transform: rotate(-90deg); }
   .mu-fila { max-height: 24vh; overflow: auto; scrollbar-width: thin; margin: 0 -.3em; }
   .mu-fila.fechada { display: none; }
-  /* cada música da fila: dá pra ver que é clicável (fundo e ▶ ao passar o mouse) e o × de tirar fica sempre à vista */
   .mu-item { display: flex; align-items: center; gap: .5em; padding: .38em .5em; border-radius: 7px; cursor: pointer; transition: background .12s; }
   .mu-item:hover { background: rgba(215, 20, 30, .13); }
   .mu-item .play { flex: none; width: 1em; color: #d7141e; font-size: .75em; visibility: hidden; }
@@ -328,13 +324,11 @@
   .mu-restaurar { display: block; margin: .5em auto 0; border: 0; background: transparent; color: var(--suave); font: inherit; font-size: .8em;
     text-decoration: underline; cursor: pointer; }
   .mu-restaurar:hover { color: #d7141e; }
-  /* pouco espaço na tela: a capa vai pro lado do nome (o card fica bem mais baixo) */
   .painel[data-painel="musica"].compacto .mu-corpo { display: grid; grid-template-columns: 4.6em 1fr; gap: .8em; align-items: center; }
   .painel[data-painel="musica"].compacto .mu-capa { aspect-ratio: 1 / 1; max-height: none; font-size: 1.4em; border-radius: 8px; width: 3.3em; }
   .painel[data-painel="musica"].compacto .mu-info { margin-top: 0; }
   .painel[data-painel="musica"].compacto .mu-abas { margin-bottom: .6em; }
   .painel[data-painel="musica"].compacto .mu-tempo { margin-top: .5em; }
-  /* minimizado: fica só uma linha com a capinha, o nome e os botões */
   .mu-mini { display: none; align-items: center; gap: .6em; padding: 0 1.08em .8em; }
   .painel[data-painel="musica"].min .mu-mini { display: flex; }
   .mu-mini img { width: 2.6em; height: 2.6em; border-radius: 6px; object-fit: cover; background: rgba(127, 127, 127, .15); }
@@ -1269,7 +1263,7 @@
     if (estado === "ouvindo") alvo = volume(analisadorMic);
     else if (estado === "falando") alvo = volume(analisadorSaida);
     else if (trabalhando()) alvo = 0.16 + 0.1 * Math.sin(t * 3.4);
-    else if (window.musicaRitmo && window.musicaRitmo()) alvo = window.musicaRitmo()(t);  // tocando música: a bola pulsa no ritmo
+    else if (window.musicaRitmo && window.musicaRitmo()) alvo = window.musicaRitmo()(t);
     else alvo = 0.04 + 0.03 * Math.sin(t * 1.2);
     nivel += (alvo - nivel) * 0.2;
 
@@ -2256,15 +2250,12 @@
   el("fecharLeitor").addEventListener("click", () => { leitorEl.hidden = true; });
   leitorEl.addEventListener("click", (e) => { if (e.target === leitorEl) leitorEl.hidden = true; });
 
-  // ---------------------------------------------------------- música
-  // Painel fixo: capa, nome, artista, barra de tempo, aleatório / anterior / tocar / próxima / repetir, volume e a fila.
-  // As músicas vêm das playlists do Miguel no YouTube (/api/musica). O som sai do player do YouTube, escondido fora da tela.
   const musica = (() => {
     const pnl = document.querySelector('.painel[data-painel="musica"]');
     const LS = (k, v) => v === undefined ? localStorage.getItem("mu_" + k) : localStorage.setItem("mu_" + k, typeof v === "string" ? v : JSON.stringify(v));
     const LSj = (k, pad) => { try { return JSON.parse(LS(k)) ?? pad; } catch (e) { return pad; } };
     let listas = [], aba = 0, abaId = LS("abaId") || "", atualId = LS("atual") || "";
-    let ordem = [], aleatorio = LS("aleatorio") === "1", repetir = LS("repetir") || "todas";  // "nao" | "todas" | "uma"
+    let ordem = [], aleatorio = LS("aleatorio") === "1", repetir = LS("repetir") || "todas";
     let tiradas = LSj("tiradas", {}), bloqueadas = new Set(LSj("bloqueadas", []));
     let player = null, pronto = false, tocando = false, arrastando = false, filaAberta = LS("fila") === "1";
     const ICP = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
@@ -2275,7 +2266,7 @@
     const faixa = () => lista().itens.find((m) => m.id === atualId) || null;
     const aviso = (t) => { el("muAviso").textContent = t || ""; if (t) setTimeout(() => { if (el("muAviso").textContent === t) el("muAviso").textContent = ""; }, 6000); };
 
-    function refazerOrdem() {  // a ordem de tocar: a da playlist, ou embaralhada mantendo a atual no começo
+    function refazerOrdem() {
       const ids = visiveis().map((m) => m.id);
       if (aleatorio) {
         for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
@@ -2316,52 +2307,63 @@
         b.classList.toggle("ativa", i === aba);
         b.addEventListener("click", (e) => {
           if (e.target.classList.contains("x")) { e.stopPropagation(); tirarPlaylist(l); return; }
-          const ia = tocando; escolherAba(i); atualId = ordem[0] || "";  // trocar de playlist: mostra a primeira; se estava tocando, já toca
+          const ia = tocando; escolherAba(i); atualId = ordem[0] || "";
           desenharAbas(); desenhar(); desenharFila(); if (ia) tocar(atualId);
         });
         c.appendChild(b);
       });
       const at = c.children[aba]; if (at) at.scrollIntoView({ block: "nearest", inline: "nearest" });
     }
+    function linhaMusica(m, detalhe, aoClicar, aoTirar) {
+      const d = document.createElement("div"); d.className = "mu-item"; d.title = "Tocar agora";
+      d.innerHTML = '<span class="play">▶</span><span class="txt"><span class="t"></span><span class="a"></span></span>';
+      d.querySelector(".t").textContent = m.titulo;
+      d.querySelector(".a").textContent = detalhe;
+      d.addEventListener("click", aoClicar);
+      if (aoTirar) {
+        const x = document.createElement("button"); x.className = "tirar"; x.type = "button"; x.textContent = "×";
+        x.title = "Tirar da lista"; x.setAttribute("aria-label", "Tirar da lista");
+        x.addEventListener("click", (e) => { e.stopPropagation(); aoTirar(); });
+        d.appendChild(x);
+      }
+      return d;
+    }
+    function itemDaFila(m) {
+      const d = linhaMusica(m, m.artista ? " · " + m.artista : "", () => tocar(m.id), () => tirar(m.id));
+      if (bloqueadas.has(m.id)) { d.classList.add("bloqueada"); d.title = "O YouTube não deixa tocar essa aqui"; }
+      return d;
+    }
+    function botaoDevolver(n) {
+      const b = document.createElement("button"); b.className = "mu-restaurar"; b.type = "button";
+      b.textContent = (n === 1 ? "1 música tirada" : n + " músicas tiradas") + " · devolver";
+      b.addEventListener("click", () => { delete tiradas[lista().id]; LS("tiradas", tiradas); refazerOrdem(); desenharFila(); });
+      return b;
+    }
+    function proximas() {
+      const k = ordem.indexOf(atualId);
+      const ids = k < 0 ? ordem : ordem.slice(k + 1).concat(repetir === "todas" ? ordem.slice(0, k) : []);
+      return ids.map((id) => lista().itens.find((m) => m.id === id)).filter(Boolean);
+    }
     function desenharFila() {
-      const c = el("muFila"); c.innerHTML = "";
+      const c = el("muFila");
       el("muFilaCab").classList.toggle("fechada", !filaAberta); c.classList.toggle("fechada", !filaAberta);
       pnl.classList.toggle("fila-aberta", filaAberta);
       if (!ordem.length) refazerOrdem();
-      const k = ordem.indexOf(atualId);
-      const seq = k >= 0 ? ordem.slice(k + 1).concat(repetir === "todas" ? ordem.slice(0, k) : []) : ordem;
+      const seq = proximas();
       el("muFilaCab").firstElementChild.textContent = "Próximas · " + seq.length;
-      seq.forEach((id, i) => {
-        const m = lista().itens.find((x) => x.id === id); if (!m) return;
-        const d = document.createElement("div"); d.className = "mu-item" + (bloqueadas.has(id) ? " bloqueada" : ""); d.title = "Tocar agora";
-        d.innerHTML = '<span class="play">▶</span><span class="txt"><span class="t"></span><span class="a"></span></span>'
-          + '<button class="tirar" type="button" title="Tirar da lista" aria-label="Tirar da lista">×</button>';
-        d.querySelector(".t").textContent = m.titulo;
-        d.querySelector(".a").textContent = m.artista ? " · " + m.artista : "";
-        if (bloqueadas.has(id)) d.title = "O YouTube não deixa tocar essa aqui";
-        d.addEventListener("click", (e) => {
-          if (e.target.closest(".tirar")) { e.stopPropagation(); tirar(id); return; }
-          tocar(id);
-        });
-        c.appendChild(d);
-      });
-      requestAnimationFrame(caber);
+      c.replaceChildren(...seq.map(itemDaFila));
       const n = (tiradas[lista().id] || []).length;
-      if (n) {
-        const b = document.createElement("button"); b.className = "mu-restaurar"; b.type = "button";
-        b.textContent = n === 1 ? "1 música tirada · devolver" : n + " músicas tiradas · devolver";
-        b.addEventListener("click", () => { delete tiradas[lista().id]; LS("tiradas", tiradas); refazerOrdem(); desenharFila(); });
-        c.appendChild(b);
-      }
+      if (n) c.appendChild(botaoDevolver(n));
+      requestAnimationFrame(caber);
     }
-    function ajustarFila() {  // a fila usa só o espaço que sobra até o fim da tela (rola por dentro)
+    function ajustarFila() {
       const c = el("muFila"); if (!filaAberta) return;
-      if (pnl.style.height && !pnl.classList.contains("min")) { c.style.maxHeight = "none"; return; }  // cresce junto com o painel
+      if (pnl.style.height && !pnl.classList.contains("min")) { c.style.maxHeight = "none"; return; }
       const sobra = innerHeight - c.getBoundingClientRect().top - 24;
       c.style.maxHeight = Math.max(120, sobra) + "px";
     }
     addEventListener("resize", ajustarFila);
-    function caber() {  // se o card passa do fim da tela, usa o jeito compacto
+    function caber() {
       if (pnl.classList.contains("min")) return;
       pnl.classList.remove("compacto"); ajustarFila();
       const cont = pnl.querySelector(".conteudo");
@@ -2374,7 +2376,7 @@
     new ResizeObserver(() => requestAnimationFrame(caber)).observe(document.querySelector(".paineis.dir"));
     new ResizeObserver(() => requestAnimationFrame(caber)).observe(pnl);
     function tirar(id) {
-      if (lista().avulsa) {  // avulsa sai de vez (do servidor)
+      if (lista().avulsa) {
         mandar("tirar-avulsa", { id });
         lista().itens = lista().itens.filter((m) => m.id !== id);
       } else { (tiradas[lista().id] = tiradas[lista().id] || []).push(id); LS("tiradas", tiradas); }
@@ -2392,14 +2394,12 @@
         desenharAbas(); desenhar(); desenharFila();
       }).catch((e) => aviso(e.message));
     }
-    // Música que veio da pesquisa, de um link ou da voz: entra na aba Avulsas e toca na hora.
     function tocarItem(item) {
       let av = listas.find((l) => l.avulsa);
       if (!av) { av = { id: "avulsas", titulo: "Avulsas", itens: [], avulsa: true }; listas.unshift(av); }
       av.itens = [item].concat(av.itens.filter((m) => m.id !== item.id));
       escolherAba(listas.indexOf(av)); desenharAbas(); tocar(item.id);
     }
-    // ---- pesquisa / link
     const busca = el("muBusca"), res = el("muResultados");
     const fecharBusca = () => { res.hidden = true; res.innerHTML = ""; el("muBuscaLimpar").hidden = true; busca.value = ""; busca.blur(); requestAnimationFrame(caber); };
     const ehLink = (t) => /youtu\.?be|^https?:\/\/|[?&]list=|^PL[\w-]{10,}$/.test(t);
@@ -2426,26 +2426,18 @@
       try { const r = await fetch("/api/musica/buscar?q=" + encodeURIComponent(q)); itens = (await r.json()).itens || []; }
       catch (e) { if (n === buscaN) res.innerHTML = '<div class="vazio-busca">Não consegui pesquisar agora.</div>'; return; }
       if (n !== buscaN) return;
-      res.innerHTML = "";
       if (!itens.length) { res.innerHTML = '<div class="vazio-busca">Nada encontrado.</div>'; return; }
-      itens.forEach((m) => {
-        const d = document.createElement("div"); d.className = "mu-item"; d.title = "Tocar agora";
-        d.innerHTML = '<span class="play">▶</span><span class="txt"><span class="t"></span><span class="a"></span></span>';
-        d.querySelector(".t").textContent = m.titulo;
-        d.querySelector(".a").textContent = (m.artista ? " · " + m.artista : "") + (m.dur ? " · " + mmss(m.dur) : "");
-        d.addEventListener("click", () => { mandar("avulsa", { item: m }).catch(() => {}); tocarItem(m); fecharBusca(); });
-        res.appendChild(d);
-      });
+      res.replaceChildren(...itens.map((m) => linhaMusica(m, (m.artista ? " · " + m.artista : "") + (m.dur ? " · " + mmss(m.dur) : ""),
+        () => { mandar("avulsa", { item: m }).catch(() => {}); tocarItem(m); fecharBusca(); })));
       requestAnimationFrame(caber);
     }
-    // as teclas daqui não vão pro resto da tela (espaço não grava, T/H/P não disparam atalhos)
     ["keydown", "keyup"].forEach((tipo) => busca.addEventListener(tipo, (e) => {
       e.stopPropagation();
       if (tipo === "keydown" && e.key === "Enter") pesquisar();
       if (tipo === "keydown" && e.key === "Escape") fecharBusca();
     }));
     busca.addEventListener("input", () => { el("muBuscaLimpar").hidden = !busca.value && res.hidden; });
-    busca.addEventListener("paste", () => setTimeout(() => { if (ehLink(busca.value.trim())) pesquisar(); }, 0));  // colou link: adiciona direto
+    busca.addEventListener("paste", () => setTimeout(() => { if (ehLink(busca.value.trim())) pesquisar(); }, 0));
     el("muBuscaLimpar").addEventListener("click", fecharBusca);
 
     function carregarApi() {
@@ -2498,14 +2490,14 @@
       if (!ordem.length) refazerOrdem();
       if (!ordem.length) return;
       let k = ordem.indexOf(atualId);
-      for (let t = 0; t < ordem.length; t++) {  // pula as que o YouTube bloqueia
+      for (let t = 0; t < ordem.length; t++) {
         k = (k + d + ordem.length) % ordem.length;
         if (!bloqueadas.has(ordem[k]) || !automatico) break;
       }
       tocar(ordem[k]);
     }
     function proxima(automatico) { passo(1, automatico); }
-    function anterior() {  // passou de 4 s: volta pro começo dela; na primeira (sem repetir a playlist) não volta pra última
+    function anterior() {
       if (player && pronto && player.getCurrentTime && player.getCurrentTime() > 4) { player.seekTo(0, true); return; }
       if (ordem.indexOf(atualId) <= 0 && repetir !== "todas") return;
       passo(-1);
@@ -2516,7 +2508,7 @@
       if (k === ordem.length - 1 && repetir === "nao") { tocando = false; desenhar(); return; }
       proxima(true);
     }
-    setInterval(() => {  // barra de tempo
+    setInterval(() => {
       if (!player || !pronto || !player.getDuration || arrastando) return;
       const tot = player.getDuration() || 0, at = player.getCurrentTime() || 0;
       el("muAtual").textContent = mmss(at); el("muTotal").textContent = mmss(tot || (faixa() || {}).dur);
@@ -2569,12 +2561,12 @@
       if (onde >= 0) aba = onde;
       else { aba = Math.max(0, listas.findIndex((l) => l.id === abaId)); atualId = ""; }
       escolherAba(aba);
-      if (!atualId) atualId = ordem[0] || "";  // já mostra a primeira no card (sem tocar)
+      if (!atualId) atualId = ordem[0] || "";
       desenharAbas(); desenhar(); desenharFila();
     }).catch(() => { el("muArtista").textContent = "Não consegui carregar as playlists."; });
     desenhar();
 
-    function mostrar(abrir) {  // voz: abre ou minimiza o painel usando o próprio botão dele
+    function mostrar(abrir) {
       const min = pnl.classList.contains("min");
       if (abrir === min) pnl.querySelector(".minimizar").click();
     }
@@ -2587,8 +2579,6 @@
       else if (acao === "fechar") mostrar(false);
       else mostrar(true);
     }
-    // Ritmo da bola enquanto toca. O áudio do YouTube vem de outro site e o navegador não deixa medir o som,
-    // então é uma batida simulada: andamento próprio de cada música (88 a 128 bpm), batida forte no 1 e no 3.
     window.musicaRitmo = () => {
       if (!tocando) return null;
       let h = 0; for (const c of atualId) h = (h * 31 + c.charCodeAt(0)) >>> 0;
