@@ -1,52 +1,39 @@
 #!/usr/bin/env python3
 """Tira um print da tela (todos os monitores) pro Ultron ver. Uso: python atalhos/tela.py
 
-Salva em .estado/telas/tela-HHMMSS.png (reduzida pra no máximo 1920 px de largura) e imprime o caminho.
-O Claude abre a imagem com a ferramenta Read. Só os 5 prints mais recentes ficam guardados.
-Windows: usa o .NET pelo powershell.exe (sem instalar nada). Mac: screencapture.
+Salva em .estado/telas/ e imprime o caminho (o Claude abre a imagem com o Read). Guarda só os 5 últimos.
+Windows: roda o tela.ps1 (sem instalar nada). Mac: screencapture.
 """
 import subprocess
 import sys
 import time
 from pathlib import Path
 
-PASTA = Path(__file__).resolve().parent.parent / ".estado" / "telas"
+AQUI = Path(__file__).resolve().parent
+PASTA = AQUI.parent / ".estado" / "telas"
+GUARDAR = 5
 
-PS = r"""
-Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-Add-Type -TypeDefinition 'using System.Runtime.InteropServices; public class DPI { [DllImport("user32.dll")] public static extern bool SetProcessDPIAware(); }'
-[DPI]::SetProcessDPIAware() | Out-Null
-$t = [System.Windows.Forms.SystemInformation]::VirtualScreen
-$bmp = New-Object System.Drawing.Bitmap $t.Width, $t.Height
-$g = [System.Drawing.Graphics]::FromImage($bmp)
-$g.CopyFromScreen($t.Left, $t.Top, 0, 0, $bmp.Size)
-$max = 1920
-if ($bmp.Width -gt $max) {
-  $h = [int]($bmp.Height * $max / $bmp.Width)
-  $peq = New-Object System.Drawing.Bitmap $max, $h
-  $g2 = [System.Drawing.Graphics]::FromImage($peq)
-  $g2.InterpolationMode = 'HighQualityBicubic'
-  $g2.DrawImage($bmp, 0, 0, $max, $h)
-  $bmp = $peq
-}
-$bmp.Save($env:DESTINO, [System.Drawing.Imaging.ImageFormat]::Png)
-"""
+
+def comando_do_print(destino):
+    """O comando que salva o print em destino, no sistema atual."""
+    if sys.platform == "darwin":
+        return ["screencapture", "-x", str(destino)]
+    return ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(AQUI / "tela.ps1"), str(destino)]
+
+
+def apagar_antigos():
+    """Deixa só os últimos GUARDAR prints na pasta."""
+    for velho in sorted(PASTA.glob("tela-*.png"))[:-GUARDAR]:
+        velho.unlink(missing_ok=True)
 
 
 def main():
     PASTA.mkdir(parents=True, exist_ok=True)
     destino = PASTA / f"tela-{time.strftime('%H%M%S')}.png"
-    if sys.platform == "darwin":
-        subprocess.run(["screencapture", "-x", str(destino)], check=True)
-    else:
-        import os
-        env = dict(os.environ, DESTINO=str(destino))
-        r = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", PS],
-                           env=env, capture_output=True, text=True, timeout=30)
-        if not destino.exists():
-            sys.exit("Não consegui tirar o print: " + (r.stderr or r.stdout).strip()[-300:])
-    for velho in sorted(PASTA.glob("tela-*.png"))[:-5]:
-        velho.unlink(missing_ok=True)
+    r = subprocess.run(comando_do_print(destino), capture_output=True, text=True, timeout=30)
+    if not destino.exists():
+        sys.exit("Não consegui tirar o print: " + (r.stderr or r.stdout).strip()[-300:])
+    apagar_antigos()
     print(destino)
 
 
