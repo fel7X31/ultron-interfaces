@@ -7,3 +7,5 @@ __pycache__/
 cerebro/
 persona-*.md
 *.tmp
+# Registro das mudanças que o Ultron fez no próprio código: tem os seus pedidos falados
+MUDANCAS-ULTRON.md

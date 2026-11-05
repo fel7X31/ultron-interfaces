@@ -26,6 +26,7 @@ from .prebusca import prebusca
 from .sessao import SESSAO
 
 TOKEN_CONFIRMADO = ESTADO / "confirmado"      # existe = a trava deixa passar neste pedido
+PEDIDO_ATUAL = ESTADO / "pedido_atual.txt"    # o hooks/registro.py anota esse pedido junto de cada mudança no código
 AQUECENDO = threading.Event()
 
 
@@ -57,6 +58,18 @@ def reiniciar():
 
 
 # ---------------------------------------------------------------- pedaços do turno
+def _guardar_pedido(texto):
+    try:
+        ESTADO.mkdir(exist_ok=True)
+        if Estado.aguardando_confirmacao and eh_confirmacao(texto) and PEDIDO_ATUAL.exists():
+            # "confirma": o pedido de verdade foi o anterior
+            anterior = PEDIDO_ATUAL.read_text(encoding="utf-8").split("\n(confirmou:")[0]
+            PEDIDO_ATUAL.write_text(f"{anterior}\n(confirmou: \"{texto[:100]}\")", encoding="utf-8")
+        else:
+            PEDIDO_ATUAL.write_text(texto[:2000], encoding="utf-8")
+    except OSError:
+        pass
+
 
 def _abrir_trava(texto, registro):
     """Abre quando ele pediu "Confirma?" e você disse sim, ou quando você já deu a permissão no pedido."""
@@ -163,6 +176,7 @@ def processar(audio=None, mime="audio/webm", texto=None):
             return
         EVENTOS.emitir({"tipo": "voce", "texto": texto})
         registro["voce"] = texto
+        _guardar_pedido(texto)
 
         fixa = comandos.tentar(comandos.Fala(texto, Estado.aguardando_confirmacao, registro))
         if fixa is not None:

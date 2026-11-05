@@ -145,8 +145,12 @@ class SessaoClaude:
 
     def comando(self):
         trava = f'"{sys.executable}" "{RAIZ / "hooks" / "trava.py"}"'
+        # registro.py: anota no MUDANCAS-ULTRON.md toda mudança que ele faz no próprio código (o backup sai na trava)
+        registro = f'"{sys.executable}" "{RAIZ / "hooks" / "registro.py"}"'
         ajustes = {"hooks": {
             "PreToolUse": [{"matcher": "*", "hooks": [{"type": "command", "command": trava}]}],
+            "PostToolUse": [{"matcher": "Edit|MultiEdit|Write|NotebookEdit",
+                             "hooks": [{"type": "command", "command": registro}]}],
         }}
         cmd = [
             claude_bin(), "-p",

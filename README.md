@@ -84,6 +84,9 @@ Antes de cada ação, o `hooks/trava.py` decide:
   trabalho; comandos de terminal que apagam, movem, publicam ou mandam dados pra fora.
 - **Nunca:** mudar a própria trava (`hooks/`) ou o `.env`.
 
+O Ultron pode editar o próprio código quando você pede e confirma. Cada mudança fica registrada em
+`MUDANCAS-ULTRON.md` (pedido, antes, depois e backup), pelo `hooks/registro.py`.
+
 É uma lista de proteção, não uma caixa de areia. Leia o `hooks/trava.py` antes de liberar ferramentas novas.
 
 ## Atalhos e pré-busca

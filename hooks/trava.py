@@ -102,6 +102,18 @@ def proibido():
     sys.exit(2)
 
 
+def guardar_backup(nome, entrada):
+    """Ação liberada no próprio código do Ultron: guarda uma cópia antes (o registro.py anota depois)."""
+    if nome not in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
+        return
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import registro
+        registro.antes(nome, entrada)
+    except Exception as erro:  # backup nunca trava a ação
+        sys.stderr.write(f"backup falhou: {erro!r}\n")
+
+
 def redireciona_pra_fora(cmd, pasta):
     """Escreve num arquivo com > ou >> fora da pasta de trabalho? (dentro dela é como usar o Write: passa)."""
     base = re.search(r"\bcd\s+(\"[^\"]+\"|'[^']+'|\S+)", cmd)
@@ -167,7 +179,11 @@ def main():
 
     if nome in LIVRES:
         return
+    if nome in ("Edit", "MultiEdit") and os.path.normcase(os.path.realpath(entrada.get("file_path") or "")) == \
+            os.path.normcase(os.path.realpath(RAIZ / "MUDANCAS-ULTRON.md")):
+        return  # escrever o resumo no registro não precisa de confirmação
     if confirmado:
+        guardar_backup(nome, entrada)
         return
 
     if nome.startswith("mcp__"):

@@ -10,6 +10,24 @@ rotas em `ultron/http/rotas/<assunto>.py` com `@rota`, comando de voz em `ultron
 `log_erro`, `claude_json`, `EVENTOS`, `CFG`) em vez de reescrever. Depois de mudar, rode
 `python -m unittest discover -s tests`.
 
+## Antes de mexer em qualquer coisa: revise o que o Ultron mudou
+
+O próprio Ultron pode editar o código dele (com confirmação do Miguel). Toda mudança fica em `MUDANCAS-ULTRON.md`,
+escrita automaticamente pelo `hooks/registro.py`: pedido do Miguel, arquivo, trecho antes/depois, backup em
+`.estado/backups/` e, em seguida, o resumo do Ultron.
+
+No começo de qualquer tarefa nesta pasta:
+1. Leia as entradas de `MUDANCAS-ULTRON.md` que ainda não têm a linha `Revisado pelo Claude Code`.
+2. Para cada uma, confira no arquivo atual se a mudança está certa e coerente com o resto do código. Atenção
+   especial a função nova, lógica mais complicada, algo que mexa em trava, confirmação, tempo de resposta, voz ou
+   no que outras partes usam. Veja se o "Resumo do Ultron" bate com o que o trecho faz.
+3. Se estiver ok, acrescente abaixo da entrada: `Revisado pelo Claude Code (AAAA-MM-DD): ok` (com uma observação
+   curta, se houver). Se tiver problema, corrija (ou volte o backup) e anote:
+   `Revisado pelo Claude Code (AAAA-MM-DD): corrigido — o que estava errado e o que foi feito`.
+4. Conte pro Miguel, em poucas linhas, o que o Ultron mudou desde a última revisão e o que você achou.
+
+Se não houver entrada nova, siga direto com a tarefa.
+
 ## Coisas a saber
 - Mudança em `.py` só vale depois de religar o servidor (o `palmas.py` liga com `server.py --sem-abrir`;
   `.estado/servidor.pid` tem o PID). Em `web/`, basta recarregar a tela.
