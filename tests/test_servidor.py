@@ -6,11 +6,15 @@ import urllib.error
 import urllib.request
 
 from ultron.http.servidor import achar_rota, criar_servidor
+from ultron.nucleo.config import CFG, ESTADO, WEB
+from ultron.nucleo.log import log
+from ultron.recursos import curriculo
 
 
 class TesteServidor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        curriculo.iniciar(CFG["pasta"], ESTADO, CFG["nome"], log, WEB)
         cls.servidor = criar_servidor(0)  # porta 0 = qualquer uma livre
         cls.url = f"http://127.0.0.1:{cls.servidor.server_address[1]}"
         threading.Thread(target=cls.servidor.serve_forever, daemon=True).start()
@@ -33,7 +37,7 @@ class TesteServidor(unittest.TestCase):
         self.assertIn(b"<html", corpo.lower())
 
     def test_rotas_json(self):
-        for caminho in ("/api/config", "/api/paineis", "/api/provas", "/api/saude"):
+        for caminho in ("/api/config", "/api/paineis", "/api/provas", "/api/saude", "/api/curriculo/estado"):
             codigo, corpo = self.pegar(caminho)
             self.assertEqual(codigo, 200, caminho)
             json.loads(corpo)

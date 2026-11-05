@@ -14,6 +14,10 @@ def tentar(texto, aguardando=False):
 
 class TesteComandos(unittest.TestCase):
 
+    def test_curriculo(self):
+        self.assertIn("análise", tentar("quero analisar meu currículo")[0])
+        self.assertIn("fechado", tentar("fecha o currículo")[0])
+
     def test_pergunta_normal_vai_pro_claude(self):
         self.assertIsNone(tentar("qual é a minha agenda de amanhã?")[0])
         self.assertIsNone(tentar("me explica como funciona uma API REST com exemplos")[0])
