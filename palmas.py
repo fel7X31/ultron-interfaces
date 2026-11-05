@@ -11,6 +11,8 @@ Calibrar:        py palmas.py --calibrar   (mostra o volume de cada som e não l
 Desligar:        py palmas.py --desligar   (fecha o Ultron que as palmas ligaram)
 Precisa de:      py -m pip install sounddevice numpy
 """
+import functools
+import io
 import json
 import os
 import queue
@@ -18,8 +20,10 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
+import wave
 import webbrowser
 from pathlib import Path
 
@@ -32,6 +36,19 @@ if sys.stdout is None:
 import numpy as np
 import sounddevice as sd
 
+
+def porta_do_env():
+    """A porta do servidor (ULTRON_PORTA no .env), ou 8790."""
+    try:
+        for linha in (RAIZ / ".env").read_text(encoding="utf-8").splitlines():
+            if linha.strip().startswith(("ULTRON_PORTA=", "JARVIS_PORTA=")):
+                return int(linha.split("=", 1)[1].strip().strip("\"'"))
+    except (FileNotFoundError, ValueError):
+        pass
+    return 8790
+
+
+URL = f"http://localhost:{porta_do_env()}"
 LIMIAR = 0.08
 PALMA_FORTE = 0.22
 RAZAO_FUNDO = 6.0
@@ -82,42 +99,6 @@ def desligar_ultron():
     print("Ultron desligado." if matar(PID) else "Não achei um Ultron ligado pelas palmas.")
 
 
-def abrir_microfone(receber):
-    """Abre o microfone padrão. Tenta o modo exclusivo (cru) antes do normal."""
-    padrao = sd.query_devices(kind="input")
-    if MODO_EXCLUSIVO and os.name == "nt":
-        try:
-            wasapi = next(i for i, h in enumerate(sd.query_hostapis()) if "WASAPI" in h["name"])
-            for i, d in enumerate(sd.query_devices()):
-                if (d["hostapi"] == wasapi and d["max_input_channels"] > 0
-                        and d["name"].startswith(padrao["name"][:25])):
-                    taxa = int(d["default_samplerate"])
-                    stream = sd.InputStream(
-                        device=i, samplerate=taxa, channels=d["max_input_channels"], dtype="float32",
-                        blocksize=int(taxa * BLOCO_S), extra_settings=sd.WasapiSettings(exclusive=True),
-                        callback=receber)
-                    return stream, taxa, "exclusivo"
-        except Exception as erro:
-            print(f"Modo exclusivo não abriu ({erro}). Usando o modo normal.")
-    taxa = int(padrao["default_samplerate"])
-    stream = sd.InputStream(samplerate=taxa, blocksize=int(taxa * BLOCO_S), channels=1,
-                            dtype="float32", callback=receber)
-    return stream, taxa, "normal"
-
-
-def porta():
-    try:
-        for linha in (RAIZ / ".env").read_text(encoding="utf-8").splitlines():
-            if linha.strip().startswith(("ULTRON_PORTA=", "JARVIS_PORTA=")):
-                return int(linha.split("=", 1)[1].strip().strip('"').strip("'"))
-    except (FileNotFoundError, ValueError):
-        pass
-    return 8790
-
-
-URL = f"http://localhost:{porta()}"
-
-
 def saude():
     """O que o servidor diz de si, ou None se ele não está no ar."""
     try:
@@ -125,6 +106,20 @@ def saude():
             return json.load(r)
     except Exception:
         return None
+
+
+def postar(caminho, dados, tipo="application/json", timeout=2):
+    """POST pro servidor do Ultron. Devolve o erro, ou None se deu certo."""
+    try:
+        req = urllib.request.Request(URL + caminho, data=dados, headers={"Content-Type": tipo})
+        urllib.request.urlopen(req, timeout=timeout).close()
+    except Exception as erro:
+        return erro
+
+
+def avisar_tela(dados):
+    """Conta pra tela do Ultron o que o atalho está fazendo (ouvindo, volume, parado)."""
+    postar("/api/atalho", json.dumps(dados).encode(), timeout=0.5)
 
 
 def navegador():
@@ -174,46 +169,84 @@ def ligar_ultron():
     abrir_tela()
 
 
+def eventos_novos(pos):
+    """Os eventos que entraram no log.jsonl depois da posição pos, e a posição nova."""
+    if not LOG.exists() or LOG.stat().st_size <= pos:
+        return [], pos
+    with open(LOG, encoding="utf-8", errors="replace") as f:
+        f.seek(pos)
+        linhas = f.read().splitlines()
+        pos = f.tell()
+    eventos = []
+    for linha in linhas:
+        try:
+            eventos.append(json.loads(linha))
+        except ValueError:
+            pass
+    return eventos, pos
+
+
+def pediu_desligar(ev):
+    """Você mandou desligar, ou ele respondeu "desligando"."""
+    return ev.get("evento") == "turno" and bool(
+        DESLIGAR_VOCE.search(ev.get("voce") or "") or DESLIGAR_RESPOSTA.search(ev.get("resposta") or ""))
+
+
+def hora_de_desligar(eventos, desligar_em):
+    """8 s depois do pedido de desligar, ou meio segundo depois que a resposta terminou de tocar."""
+    for ev in eventos:
+        if desligar_em is None and pediu_desligar(ev):
+            print("Pedido de desligar.")
+            desligar_em = time.time() + 8
+        elif desligar_em and ev.get("evento") == "tela" and ev.get("tipo") == "voz_tocou":
+            desligar_em = time.time() + 0.5
+    return desligar_em
+
+
 def acompanhar():
     """Espera o Ultron ser desligado: por voz, fechando a janela ou de fora."""
     pos = LOG.stat().st_size if LOG.exists() else 0
-    desligar_em = None
-    sem_tela_desde = None
-    viu_tela = False
+    desligar_em = ultima_tela = None
     while True:
         time.sleep(1)
         s = saude()
         if s is None:
             return
-        if LOG.exists() and LOG.stat().st_size > pos:
-            with open(LOG, encoding="utf-8", errors="replace") as f:
-                f.seek(pos)
-                novas = f.read()
-                pos = f.tell()
-            for linha in novas.splitlines():
-                try:
-                    ev = json.loads(linha)
-                except ValueError:
-                    continue
-                if ev.get("evento") == "turno" and desligar_em is None and (
-                        DESLIGAR_VOCE.search(ev.get("voce") or "")
-                        or DESLIGAR_RESPOSTA.search(ev.get("resposta") or "")):
-                    print("Pedido de desligar.")
-                    desligar_em = time.time() + 8
-                elif desligar_em and ev.get("evento") == "tela" and ev.get("tipo") == "voz_tocou":
-                    desligar_em = time.time() + 0.5
+        eventos, pos = eventos_novos(pos)
+        desligar_em = hora_de_desligar(eventos, desligar_em)
+        if s.get("telas"):
+            ultima_tela = time.time()
         if desligar_em and time.time() >= desligar_em:
-            desligar_ultron()
-            return
-        telas = s.get("telas", 0)
-        if telas:
-            viu_tela, sem_tela_desde = True, None
-        elif viu_tela:
-            sem_tela_desde = sem_tela_desde or time.time()
-            if time.time() - sem_tela_desde >= SEM_TELA_DESLIGA:
-                print("A janela foi fechada.")
-                desligar_ultron()
-                return
+            return desligar_ultron()
+        if ultima_tela and time.time() - ultima_tela >= SEM_TELA_DESLIGA:
+            print("A janela foi fechada.")
+            return desligar_ultron()
+
+
+def microfone_exclusivo(receber):
+    """O microfone padrão no modo exclusivo do WASAPI (som cru, sem filtro do Windows)."""
+    nome = sd.query_devices(kind="input")["name"][:25]
+    wasapi = next(i for i, h in enumerate(sd.query_hostapis()) if "WASAPI" in h["name"])
+    i, d = next((i, d) for i, d in enumerate(sd.query_devices())
+                if d["hostapi"] == wasapi and d["max_input_channels"] > 0 and d["name"].startswith(nome))
+    taxa = int(d["default_samplerate"])
+    stream = sd.InputStream(device=i, samplerate=taxa, channels=d["max_input_channels"], dtype="float32",
+                            blocksize=int(taxa * BLOCO_S), extra_settings=sd.WasapiSettings(exclusive=True),
+                            callback=receber)
+    return stream, taxa
+
+
+def abrir_microfone(receber):
+    """Abre o microfone padrão: tenta o modo exclusivo e, se não der, o normal."""
+    if MODO_EXCLUSIVO and os.name == "nt":
+        try:
+            return (*microfone_exclusivo(receber), "exclusivo")
+        except Exception as erro:
+            print(f"Modo exclusivo não abriu ({erro!r}). Usando o modo normal.")
+    taxa = taxa_do_microfone()
+    stream = sd.InputStream(samplerate=taxa, blocksize=int(taxa * BLOCO_S), channels=1,
+                            dtype="float32", callback=receber)
+    return stream, taxa, "normal"
 
 
 def ouvir(calibrar=False):
@@ -278,54 +311,48 @@ def ouvir(calibrar=False):
                 inicio, descartar = None, True
 
 
-TAXA_MIC = None
+@functools.lru_cache(maxsize=1)
+def taxa_do_microfone():
+    return int(sd.query_devices(kind="input")["default_samplerate"])
 
 
-def avisar_tela(dados):
-    """Conta pra tela do Ultron o que o atalho está fazendo (ouvindo, volume, parado)."""
-    try:
-        req = urllib.request.Request(URL + "/api/atalho", data=json.dumps(dados).encode(),
-                                     headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=0.5).close()
-    except Exception:
-        pass
+def bipe(frequencia):
+    """Bipe curto, sem travar a gravação."""
+    if ATALHO_BIPE:
+        import winsound
+        threading.Thread(target=winsound.Beep, args=(frequencia, 70), daemon=True).start()
 
 
-def gravar_enquanto_segura(bipe):
-    """Grava do microfone (modo normal) enquanto o V estiver apertado. Devolve um WAV.
+def volume(bloco):
+    return min(1.0, float(np.sqrt(np.mean(bloco ** 2))) * 15)
 
-    O bipe agudo só toca depois que o microfone já está gravando (antes, o começo da
-    frase se perdia). Depois de soltar, grava mais ATALHO_CAUDA_S pra não cortar o fim.
-    """
-    import ctypes, io, wave
-    segura = lambda: ctypes.windll.user32.GetAsyncKeyState(ATALHO_TECLA) & 0x8000
-    global TAXA_MIC
-    if not TAXA_MIC:
-        TAXA_MIC = int(sd.query_devices(kind="input")["default_samplerate"])
-    taxa = TAXA_MIC
+
+def gravar_enquanto_segura():
+    """O áudio enquanto o V estiver apertado (mais ATALHO_CAUDA_S no fim), ou None se foi curto demais."""
+    import ctypes
+    segurando = lambda: ctypes.windll.user32.GetAsyncKeyState(ATALHO_TECLA) & 0x8000
     pedacos = []
-    stream = sd.InputStream(samplerate=taxa, channels=1, dtype="float32", latency="low",
-                            callback=lambda d, *_: pedacos.append(d[:, 0].copy()))
-    with stream:
+    with sd.InputStream(samplerate=taxa_do_microfone(), channels=1, dtype="float32", latency="low",
+                        callback=lambda d, *_: pedacos.append(d[:, 0].copy())):
         limite = time.time() + 2
         while not pedacos and time.time() < limite:
             time.sleep(0.005)
         bipe(880)
         avisar_tela({"estado": "ouvindo"})
         inicio = time.time()
-        ultimo_nivel = 0.0
-        while segura() and time.time() - inicio < ATALHO_MAX_S:
-            time.sleep(0.01)
-            if time.time() - ultimo_nivel >= 0.08:
-                ultimo_nivel = time.time()
-                bloco = pedacos[-1]
-                avisar_tela({"nivel": min(1.0, float(np.sqrt(np.mean(bloco ** 2))) * 15)})
+        while segurando() and time.time() - inicio < ATALHO_MAX_S:
+            time.sleep(0.08)
+            if pedacos:
+                avisar_tela({"nivel": volume(pedacos[-1])})
         time.sleep(ATALHO_CAUDA_S)
     bipe(520)
-    duracao = time.time() - inicio
-    if duracao < 0.35 or not pedacos:
+    if time.time() - inicio < 0.35 or not pedacos:
         return None
-    audio = np.concatenate(pedacos)
+    return np.concatenate(pedacos)
+
+
+def para_wav(audio, taxa):
+    """WAV mono de 16 kHz com o volume normalizado, ou None se for só silêncio."""
     pico = float(np.max(np.abs(audio)))
     if pico < 0.005:
         return None
@@ -343,45 +370,41 @@ def gravar_enquanto_segura(bipe):
     return buf.getvalue()
 
 
+def ao_apertar_atalho():
+    """Interrompe o Ultron, grava enquanto o V estiver apertado e manda a fala pra ele."""
+    if not saude():
+        print("Ctrl+Alt+V: o Ultron está desligado. Bata duas palmas antes.")
+        return
+    postar("/api/interromper", b"")
+    try:
+        audio = gravar_enquanto_segura()
+    except Exception as erro:
+        print(f"Ctrl+Alt+V: não consegui gravar ({erro}).")
+        audio = None
+    wav = para_wav(audio, taxa_do_microfone()) if audio is not None else None
+    if not wav:
+        avisar_tela({"estado": "cancelado"})
+        return
+    avisar_tela({"estado": "parado"})
+    erro = postar("/api/audio", wav, tipo="audio/wav", timeout=10)
+    if erro:
+        print(f"Ctrl+Alt+V: o servidor não aceitou o áudio ({erro}).")
+
+
 def atalho_global():
-    """Registra Ctrl+Alt+V no Windows e, a cada aperto, grava e manda a fala pro Ultron."""
+    """Registra Ctrl+Alt+V no Windows e chama ao_apertar_atalho() a cada aperto."""
     import ctypes
     from ctypes import wintypes
-    import threading
-    import winsound
     user32 = ctypes.windll.user32
     MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, WM_HOTKEY = 0x1, 0x2, 0x4000, 0x0312
     if not user32.RegisterHotKey(None, 1, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, ATALHO_TECLA):
         print("Não consegui registrar o Ctrl+Alt+V (outro programa já usa esse atalho).")
         return
     print("Atalho Ctrl+Alt+V pronto.")
-    bipe = lambda f: threading.Thread(target=winsound.Beep, args=(f, 70), daemon=True).start() if ATALHO_BIPE else None
     msg = wintypes.MSG()
     while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
-        if msg.message != WM_HOTKEY:
-            continue
-        if not saude():
-            print("Ctrl+Alt+V: o Ultron está desligado. Bata duas palmas antes.")
-            continue
-        try:
-            urllib.request.urlopen(urllib.request.Request(URL + "/api/interromper", data=b"", method="POST"), timeout=2)
-        except Exception:
-            pass
-        try:
-            wav = gravar_enquanto_segura(bipe)
-        except Exception as erro:
-            print(f"Ctrl+Alt+V: não consegui gravar ({erro}).")
-            avisar_tela({"estado": "cancelado"})
-            continue
-        if not wav:
-            avisar_tela({"estado": "cancelado"})
-            continue
-        avisar_tela({"estado": "parado"})
-        try:
-            req = urllib.request.Request(URL + "/api/audio", data=wav, headers={"Content-Type": "audio/wav"})
-            urllib.request.urlopen(req, timeout=10)
-        except Exception as erro:
-            print(f"Ctrl+Alt+V: o servidor não aceitou o áudio ({erro}).")
+        if msg.message == WM_HOTKEY:
+            ao_apertar_atalho()
 
 
 def main():
@@ -394,7 +417,6 @@ def main():
             pass
         return
     if ATALHO_GLOBAL and os.name == "nt":
-        import threading
         threading.Thread(target=atalho_global, daemon=True).start()
     while True:
         if saude():
