@@ -100,6 +100,22 @@ def saude(pedido):
     return {"claude": SESSAO.vivo(), "pasta": str(CFG["pasta"]), "modelo": CFG["modelo"], "telas": len(EVENTOS.ouvintes)}
 
 
+@rota("POST", "/api/atalho")
+def atalho(pedido):
+    """O palmas.py avisa a tela: Ctrl+Alt+V gravando (e o volume da voz)."""
+    try:
+        d = pedido.json()
+    except ValueError:
+        d = {}
+    evento = {"tipo": "atalho"}
+    if d.get("estado") in ("ouvindo", "parado", "cancelado"):
+        evento["estado"] = d["estado"]
+    if d.get("nivel") is not None:
+        evento["nivel"] = max(0.0, min(1.0, float(d["nivel"])))
+    EVENTOS.emitir(evento)
+    return {"ok": True}
+
+
 @rota("POST", "/api/diag")
 def diagnostico(pedido):
     """A tela avisa se a voz tocou ou falhou."""

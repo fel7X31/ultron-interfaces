@@ -1,0 +1,3 @@
+# Só pro palmas.py (ligar com duas palmas). O servidor não precisa de nada.
+sounddevice
+numpy
