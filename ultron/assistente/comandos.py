@@ -90,8 +90,6 @@ def quadro_tarefas(fala):
         return "Quadro aberto. Cada card tem um prompt pronto, é só copiar."
 
 
-# ---------------------------------------------------------------- currículo
-# "Ultron, abre o currículo" / "quero analisar meu currículo" / "fecha o currículo": abre a tela na hora.
 ABRIR_CURRICULO = re.compile(r"\b(abr\w*|mostr\w*|quero|vamos|bora|ir|vai|analis\w*|adapt\w*|atualiz\w*|mexer|editar)\b.*\bcurricul\w*")
 FECHAR_CURRICULO = re.compile(r"\b(fech\w*|sai\w*|esconde\w*|tira\w*)\b.*\bcurricul\w*")
 FALAS_CURRICULO = {"analisar": "Abrindo a análise do currículo. Vamos ver o que se salva.",
@@ -114,7 +112,6 @@ def abrir_curriculo(fala):
         return FALAS_CURRICULO[modo]
 
 
-# ---------------------------------------------------------------- modo prova (fim)
 @comando
 def desligar_prova(fala):
     if fala.curta(8) and DESLIGAR_PROVA.search(fala.frase):
