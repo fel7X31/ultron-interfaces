@@ -26,7 +26,7 @@ from .prebusca import prebusca
 from .sessao import SESSAO
 
 TOKEN_CONFIRMADO = ESTADO / "confirmado"      # existe = a trava deixa passar neste pedido
-PEDIDO_ATUAL = ESTADO / "pedido_atual.txt"    # o hooks/registro.py anota esse pedido junto de cada mudança no código
+PEDIDO_ATUAL = ESTADO / "pedido_atual.txt"
 AQUECENDO = threading.Event()
 
 
@@ -57,12 +57,10 @@ def reiniciar():
     threading.Thread(target=aquecer, daemon=True).start()
 
 
-# ---------------------------------------------------------------- pedaços do turno
 def _guardar_pedido(texto):
     try:
         ESTADO.mkdir(exist_ok=True)
         if Estado.aguardando_confirmacao and eh_confirmacao(texto) and PEDIDO_ATUAL.exists():
-            # "confirma": o pedido de verdade foi o anterior
             anterior = PEDIDO_ATUAL.read_text(encoding="utf-8").split("\n(confirmou:")[0]
             PEDIDO_ATUAL.write_text(f"{anterior}\n(confirmou: \"{texto[:100]}\")", encoding="utf-8")
         else:

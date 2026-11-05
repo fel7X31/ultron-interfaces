@@ -109,8 +109,8 @@ def guardar_backup(nome, entrada):
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         import registro
-        registro.antes(nome, entrada)
-    except Exception as erro:  # backup nunca trava a ação
+        registro.antes(entrada)
+    except Exception as erro:
         sys.stderr.write(f"backup falhou: {erro!r}\n")
 
 
@@ -181,7 +181,7 @@ def main():
         return
     if nome in ("Edit", "MultiEdit") and os.path.normcase(os.path.realpath(entrada.get("file_path") or "")) == \
             os.path.normcase(os.path.realpath(RAIZ / "MUDANCAS-ULTRON.md")):
-        return  # escrever o resumo no registro não precisa de confirmação
+        return
     if confirmado:
         guardar_backup(nome, entrada)
         return
