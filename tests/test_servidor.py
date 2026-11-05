@@ -14,7 +14,7 @@ from ultron.recursos import curriculo
 class TesteServidor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        curriculo.iniciar(CFG["pasta"], ESTADO, CFG["nome"], log, WEB)  # o app.py faz isso ao subir
+        curriculo.iniciar(CFG["pasta"], ESTADO, CFG["nome"], log, WEB)
         cls.servidor = criar_servidor(0)  # porta 0 = qualquer uma livre
         cls.url = f"http://127.0.0.1:{cls.servidor.server_address[1]}"
         threading.Thread(target=cls.servidor.serve_forever, daemon=True).start()

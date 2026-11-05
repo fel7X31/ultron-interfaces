@@ -21,7 +21,7 @@ from pathlib import Path
 from html.parser import HTMLParser
 from xml.etree import ElementTree
 
-CTX = {}  # preenchido por iniciar(): pasta, estado, nome, log, web
+CTX = {}
 TRAVA = threading.Lock()
 RODANDO = {"agora": False}
 
@@ -64,7 +64,7 @@ mandou ele pedir pra outro assistente, isso NÃO vale mais: agora você pode e d
 "Jarvis" aqui: quem cuida do currículo é você, Ultron.
 """
 
-FONTES = {  # nome curto -> (CSS, nome no Word)
+FONTES = {
     "calibri": ("Calibri, Carlito, 'Segoe UI', Arial, sans-serif", "Calibri"),
     "arial": ("Arial, Helvetica, sans-serif", "Arial"),
     "segoe": ("'Segoe UI', Arial, sans-serif", "Segoe UI"),
@@ -74,7 +74,7 @@ FONTES = {  # nome curto -> (CSS, nome no Word)
     "garamond": ("Garamond, 'EB Garamond', 'Times New Roman', serif", "Garamond"),
     "cambria": ("Cambria, Georgia, serif", "Cambria"),
 }
-ESPACOS = {"compacto": (0.7, 1.25, 257), "normal": (1.0, 1.38, 283), "amplo": (1.35, 1.5, 308)}  # (margens, linha, Word)
+ESPACOS = {"compacto": (0.7, 1.25, 257), "normal": (1.0, 1.38, 283), "amplo": (1.35, 1.5, 308)}
 ESTILO_PADRAO = {"fonte": "calibri", "tamanho": 10.5, "cor": "#1f2a44", "espacamento": "normal",
                  "nome_alinhado": "centro", "texto_alinhado": "esquerda", "linhas": True, "maiusculas": True}
 
@@ -195,7 +195,6 @@ def iniciar(pasta, estado, nome, log, web):
     CTX["estado"].mkdir(parents=True, exist_ok=True)
 
 
-# ---------------------------------------------------------------- estado (fica salvo entre uma abertura e outra)
 
 def _arq_estado():
     return CTX["estado"] / "estado.json"
@@ -226,7 +225,6 @@ def estado_publico():
             "modos": modos, "rodando": RODANDO["agora"]}
 
 
-# ---------------------------------------------------------------- arquivo original
 
 def _texto_docx(dados):
     """Tira os parágrafos de um .docx (só biblioteca padrão). Devolve (texto, html)."""
@@ -278,7 +276,7 @@ def _docx_para_folha(dados):
         x = rpr.find(w(nome)) if rpr is not None else None
         return x is not None and (x.get(w("val")) or "true").lower() not in ("0", "false", "none")
 
-    tam_padrao = 11.0  # o Word usa 11 quando o documento não diz
+    tam_padrao = 11.0
     if estilos is not None:
         sz = estilos.find(f".//{w('rPrDefault')}//{w('sz')}")
         if sz is not None and (sz.get(w("val")) or "").isdigit():
@@ -299,7 +297,7 @@ def _docx_para_folha(dados):
                 tam = int(sz.get(w("val"), "0")) / 2 if sz is not None and (sz.get(w("val")) or "").isdigit() else 0
             else:
                 nome_fonte, tam = None, 0
-            tam = tam or tam_padrao  # trecho sem tamanho = tamanho padrão do documento
+            tam = tam or tam_padrao
             for x in r:
                 if x.tag == w("t") and x.text:
                     pedacos.append((x.text, b, i, u))
@@ -329,7 +327,7 @@ def _docx_para_folha(dados):
         f = estilos.find(f".//{w('rPrDefault')}//{w('rFonts')}")
         fonte_doc = f.get(w("ascii")) if f is not None else ""
     tam_doc = tam_padrao
-    if tamanhos:  # mediana ponderada pelas letras: o tamanho do corpo do texto, sem o nome puxar pra cima
+    if tamanhos:
         metade, soma = sum(tamanhos.values()) / 2, 0
         for t in sorted(tamanhos):
             soma += tamanhos[t]
@@ -477,7 +475,7 @@ def receber_arquivo(nome, dados):
             orig["html"] = corpo
         est = ler_estado()
         est["original"] = orig
-        for m in ("analisar", "adaptar"):  # arquivo novo, conversa nova
+        for m in ("analisar", "adaptar"):
             est[m] = {}
         if ext == ".docx":
             try:
@@ -485,8 +483,8 @@ def receber_arquivo(nome, dados):
                 md = md_de_arvore(sanear_html(folha)[1])
                 if md.strip():
                     est["analisar"] = {"curriculo": md, "html": folha, "html_md": md, "estilo": normalizar_estilo(estilo)}
-                    orig["html"] = folha  # o visor do original também fica mais parecido
-            except Exception as erro:  # se der errado, o Ultron monta como antes
+                    orig["html"] = folha
+            except Exception as erro:
                 CTX["log"]({"evento": "curriculo_falhou", "detalhe": "docx->folha " + repr(erro)[:200]})
         salvar_estado(est)
     return estado_publico()
@@ -530,7 +528,6 @@ def guardar_edicao(modo, curriculo, html_folha_editada=None):
         salvar_estado(est)
 
 
-# ---------------------------------------------------------------- conversa com o Claude (sai aos poucos)
 
 def _partes(texto):
     """Separa <mensagem>, <curriculo> e <analise>, mesmo com a tag ainda aberta (no meio da escrita)."""
@@ -571,7 +568,7 @@ def _conversar(modo, mensagem, curriculo_atual, escrever, arquivo, html_atual=No
     est = ler_estado()
     e = est.get(modo) or {}
     primeira = not e.get("sessao")
-    if curriculo_atual is not None and (modo == "analisar" or e.get("curriculo")):  # a folha como está na tela
+    if curriculo_atual is not None and (modo == "analisar" or e.get("curriculo")):
         e["curriculo"] = str(curriculo_atual)[:40000]
     pedido = mensagem.strip()
     if primeira:
@@ -579,7 +576,7 @@ def _conversar(modo, mensagem, curriculo_atual, escrever, arquivo, html_atual=No
             abertura = (f"Leia o meu currículo original no arquivo {arquivo}. Escreva a primeira versão melhorada e me "
                         "pergunte o que falta pra deixar ele forte.")
         else:
-            if e.get("curriculo"):  # Word: a folha já foi montada direto do arquivo, igualzinha
+            if e.get("curriculo"):
                 abertura = (f"Leia o meu currículo original no arquivo {arquivo} e faça a análise completa com conselhos. "
                             "A folha já foi montada direto do meu Word, igual ao original: NÃO escreva <folha> nem "
                             "<curriculo> e não mande <estilo>. O texto da folha:\n" + e["curriculo"])
@@ -596,7 +593,6 @@ def _conversar(modo, mensagem, curriculo_atual, escrever, arquivo, html_atual=No
     sessao = e.get("sessao") or str(uuid.uuid4())
     cmd = [shutil.which("claude") or "claude", "-p", pedido, "--model", "sonnet",
            "--output-format", "stream-json", "--verbose", "--include-partial-messages",
-           # Read: o arquivo do currículo. WebFetch/WebSearch: ler os links de vagas que ele mandar.
            "--tools", "Read,WebFetch,WebSearch", "--allowedTools", "Read,WebFetch,WebSearch",
            "--strict-mcp-config", "--disable-slash-commands",
            "--append-system-prompt", sistema]
@@ -617,15 +613,15 @@ def _conversar(modo, mensagem, curriculo_atual, escrever, arquivo, html_atual=No
             if tipo == "stream_event":
                 x = ev.get("event") or {}
                 if x.get("type") == "message_start":
-                    texto = ""  # cada mensagem nova (depois de ler o arquivo) começa do zero
+                    texto = ""
                 elif x.get("type") == "content_block_delta" and (x.get("delta") or {}).get("type") == "text_delta":
                     texto += x["delta"].get("text", "")
                     if time.time() - ultimo_envio > 0.07:
                         ultimo_envio = time.time()
                         partes = _partes(texto)
-                        if "folha" in partes:  # a cópia do layout aparece enquanto ele escreve (já limpa)
+                        if "folha" in partes:
                             partes["folha"] = sanear_html(partes["folha"])[0]
-                        if partes.get("estilo_fechou") and _ler_estilo(partes["estilo"]):  # a folha muda na hora
+                        if partes.get("estilo_fechou") and _ler_estilo(partes["estilo"]):
                             partes["estilo_css"] = css_estilo(normalizar_estilo(e.get("estilo"), _ler_estilo(partes["estilo"])))
                         escrever({"t": "parcial", **partes})
             elif tipo == "assistant":
@@ -645,7 +641,7 @@ def _conversar(modo, mensagem, curriculo_atual, escrever, arquivo, html_atual=No
     if not texto.strip():
         erro = erro or (proc.stderr.read() or "").strip()[-300:] or "O Ultron não respondeu."
         CTX["log"]({"evento": "curriculo_falhou", "modo": modo, "detalhe": erro})
-        if not primeira and "session" in erro.lower():  # sessão sumiu (limpeza semanal): começa outra
+        if not primeira and "session" in erro.lower():
             with TRAVA:
                 est = ler_estado()
                 est.setdefault(modo, {}).pop("sessao", None)
@@ -657,13 +653,13 @@ def _conversar(modo, mensagem, curriculo_atual, escrever, arquivo, html_atual=No
         est = ler_estado()
         e2 = est.setdefault(modo, {})
         e2["sessao"] = sessao
-        if curriculo_atual is not None and e.get("curriculo"):  # guarda as edições dele mesmo se o Ultron não reescrever
+        if curriculo_atual is not None and e.get("curriculo"):
             e2["curriculo"] = e["curriculo"]
             if html_atual:
                 e2["html"], e2["html_md"] = sanear_html(html_atual)[0], e2["curriculo"]
         if p.get("curriculo") and (modo == "adaptar" or not e2.get("curriculo")):
             e2["curriculo"] = p["curriculo"]
-        if modo == "analisar" and p.get("folha") and not e2.get("curriculo"):  # cópia fiel do PDF original
+        if modo == "analisar" and p.get("folha") and not e2.get("curriculo"):
             limpo, arvore = sanear_html(p["folha"])
             if _texto_no(arvore).strip():
                 e2["curriculo"] = md_de_arvore(arvore)
@@ -687,7 +683,6 @@ def _conversar(modo, mensagem, curriculo_atual, escrever, arquivo, html_atual=No
     escrever({"t": "fim", "estado": estado_publico()})
 
 
-# ---------------------------------------------------------------- exportar
 
 def _blocos(md):
     """Markdown simples -> [(tipo, texto, recuo)]: h1, contato, h2, h3, li, p, hr, espaco.
@@ -703,7 +698,7 @@ def _blocos(md):
             blocos.append(("espaco", "", 0))
             anterior = "espaco"
             continue
-        if re.fullmatch(r"(-\s*){3,}|(\*\s*){3,}|(_\s*){3,}", l):  # "---": linha separadora
+        if re.fullmatch(r"(-\s*){3,}|(\*\s*){3,}|(_\s*){3,}", l):
             b = ("hr", "")
         elif l.startswith("### "):
             b = ("h3", l[4:])
@@ -739,7 +734,7 @@ def _runs(texto):
 
 def gerar_docx(md, estilo=None, arvore=None):
     est = normalizar_estilo(estilo)
-    meio = round(est["tamanho"] * 2)  # o Word mede em meios pontos
+    meio = round(est["tamanho"] * 2)
     cor = est["cor"].lstrip("#").upper()
     mult, _, linha_word = ESPACOS[est["espacamento"]]
     jc = "left" if est["nome_alinhado"] == "esquerda" else "center"
@@ -762,7 +757,7 @@ def gerar_docx(md, estilo=None, arvore=None):
 
     corpo = _corpo_docx_html(arvore, est) if arvore is not None else []
     for tipo, t, recuo in ([] if arvore is not None else _blocos(md)):
-        ind = recuo * 425  # ~0,75 cm por nível
+        ind = recuo * 425
         if tipo == "espaco":
             corpo.append(par("", esp(0, 0)))
         elif tipo == "h1":
@@ -772,7 +767,7 @@ def gerar_docx(md, estilo=None, arvore=None):
         elif tipo == "h2":
             corpo.append(par(run(t.upper() if est["maiusculas"] else t, b=True, tam=round(meio * 1.1), cor=cor),
                              borda + esp(220, 80)))
-        elif tipo == "hr":  # mesma linha do título das seções
+        elif tipo == "hr":
             corpo.append(par("", f'<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="{cor}"/></w:pBdr>'
                              + esp(40, 100) + '<w:rPr><w:sz w:val="4"/></w:rPr>'))
         elif tipo == "h3":
@@ -844,7 +839,6 @@ def html_folha(md):
     return "".join(partes)
 
 
-# ---------------------------------------------------------------- folha da tela (HTML) -> PDF e Word fiéis
 
 _TAGS = {"p", "div", "h1", "h2", "h3", "ul", "ol", "li", "br", "b", "strong", "i", "em", "u", "hr", "span"}
 _CLASSES = {"contato", "espaco", "r1", "r2", "r3", "marcador"}
@@ -863,7 +857,7 @@ class _Leitor(HTMLParser):
         if tag in ("script", "style"):
             tag = "lixo"
         elif tag not in _TAGS:
-            tag = "span"  # <font>, <a>... viram texto comum
+            tag = "span"
         cls = [c for c in (dict(attrs).get("class") or "").split() if c in _CLASSES]
         no = {"tag": tag, "cls": cls, "filhos": []}
         self.pilha[-1]["filhos"].append(no)
@@ -920,7 +914,7 @@ def _corpo_docx_html(arvore, est):
     linha = f'<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="{cor}"/></w:pBdr>'
     corpo = []
 
-    def twip(px):  # medidas da tela (px a 96 dpi) -> twips do Word
+    def twip(px):
         return round(px * 15 * mult)
 
     def ppr(antes=0, depois=0, ind=0, jc="", borda="", pendurado=0, tab=0):
@@ -946,12 +940,11 @@ def _corpo_docx_html(arvore, est):
         return saida
 
     def runs(lista, negrito=False, tam=None, cor_run=None, maiusc=False):
-        # tira espaços do começo/fim do parágrafo e em volta das quebras, como o navegador faz
         lista = [x for x in lista if x == "BR" or x[0]]
         xml, inicio = [], True
         for k, x in enumerate(lista):
             if x == "BR":
-                if k != len(lista) - 1:  # <br> no fim do bloco não cria linha
+                if k != len(lista) - 1:
                     xml.append("<w:r><w:br/></w:r>")
                 inicio = True
                 continue
@@ -982,10 +975,10 @@ def _corpo_docx_html(arvore, est):
         ind = (recuo_de(no) if isinstance(no, dict) else 0) * 425 + extra_recuo
         vazio = not "".join(x[0] for x in lista_inline if x != "BR").strip()
         if "espaco" in cls or vazio:
-            par("", ppr())  # linha em branco
+            par("", ppr())
         elif "contato" in cls:
             par(runs(lista_inline, tam=round(meio * .9), cor_run="555555"), ppr(0, 12, ind, jc_nome))
-        else:  # <p> tem 5px embaixo na tela; as linhas criadas com Enter (<div>) não têm
+        else:
             depois = 5 if isinstance(no, dict) and no["tag"] == "p" else 0
             par(runs(lista_inline), ppr(0, depois, ind, jc_texto))
 
@@ -1033,7 +1026,7 @@ def _corpo_docx_html(arvore, est):
             elif t == "li":
                 lista_word({"tag": "ul", "cls": [], "filhos": [f]}, 0)
             elif any(isinstance(x, dict) and x["tag"] in _BLOCOS for x in f["filhos"]):
-                blocos(f, extra_recuo + recuo_de(f) * 425)  # <div> com blocos dentro
+                blocos(f, extra_recuo + recuo_de(f) * 425)
             else:
                 paragrafo(f, pedacos(f), extra_recuo)
         soltar()
@@ -1085,7 +1078,7 @@ def exportar(formato, md, estilo=None, html_tela=None):
         dados = gerar_pdf(md, estilo, limpo or None)
     nome = re.sub(r"[^\w-]+", "-", next((t for tp, t, _ in _blocos(md) if tp == "h1"), "curriculo")).strip("-")[:40]
     nome = f"Curriculo-{nome or 'novo'}.{formato}"
-    try:  # guarda uma cópia na pasta de trabalho também
+    try:
         destino = CTX["pasta"] / "curriculo"
         destino.mkdir(exist_ok=True)
         (destino / f"{time.strftime('%Y-%m-%d')}-{nome}").write_bytes(dados)
