@@ -238,6 +238,114 @@
   #botaoProvas { right: 162px; }
   #botaoProvas:hover { transform: none; }
   #botaoProvas.ativo { color: #d7141e; }
+  /* Painel de música (card fixo na coluna da direita). O som vem do player do YouTube, escondido fora da tela. */
+  .painel[data-painel="musica"] .conteudo { max-height: none; overflow: hidden; display: flex; flex-direction: column; }
+  .painel[data-painel="musica"] .conteudo > * { flex: none; }
+  .painel[data-painel="musica"] .conteudo > .mu-fila { flex: 1 1 auto; min-height: 0; }
+  /* fila fechada: o painel volta pra altura natural, mesmo que você tenha puxado o tamanho */
+  .painel[data-painel="musica"]:not(.fila-aberta) { height: auto !important; }
+  .mu-player { position: fixed; left: -10000px; top: 0; width: 200px; height: 200px; pointer-events: none; }
+  .mu-abas { display: flex; gap: .4em; margin-bottom: .6em; overflow-x: auto; scrollbar-width: none; }
+  .mu-abas::-webkit-scrollbar { display: none; }
+  .mu-abas button { position: relative; }
+  .mu-abas .x { display: none; margin-left: .4em; opacity: .75; }
+  .mu-abas button:hover .x { display: inline; }
+  .mu-abas .x:hover { opacity: 1; }
+  /* busca: pesquisa no YouTube ou cola link de música/playlist */
+  .mu-busca { display: flex; align-items: center; gap: .45em; border: 1px solid var(--linha); border-radius: 999px; padding: 0 .3em 0 .75em;
+    margin-bottom: .7em; color: var(--suave); transition: border-color .15s; }
+  .mu-busca:focus-within { border-color: #d7141e; color: var(--texto); }
+  .mu-busca input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: var(--texto); font: inherit; font-size: .9em; padding: .5em 0; }
+  .mu-busca input::placeholder { color: var(--fraco); }
+  .mu-busca button { border: 0; background: transparent; color: var(--suave); cursor: pointer; font-size: 1.1em; width: 1.6em; height: 1.6em; border-radius: 999px; }
+  .mu-busca button:hover { color: #d7141e; }
+  .mu-resultados { margin: -.3em 0 .7em; max-height: 34vh; overflow: auto; scrollbar-width: thin; border-bottom: 1px solid var(--linha); padding-bottom: .4em; }
+  .mu-resultados .vazio-busca { font-size: .85em; color: var(--suave); padding: .4em .5em; }
+  .mu-abas button { flex: 1 0 auto; max-width: 70%; min-width: 0; border: 1px solid var(--linha); background: transparent; color: var(--suave); cursor: pointer;
+    font: inherit; font-size: .85em; padding: .4em .6em; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: .15s; }
+  .mu-abas button:hover { color: var(--texto); border-color: var(--suave); }
+  .mu-abas button.ativa { background: #d7141e; border-color: #d7141e; color: #fff; }
+  .mu-capa { position: relative; aspect-ratio: 16 / 9; max-height: 13vh; width: 100%; border-radius: 10px; overflow: hidden; background: rgba(127, 127, 127, .15);
+    display: grid; place-items: center; color: var(--fraco); font-size: 2.4em; }
+  .mu-capa img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .mu-info { display: flex; align-items: center; gap: .6em; margin-top: .8em; }
+  .mu-info > div { flex: 1; min-width: 0; }
+  .mu-titulo { font-weight: 700; font-size: 1.15em; color: var(--texto); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mu-artista { font-size: .9em; color: var(--suave); margin-top: .1em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mu-aviso { font-size: .82em; color: #e2434b; min-height: 0; margin-top: .3em; }
+  .mu-aviso:empty { display: none; }
+  .mu-tempo { margin-top: .7em; }
+  .mu-barra { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 14px; margin: 0; background: transparent; cursor: pointer; --v: 0%; }
+  .mu-barra::-webkit-slider-runnable-track { height: 4px; border-radius: 99px;
+    background: linear-gradient(to right, var(--texto) var(--v), rgba(127, 127, 127, .32) var(--v)); }
+  .mu-barra:hover::-webkit-slider-runnable-track { background: linear-gradient(to right, #d7141e var(--v), rgba(127, 127, 127, .32) var(--v)); }
+  .mu-barra::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .4); opacity: 0; transition: opacity .12s; }
+  .mu-barra:hover::-webkit-slider-thumb, .mu-barra:active::-webkit-slider-thumb { opacity: 1; }
+  .mu-barra::-moz-range-track { height: 4px; border-radius: 99px; background: rgba(127, 127, 127, .32); }
+  .mu-barra::-moz-range-progress { height: 4px; border-radius: 99px; background: var(--texto); }
+  .mu-barra:hover::-moz-range-progress { background: #d7141e; }
+  .mu-barra::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: #fff; opacity: 0; }
+  .mu-barra:hover::-moz-range-thumb { opacity: 1; }
+  .mu-tempos { display: flex; justify-content: space-between; font-size: .78em; color: var(--suave); margin-top: .35em; font-variant-numeric: tabular-nums; }
+  .mu-controles { display: flex; align-items: center; justify-content: space-between; margin: .5em .2em .3em; }
+  .mu-controles button { border: 0; background: transparent; color: var(--texto); cursor: pointer; display: grid; place-items: center;
+    width: 2.6em; height: 2.6em; border-radius: 999px; transition: background .15s, color .15s, transform .12s; }
+  .mu-controles button:hover { background: rgba(127, 127, 127, .16); }
+  .mu-controles button:active { transform: scale(.92); }
+  .mu-controles .lado { color: var(--fraco); position: relative; }
+  .mu-controles .lado.ligado { color: #d7141e; }
+  .mu-controles .lado.ligado::after { content: ""; position: absolute; bottom: .25em; width: 4px; height: 4px; border-radius: 50%; background: #d7141e; }
+  .mu-controles .lado .um { position: absolute; font-size: .55em; font-weight: 800; top: .55em; right: .55em; }
+  .mu-controles .tocar { width: 2.9em; height: 2.9em; background: #d7141e; color: #fff; box-shadow: 0 0 14px rgba(215, 20, 30, .35); }
+  .mu-controles .tocar:hover { background: #ef2630; }
+  .mu-volume { display: flex; align-items: center; gap: .5em; margin: .15em .1em .55em; }
+  .mu-volume .mudo { flex: none; border: 0; background: transparent; color: var(--suave); cursor: pointer; width: 1.9em; height: 1.9em;
+    border-radius: 999px; display: grid; place-items: center; padding: 0; }
+  .mu-volume .mudo:hover { color: var(--texto); background: rgba(127, 127, 127, .16); }
+  .mu-fila-cab { width: 100%; display: flex; align-items: center; justify-content: space-between; border: 0; border-top: 1px solid var(--linha);
+    background: transparent; color: var(--suave); cursor: pointer; font: inherit; font-size: .8em; letter-spacing: .14em; text-transform: uppercase;
+    padding: .8em .2em .5em; }
+  .mu-fila-cab:hover { color: var(--texto); }
+  .mu-fila-cab .seta { transition: transform .2s; font-size: 1.2em; }
+  .mu-fila-cab.fechada .seta { transform: rotate(-90deg); }
+  .mu-fila { max-height: 24vh; overflow: auto; scrollbar-width: thin; margin: 0 -.3em; }
+  .mu-fila.fechada { display: none; }
+  /* cada música da fila: dá pra ver que é clicável (fundo e ▶ ao passar o mouse) e o × de tirar fica sempre à vista */
+  .mu-item { display: flex; align-items: center; gap: .5em; padding: .38em .5em; border-radius: 7px; cursor: pointer; transition: background .12s; }
+  .mu-item:hover { background: rgba(215, 20, 30, .13); }
+  .mu-item .play { flex: none; width: 1em; color: #d7141e; font-size: .75em; visibility: hidden; }
+  .mu-item:hover .play { visibility: visible; }
+  .mu-item .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--texto); }
+  .mu-item:hover .txt { color: #d7141e; }
+  .mu-item .a { color: var(--suave); font-size: .88em; }
+  .mu-item .tirar { flex: none; width: 1.5em; height: 1.5em; border: 0; border-radius: 999px; background: rgba(215, 20, 30, .18);
+    color: #d7141e; cursor: pointer; font-size: 1.05em; font-weight: 700; line-height: 1; display: grid; place-items: center; padding: 0;
+    visibility: hidden; transition: background .12s, color .12s; }
+  .mu-item:hover .tirar { visibility: visible; }
+  .mu-item .tirar:hover { background: #d7141e; color: #fff; }
+  .mu-item.bloqueada { opacity: .45; }
+  .mu-restaurar { display: block; margin: .5em auto 0; border: 0; background: transparent; color: var(--suave); font: inherit; font-size: .8em;
+    text-decoration: underline; cursor: pointer; }
+  .mu-restaurar:hover { color: #d7141e; }
+  /* pouco espaço na tela: a capa vai pro lado do nome (o card fica bem mais baixo) */
+  .painel[data-painel="musica"].compacto .mu-corpo { display: grid; grid-template-columns: 4.6em 1fr; gap: .8em; align-items: center; }
+  .painel[data-painel="musica"].compacto .mu-capa { aspect-ratio: 1 / 1; max-height: none; font-size: 1.4em; border-radius: 8px; width: 3.3em; }
+  .painel[data-painel="musica"].compacto .mu-info { margin-top: 0; }
+  .painel[data-painel="musica"].compacto .mu-abas { margin-bottom: .6em; }
+  .painel[data-painel="musica"].compacto .mu-tempo { margin-top: .5em; }
+  /* minimizado: fica só uma linha com a capinha, o nome e os botões */
+  .mu-mini { display: none; align-items: center; gap: .6em; padding: 0 1.08em .8em; }
+  .painel[data-painel="musica"].min .mu-mini { display: flex; }
+  .mu-mini img { width: 2.6em; height: 2.6em; border-radius: 6px; object-fit: cover; background: rgba(127, 127, 127, .15); }
+  .mu-mini .txt { flex: 1; min-width: 0; }
+  .mu-mini .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--texto); }
+  .mu-mini .a { font-size: .82em; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mu-mini button { border: 0; background: rgba(127, 127, 127, .16); color: var(--texto); width: 2.2em; height: 2.2em; border-radius: 999px;
+    display: grid; place-items: center; cursor: pointer; }
+  .mu-mini button:hover { background: #d7141e; color: #fff; }
+  .mu-mini button[hidden] { display: none; }
+  .mu-controles button:disabled { opacity: .3; cursor: default; background: transparent; }
   .chat-caixa .config-topo { cursor: grab; }
   .chat-caixa.arrastando { transition: none; opacity: .9; }
   .chat-caixa.perto-da-borda { outline: 2px dashed #d7141e; outline-offset: 4px; }
@@ -515,7 +623,31 @@
 <div class="paineis dir">
   <section class="painel" data-painel="mercado"><header><span class="titulo">Mercado</span><span class="contador"></span><button class="minimizar" title="Minimizar">–</button></header><div class="conteudo"></div></section>
   <section class="painel" data-painel="tarefas"><header><span class="titulo">Tarefas</span><span class="contador"></span><button class="mais" id="filtroTarefa" title="Filtro: todas">☰</button><button class="mais" id="abrirQuadro" title="Abrir o quadro de tarefas (cards com prompt)">⤢</button><button class="mais" id="maisTarefa" title="Nova tarefa">+</button><button class="minimizar" title="Minimizar">–</button></header><div class="conteudo"></div></section>
+  <section class="painel" data-painel="musica"><header><span class="titulo">Música</span><span class="contador" id="muContador"></span><button class="minimizar" title="Minimizar">–</button></header>
+    <div class="mu-mini"><img id="muMiniCapa" alt=""><div class="txt"><div class="t" id="muMiniTitulo">Escolha uma música</div><div class="a" id="muMiniArtista"></div></div>
+      <button id="muMiniAnt" title="Anterior"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button><button id="muMiniTocar" title="Tocar / pausar"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button><button id="muMiniProx" title="Próxima"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button></div>
+    <div class="conteudo">
+      <div class="mu-abas" id="muAbas"></div>
+      <div class="mu-busca"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="muBusca" type="text" placeholder="Pesquisar música ou colar link" autocomplete="off" aria-label="Pesquisar música ou colar link do YouTube"><button id="muBuscaLimpar" type="button" title="Fechar a pesquisa" hidden>×</button></div>
+      <div class="mu-resultados" id="muResultados" hidden></div>
+      <div class="mu-corpo"><div class="mu-capa">♪<img id="muCapa" alt="" hidden></div>
+      <div class="mu-info"><div><div class="mu-titulo" id="muTitulo">Escolha uma música</div><div class="mu-artista" id="muArtista">Carregando as playlists…</div></div></div></div>
+      <div class="mu-aviso" id="muAviso"></div>
+      <div class="mu-tempo"><input id="muTempo" class="mu-barra" type="range" min="0" max="1000" value="0" aria-label="Posição da música">
+        <div class="mu-tempos"><span id="muAtual">0:00</span><span id="muTotal">0:00</span></div></div>
+      <div class="mu-controles">
+        <button class="lado" id="muAleatorio" title="Aleatório"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+        <button id="muAnterior" title="Anterior"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+        <button class="tocar" id="muTocar" title="Tocar / pausar"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+        <button id="muProxima" title="Próxima"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+        <button class="lado" id="muRepetir" title="Repetir"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg><span class="um" hidden>1</span></button>
+      </div>
+      <div class="mu-volume"><button class="mudo" id="muMudo" type="button" title="Tirar o som"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.5v5h3.5L11 19V5L6.5 9.5z"/><path d="M14 8.2a4.5 4.5 0 0 1 0 7.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.5 5.5a8 8 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><input id="muVolume" class="mu-barra" type="range" min="0" max="100" value="60" aria-label="Volume"></div>
+      <button class="mu-fila-cab" id="muFilaCab" type="button"><span>Próximas músicas</span><span class="seta">▾</span></button>
+      <div class="mu-fila" id="muFila"></div>
+    </div></section>
 </div>
+<div id="muPlayer" class="mu-player" aria-hidden="true"></div>
 
 <button id="botaoChat" class="engrenagem" aria-label="Conversa por texto" title="Conversa por texto">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -1137,6 +1269,7 @@
     if (estado === "ouvindo") alvo = volume(analisadorMic);
     else if (estado === "falando") alvo = volume(analisadorSaida);
     else if (trabalhando()) alvo = 0.16 + 0.1 * Math.sin(t * 3.4);
+    else if (window.musicaRitmo && window.musicaRitmo()) alvo = window.musicaRitmo()(t);  // tocando música: a bola pulsa no ritmo
     else alvo = 0.04 + 0.03 * Math.sin(t * 1.2);
     nivel += (alvo - nivel) * 0.2;
 
@@ -1736,6 +1869,8 @@
           if (digitandoCorrecao) provasPendente = true; else carregarProvas();
         }
         fetch("/api/config").then((r) => r.json()).then((c) => { config = c; atualizarBotaoProvas(); }).catch(() => {});
+      } else if (e.tipo === "musica") {
+        musica.comando(e.acao, e.item);
       } else if (e.tipo === "tarefas") {  // "abre o quadro de tarefas" por voz
         if (e.abrir) abrirQuadro(); else fecharQuadro();
       } else if (e.tipo === "limpeza") {
@@ -2120,6 +2255,354 @@
   }
   el("fecharLeitor").addEventListener("click", () => { leitorEl.hidden = true; });
   leitorEl.addEventListener("click", (e) => { if (e.target === leitorEl) leitorEl.hidden = true; });
+
+  // ---------------------------------------------------------- música
+  // Painel fixo: capa, nome, artista, barra de tempo, aleatório / anterior / tocar / próxima / repetir, volume e a fila.
+  // As músicas vêm das playlists do Miguel no YouTube (/api/musica). O som sai do player do YouTube, escondido fora da tela.
+  const musica = (() => {
+    const pnl = document.querySelector('.painel[data-painel="musica"]');
+    const LS = (k, v) => v === undefined ? localStorage.getItem("mu_" + k) : localStorage.setItem("mu_" + k, typeof v === "string" ? v : JSON.stringify(v));
+    const LSj = (k, pad) => { try { return JSON.parse(LS(k)) ?? pad; } catch (e) { return pad; } };
+    let listas = [], aba = 0, abaId = LS("abaId") || "", atualId = LS("atual") || "";
+    let ordem = [], aleatorio = LS("aleatorio") === "1", repetir = LS("repetir") || "todas";  // "nao" | "todas" | "uma"
+    let tiradas = LSj("tiradas", {}), bloqueadas = new Set(LSj("bloqueadas", []));
+    let player = null, pronto = false, tocando = false, arrastando = false, filaAberta = LS("fila") === "1";
+    const ICP = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const ICPA = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
+    const mmss = (s) => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+    const lista = () => (listas[aba] || { itens: [] });
+    const visiveis = () => lista().itens.filter((m) => !(tiradas[lista().id] || []).includes(m.id));
+    const faixa = () => lista().itens.find((m) => m.id === atualId) || null;
+    const aviso = (t) => { el("muAviso").textContent = t || ""; if (t) setTimeout(() => { if (el("muAviso").textContent === t) el("muAviso").textContent = ""; }, 6000); };
+
+    function refazerOrdem() {  // a ordem de tocar: a da playlist, ou embaralhada mantendo a atual no começo
+      const ids = visiveis().map((m) => m.id);
+      if (aleatorio) {
+        for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+        const k = ids.indexOf(atualId); if (k > 0) { ids.splice(k, 1); ids.unshift(atualId); }
+      }
+      ordem = ids;
+    }
+    function capa(id, img) {
+      if (!id) { img.hidden = true; return; }
+      img.hidden = false;
+      img.onerror = () => { img.onerror = null; img.src = "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg"; };
+      img.src = "https://i.ytimg.com/vi/" + id + "/maxresdefault.jpg";
+    }
+    function desenhar() {
+      const f = faixa();
+      el("muTitulo").textContent = el("muMiniTitulo").textContent = f ? f.titulo : "Escolha uma música";
+      el("muArtista").textContent = el("muMiniArtista").textContent = f ? f.artista : (listas.length ? "Clique numa música da lista" : el("muArtista").textContent);
+      capa(f && f.id, el("muCapa")); capa(f && f.id, el("muMiniCapa"));
+      el("muTocar").innerHTML = el("muMiniTocar").innerHTML = tocando ? ICPA : ICP;
+      el("muTocar").title = tocando ? "Pausar" : "Tocar";
+      const primeira = ordem.length && ordem.indexOf(atualId) <= 0 && repetir !== "todas";
+      el("muMiniAnt").hidden = !!primeira; el("muAnterior").disabled = !!primeira;
+      el("muContador").textContent = "";
+      el("muAleatorio").classList.toggle("ligado", aleatorio);
+      el("muAleatorio").title = aleatorio ? "Aleatório: ligado" : "Aleatório: desligado";
+      el("muRepetir").classList.toggle("ligado", repetir !== "nao");
+      el("muRepetir").querySelector(".um").hidden = repetir !== "uma";
+      el("muRepetir").title = { nao: "Repetir: desligado", todas: "Repetir a playlist", uma: "Repetir esta música" }[repetir];
+      if (!f) { el("muTotal").textContent = "0:00"; }
+      else if (!pronto || !player.getDuration) el("muTotal").textContent = mmss(f.dur);
+    }
+    function desenharAbas() {
+      const c = el("muAbas"); c.innerHTML = "";
+      listas.forEach((l, i) => {
+        const b = document.createElement("button"); b.type = "button"; b.title = l.titulo + " · " + l.itens.length + " músicas";
+        b.textContent = l.titulo;
+        if (!l.avulsa) { const x = document.createElement("span"); x.className = "x"; x.textContent = "×"; x.title = "Tirar essa playlist"; b.appendChild(x); }
+        b.classList.toggle("ativa", i === aba);
+        b.addEventListener("click", (e) => {
+          if (e.target.classList.contains("x")) { e.stopPropagation(); tirarPlaylist(l); return; }
+          const ia = tocando; escolherAba(i); atualId = ordem[0] || "";  // trocar de playlist: mostra a primeira; se estava tocando, já toca
+          desenharAbas(); desenhar(); desenharFila(); if (ia) tocar(atualId);
+        });
+        c.appendChild(b);
+      });
+      const at = c.children[aba]; if (at) at.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+    function desenharFila() {
+      const c = el("muFila"); c.innerHTML = "";
+      el("muFilaCab").classList.toggle("fechada", !filaAberta); c.classList.toggle("fechada", !filaAberta);
+      pnl.classList.toggle("fila-aberta", filaAberta);
+      if (!ordem.length) refazerOrdem();
+      const k = ordem.indexOf(atualId);
+      const seq = k >= 0 ? ordem.slice(k + 1).concat(repetir === "todas" ? ordem.slice(0, k) : []) : ordem;
+      el("muFilaCab").firstElementChild.textContent = "Próximas · " + seq.length;
+      seq.forEach((id, i) => {
+        const m = lista().itens.find((x) => x.id === id); if (!m) return;
+        const d = document.createElement("div"); d.className = "mu-item" + (bloqueadas.has(id) ? " bloqueada" : ""); d.title = "Tocar agora";
+        d.innerHTML = '<span class="play">▶</span><span class="txt"><span class="t"></span><span class="a"></span></span>'
+          + '<button class="tirar" type="button" title="Tirar da lista" aria-label="Tirar da lista">×</button>';
+        d.querySelector(".t").textContent = m.titulo;
+        d.querySelector(".a").textContent = m.artista ? " · " + m.artista : "";
+        if (bloqueadas.has(id)) d.title = "O YouTube não deixa tocar essa aqui";
+        d.addEventListener("click", (e) => {
+          if (e.target.closest(".tirar")) { e.stopPropagation(); tirar(id); return; }
+          tocar(id);
+        });
+        c.appendChild(d);
+      });
+      requestAnimationFrame(caber);
+      const n = (tiradas[lista().id] || []).length;
+      if (n) {
+        const b = document.createElement("button"); b.className = "mu-restaurar"; b.type = "button";
+        b.textContent = n === 1 ? "1 música tirada · devolver" : n + " músicas tiradas · devolver";
+        b.addEventListener("click", () => { delete tiradas[lista().id]; LS("tiradas", tiradas); refazerOrdem(); desenharFila(); });
+        c.appendChild(b);
+      }
+    }
+    function ajustarFila() {  // a fila usa só o espaço que sobra até o fim da tela (rola por dentro)
+      const c = el("muFila"); if (!filaAberta) return;
+      if (pnl.style.height && !pnl.classList.contains("min")) { c.style.maxHeight = "none"; return; }  // cresce junto com o painel
+      const sobra = innerHeight - c.getBoundingClientRect().top - 24;
+      c.style.maxHeight = Math.max(120, sobra) + "px";
+    }
+    addEventListener("resize", ajustarFila);
+    function caber() {  // se o card passa do fim da tela, usa o jeito compacto
+      if (pnl.classList.contains("min")) return;
+      pnl.classList.remove("compacto"); ajustarFila();
+      const cont = pnl.querySelector(".conteudo");
+      const apertado = pnl.style.height && filaAberta && el("muFila").clientHeight < 90;
+      if (pnl.getBoundingClientRect().bottom > innerHeight - 8 || apertado || (pnl.style.height && cont.scrollHeight > cont.clientHeight + 2)) {
+        pnl.classList.add("compacto"); ajustarFila();
+      }
+    }
+    addEventListener("resize", caber);
+    new ResizeObserver(() => requestAnimationFrame(caber)).observe(document.querySelector(".paineis.dir"));
+    new ResizeObserver(() => requestAnimationFrame(caber)).observe(pnl);
+    function tirar(id) {
+      if (lista().avulsa) {  // avulsa sai de vez (do servidor)
+        mandar("tirar-avulsa", { id });
+        lista().itens = lista().itens.filter((m) => m.id !== id);
+      } else { (tiradas[lista().id] = tiradas[lista().id] || []).push(id); LS("tiradas", tiradas); }
+      ordem = ordem.filter((x) => x !== id); desenharFila();
+    }
+    function escolherAba(i) { aba = i; abaId = (listas[i] || {}).id || ""; LS("abaId", abaId); refazerOrdem(); }
+    const mandar = (acao, dados) => fetch("/api/musica/" + acao, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dados) })
+      .then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.erro || "erro"); return d; });
+    function tirarPlaylist(l) {
+      if (!confirm("Tirar a playlist \u201c" + l.titulo + "\u201d do painel? (no YouTube ela continua)")) return;
+      mandar("tirar-playlist", { id: l.id }).then(() => {
+        const i = listas.indexOf(l); listas.splice(i, 1);
+        if (aba >= listas.length) aba = Math.max(0, listas.length - 1);
+        escolherAba(aba); if (!faixa()) atualId = ordem[0] || "";
+        desenharAbas(); desenhar(); desenharFila();
+      }).catch((e) => aviso(e.message));
+    }
+    // Música que veio da pesquisa, de um link ou da voz: entra na aba Avulsas e toca na hora.
+    function tocarItem(item) {
+      let av = listas.find((l) => l.avulsa);
+      if (!av) { av = { id: "avulsas", titulo: "Avulsas", itens: [], avulsa: true }; listas.unshift(av); }
+      av.itens = [item].concat(av.itens.filter((m) => m.id !== item.id));
+      escolherAba(listas.indexOf(av)); desenharAbas(); tocar(item.id);
+    }
+    // ---- pesquisa / link
+    const busca = el("muBusca"), res = el("muResultados");
+    const fecharBusca = () => { res.hidden = true; res.innerHTML = ""; el("muBuscaLimpar").hidden = true; busca.value = ""; busca.blur(); requestAnimationFrame(caber); };
+    const ehLink = (t) => /youtu\.?be|^https?:\/\/|[?&]list=|^PL[\w-]{10,}$/.test(t);
+    let buscaN = 0;
+    async function pesquisar() {
+      const q = busca.value.trim(); if (!q) return;
+      const n = ++buscaN;
+      res.hidden = false; el("muBuscaLimpar").hidden = false;
+      if (ehLink(q)) {
+        res.innerHTML = '<div class="vazio-busca">Adicionando…</div>';
+        try {
+          const d = await mandar("adicionar", { link: q });
+          if (d.tipo === "playlist") {
+            listas = listas.filter((l) => l.id !== d.playlist.id); listas.push(d.playlist);
+            escolherAba(listas.length - 1); atualId = ordem[0] || "";
+            desenharAbas(); desenhar(); desenharFila(); aviso("Playlist \u201c" + d.playlist.titulo + "\u201d adicionada.");
+          } else tocarItem(d.item);
+          fecharBusca();
+        } catch (e) { res.innerHTML = ""; const v = document.createElement("div"); v.className = "vazio-busca"; v.textContent = e.message; res.appendChild(v); }
+        return;
+      }
+      res.innerHTML = '<div class="vazio-busca">Pesquisando…</div>';
+      let itens = [];
+      try { const r = await fetch("/api/musica/buscar?q=" + encodeURIComponent(q)); itens = (await r.json()).itens || []; }
+      catch (e) { if (n === buscaN) res.innerHTML = '<div class="vazio-busca">Não consegui pesquisar agora.</div>'; return; }
+      if (n !== buscaN) return;
+      res.innerHTML = "";
+      if (!itens.length) { res.innerHTML = '<div class="vazio-busca">Nada encontrado.</div>'; return; }
+      itens.forEach((m) => {
+        const d = document.createElement("div"); d.className = "mu-item"; d.title = "Tocar agora";
+        d.innerHTML = '<span class="play">▶</span><span class="txt"><span class="t"></span><span class="a"></span></span>';
+        d.querySelector(".t").textContent = m.titulo;
+        d.querySelector(".a").textContent = (m.artista ? " · " + m.artista : "") + (m.dur ? " · " + mmss(m.dur) : "");
+        d.addEventListener("click", () => { mandar("avulsa", { item: m }).catch(() => {}); tocarItem(m); fecharBusca(); });
+        res.appendChild(d);
+      });
+      requestAnimationFrame(caber);
+    }
+    // as teclas daqui não vão pro resto da tela (espaço não grava, T/H/P não disparam atalhos)
+    ["keydown", "keyup"].forEach((tipo) => busca.addEventListener(tipo, (e) => {
+      e.stopPropagation();
+      if (tipo === "keydown" && e.key === "Enter") pesquisar();
+      if (tipo === "keydown" && e.key === "Escape") fecharBusca();
+    }));
+    busca.addEventListener("input", () => { el("muBuscaLimpar").hidden = !busca.value && res.hidden; });
+    busca.addEventListener("paste", () => setTimeout(() => { if (ehLink(busca.value.trim())) pesquisar(); }, 0));  // colou link: adiciona direto
+    el("muBuscaLimpar").addEventListener("click", fecharBusca);
+
+    function carregarApi() {
+      if (window.YT && YT.Player) return Promise.resolve();
+      return new Promise((ok, falha) => {
+        window.onYouTubeIframeAPIReady = ok;
+        const sc = document.createElement("script");
+        sc.src = "https://www.youtube.com/iframe_api"; sc.onerror = () => falha(new Error("sem internet"));
+        document.head.appendChild(sc);
+      });
+    }
+    let criando = null;
+    function garantirPlayer() {
+      if (player && pronto) return Promise.resolve();
+      if (criando) return criando;
+      criando = carregarApi().then(() => new Promise((ok) => {
+        player = new YT.Player("muPlayer", {
+          width: 200, height: 200,
+          playerVars: { autoplay: 0, controls: 0, rel: 0, playsinline: 1, origin: location.origin },
+          events: {
+            onReady: () => { pronto = true; player.setVolume(Number(el("muVolume").value)); ok(); },
+            onStateChange: (ev) => {
+              tocando = ev.data === YT.PlayerState.PLAYING || ev.data === YT.PlayerState.BUFFERING;
+              if (ev.data === YT.PlayerState.ENDED) acabou();
+              desenhar();
+            },
+            onError: () => {
+              bloqueadas.add(atualId); LS("bloqueadas", [...bloqueadas]);
+              aviso("Essa o YouTube não deixa tocar fora do site. Pulei pra próxima.");
+              desenharFila(); setTimeout(() => proxima(true), 800);
+            },
+          },
+        });
+      }));
+      criando.catch(() => { criando = null; });
+      return criando;
+    }
+    async function tocar(id) {
+      if (id) { atualId = id; LS("atual", id); }
+      if (!atualId) { if (!ordem.length) refazerOrdem(); atualId = ordem[0] || ""; LS("atual", atualId); }
+      if (!atualId) return;
+      desenhar(); desenharFila();
+      try { await garantirPlayer(); } catch (e) { aviso("Não consegui carregar o player (sem internet?)."); return; }
+      const carregado = player.getVideoData && player.getVideoData().video_id;
+      if (id || carregado !== atualId) player.loadVideoById(atualId); else player.playVideo();
+    }
+    function pausar() { if (player && pronto) player.pauseVideo(); }
+    function alternar() { tocando ? pausar() : tocar(); }
+    function passo(d, automatico) {
+      if (!ordem.length) refazerOrdem();
+      if (!ordem.length) return;
+      let k = ordem.indexOf(atualId);
+      for (let t = 0; t < ordem.length; t++) {  // pula as que o YouTube bloqueia
+        k = (k + d + ordem.length) % ordem.length;
+        if (!bloqueadas.has(ordem[k]) || !automatico) break;
+      }
+      tocar(ordem[k]);
+    }
+    function proxima(automatico) { passo(1, automatico); }
+    function anterior() {  // passou de 4 s: volta pro começo dela; na primeira (sem repetir a playlist) não volta pra última
+      if (player && pronto && player.getCurrentTime && player.getCurrentTime() > 4) { player.seekTo(0, true); return; }
+      if (ordem.indexOf(atualId) <= 0 && repetir !== "todas") return;
+      passo(-1);
+    }
+    function acabou() {
+      if (repetir === "uma") { player.seekTo(0, true); player.playVideo(); return; }
+      const k = ordem.indexOf(atualId);
+      if (k === ordem.length - 1 && repetir === "nao") { tocando = false; desenhar(); return; }
+      proxima(true);
+    }
+    setInterval(() => {  // barra de tempo
+      if (!player || !pronto || !player.getDuration || arrastando) return;
+      const tot = player.getDuration() || 0, at = player.getCurrentTime() || 0;
+      el("muAtual").textContent = mmss(at); el("muTotal").textContent = mmss(tot || (faixa() || {}).dur);
+      el("muTempo").value = tot ? Math.round(at / tot * 1000) : 0;
+      encher(el("muTempo"));
+      el("muTempo").style.background = "";
+    }, 500);
+    el("muTempo").addEventListener("input", () => {
+      arrastando = true; encher(el("muTempo"));
+      const tot = (player && pronto && player.getDuration()) || (faixa() || {}).dur || 0;
+      el("muAtual").textContent = mmss(el("muTempo").value / 1000 * tot);
+    });
+    el("muTempo").addEventListener("change", () => {
+      arrastando = false;
+      if (player && pronto && player.getDuration()) player.seekTo(el("muTempo").value / 1000 * player.getDuration(), true);
+    });
+    const botao = (id, fn) => el(id).addEventListener("click", (e) => { e.currentTarget.blur(); e.stopPropagation(); fn(); });
+    botao("muTocar", alternar); botao("muMiniTocar", alternar);
+    botao("muProxima", () => proxima()); botao("muMiniProx", () => proxima()); botao("muAnterior", anterior); botao("muMiniAnt", anterior);
+    botao("muAleatorio", () => { aleatorio = !aleatorio; LS("aleatorio", aleatorio ? "1" : "0"); refazerOrdem(); desenhar(); desenharFila(); });
+    botao("muRepetir", () => { repetir = { nao: "todas", todas: "uma", uma: "nao" }[repetir]; LS("repetir", repetir); desenhar(); desenharFila(); });
+    botao("muFilaCab", () => { filaAberta = !filaAberta; LS("fila", filaAberta ? "1" : "0"); desenharFila(); });
+    el("muVolume").value = LS("volume") || "60";
+    function encher(r) { r.style.setProperty("--v", (r.value - r.min) / (r.max - r.min) * 100 + "%"); }
+    const ICON_VOL = el("muMudo").innerHTML;
+    const ICON_MUDO = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.5v5h3.5L11 19V5L6.5 9.5z"/><path d="m15 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    function aplicarVolume() {
+      const v = Number(el("muVolume").value);
+      encher(el("muVolume"));
+      el("muMudo").innerHTML = v === 0 ? ICON_MUDO : ICON_VOL;
+      el("muMudo").title = v === 0 ? "Voltar o som" : "Tirar o som";
+      if (player && pronto) player.setVolume(v);
+    }
+    let volAntes = 60;
+    el("muVolume").addEventListener("input", (e) => { LS("volume", e.target.value); aplicarVolume(); });
+    botao("muMudo", () => {
+      const v = Number(el("muVolume").value);
+      if (v > 0) { volAntes = v; el("muVolume").value = 0; } else el("muVolume").value = volAntes || 60;
+      LS("volume", el("muVolume").value); aplicarVolume();
+    });
+    aplicarVolume(); encher(el("muTempo"));
+    el("muVolume").addEventListener("change", (e) => e.target.blur());
+    el("muTempo").addEventListener("pointerup", (e) => e.target.blur());
+
+    fetch("/api/musica").then((r) => r.json()).then((d) => {
+      listas = (d.playlists || []).filter((l) => l.itens && l.itens.length);
+      if (!listas.length) { el("muArtista").textContent = d.erro || "Não achei as playlists."; return; }
+      let onde = listas.findIndex((l) => l.id === abaId && l.itens.some((m) => m.id === atualId));
+      if (onde < 0) onde = listas.findIndex((l) => l.itens.some((m) => m.id === atualId));
+      if (onde >= 0) aba = onde;
+      else { aba = Math.max(0, listas.findIndex((l) => l.id === abaId)); atualId = ""; }
+      escolherAba(aba);
+      if (!atualId) atualId = ordem[0] || "";  // já mostra a primeira no card (sem tocar)
+      desenharAbas(); desenhar(); desenharFila();
+    }).catch(() => { el("muArtista").textContent = "Não consegui carregar as playlists."; });
+    desenhar();
+
+    function mostrar(abrir) {  // voz: abre ou minimiza o painel usando o próprio botão dele
+      const min = pnl.classList.contains("min");
+      if (abrir === min) pnl.querySelector(".minimizar").click();
+    }
+    function comando(acao, item) {
+      if (acao === "tocar_item" && item) { tocarItem(item); }
+      else if (acao === "tocar") { tocar(); }
+      else if (acao === "proxima") proxima();
+      else if (acao === "anterior") anterior();
+      else if (acao === "pausar" || acao === "parar") pausar();
+      else if (acao === "fechar") mostrar(false);
+      else mostrar(true);
+    }
+    // Ritmo da bola enquanto toca. O áudio do YouTube vem de outro site e o navegador não deixa medir o som,
+    // então é uma batida simulada: andamento próprio de cada música (88 a 128 bpm), batida forte no 1 e no 3.
+    window.musicaRitmo = () => {
+      if (!tocando) return null;
+      let h = 0; for (const c of atualId) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      const bpm = 88 + (h % 41), batida = 60 / bpm;
+      return (t) => {
+        const fase = (t % batida) / batida, n = Math.floor(t / batida);
+        const forte = n % 2 === 0 ? 1 : 0.6;
+        const chute = Math.exp(-fase * 7) * forte;
+        const contra = Math.exp(-Math.abs(fase - 0.5) * 18) * 0.25;
+        return 0.1 + 0.42 * chute + contra + 0.05 * Math.sin(t * 2.3) + 0.04 * Math.sin(t * 7.1 + h);
+      };
+    };
+    return { comando, alternar };
+  })();
 
   // ---------------------------------------------------------- novo compromisso
   const eventoEl = el("novoEvento");
