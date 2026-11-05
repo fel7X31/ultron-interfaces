@@ -10,7 +10,9 @@ import webbrowser
 from .assistente.sessao import SESSAO
 from .assistente.turno import aquecer
 from .http.servidor import criar_servidor
-from .nucleo.config import CFG
+from .nucleo.config import CFG, ESTADO, WEB
+from .nucleo.log import log
+from .recursos import curriculo
 from .recursos.google import atualizar_google
 from .recursos.historico import manutencao
 from .recursos.mercado import atualizar_mercado
@@ -78,6 +80,7 @@ def main():
         os._exit(0)
 
     signal.signal(signal.SIGTERM, encerrar)
+    curriculo.iniciar(CFG["pasta"], ESTADO, CFG["nome"], log, WEB)
     _em_segundo_plano(aquecer)
     _em_segundo_plano(rotinas)
     if "--sem-abrir" not in sys.argv:

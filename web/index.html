@@ -237,6 +237,8 @@
   /* Destacar a conversa e painel de provas */
   #botaoProvas { right: 162px; }
   #botaoProvas:hover { transform: none; }
+  #botaoCurriculo { right: 210px; }
+  #botaoCurriculo:hover { transform: none; }
   #botaoProvas.ativo { color: #d7141e; }
   .chat-caixa .config-topo { cursor: grab; }
   .chat-caixa.arrastando { transition: none; opacity: .9; }
@@ -490,6 +492,15 @@
   .sobe { color: #1c7c45; } .desce { color: #c4121b; }
   .tarefa.feita .principal { text-decoration: line-through; color: var(--suave); }
   .vazio { font-size: 12px; color: var(--suave); padding: 4px 0; }
+  /* Tela do currículo (web/curriculo.html), aberta por voz: "Ultron, abre o currículo" */
+  /* Aparece rápido e suave (fade + leve zoom); some do mesmo jeito. */
+  .curriculo-tela { position: fixed; inset: 0; z-index: 50; background: #c3c6cb; }
+  body.escuro .curriculo-tela { background: #030405; }
+  .curriculo-tela iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .curriculo-tela.abrindo { animation: curriculoAbre .38s cubic-bezier(.16, 1, .3, 1) both; }
+  .curriculo-tela.fechando { animation: curriculoFecha .24s cubic-bezier(.4, 0, 1, 1) both; }
+  @keyframes curriculoAbre { from { opacity: 0; transform: translateY(14px) scale(.965); } }
+  @keyframes curriculoFecha { to { opacity: 0; transform: translateY(8px) scale(.975); } }
   @media (max-width: 900px) { .paineis { display: none; } }
 
   @keyframes pisca { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
@@ -523,6 +534,10 @@
 <button id="botaoProvas" class="engrenagem" aria-label="Provas" title="Provas (modo prova)">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2h6V3"/><path d="m9 12 2 2 4-4"/><path d="M9 17h6"/></svg>
 </button>
+<button id="botaoCurriculo" class="engrenagem" aria-label="Currículo" title="Abrir o currículo">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
+</button>
+<div id="curriculoTela" class="curriculo-tela" hidden></div>
 <div id="provas" class="config" hidden>
   <div class="config-caixa provas-caixa" role="dialog" aria-modal="true" aria-label="Provas">
     <div class="config-topo">
@@ -1738,6 +1753,8 @@
         fetch("/api/config").then((r) => r.json()).then((c) => { config = c; atualizarBotaoProvas(); }).catch(() => {});
       } else if (e.tipo === "tarefas") {  // "abre o quadro de tarefas" por voz
         if (e.abrir) abrirQuadro(); else fecharQuadro();
+      } else if (e.tipo === "curriculo") {
+        if (e.abrir) abrirCurriculo(e.modo); else fecharCurriculo();
       } else if (e.tipo === "limpeza") {
         podarHistorico();
         if (chatAberto()) desenharChat();
@@ -2557,6 +2574,54 @@
     if (ev.key === "Escape") { if (novaQuadro.value) novaQuadro.value = ""; else fecharQuadro(); }
   });
   novaQuadro.addEventListener("keyup", (ev) => ev.stopPropagation());
+
+  // ---------------------------------------------------------- currículo (tela inteira, por cima)
+  // A tela já fica carregada escondida: quando abre, o conteúdo está pronto e a animação aparece de verdade.
+  let curriculoPronto = null;
+  function quadroCurriculo() {
+    const tela = el("curriculoTela");
+    let quadro = tela.querySelector("iframe");
+    if (!quadro) {
+      quadro = document.createElement("iframe");
+      quadro.title = "Currículo";
+      curriculoPronto = new Promise((ok) => quadro.addEventListener("load", () => setTimeout(ok, 120), { once: true }));
+      quadro.src = "/curriculo.html";
+      tela.appendChild(quadro);
+    }
+    return quadro;
+  }
+  setTimeout(quadroCurriculo, 1500);
+  async function abrirCurriculo(modo) {
+    const tela = el("curriculoTela");
+    const quadro = quadroCurriculo();
+    await Promise.race([curriculoPronto, new Promise((ok) => setTimeout(ok, 2500))]);
+    if (modo) quadro.contentWindow.postMessage({ tipo: "abrirModo", modo }, "*");
+    if (!tela.hidden && !tela.classList.contains("fechando")) { quadro.focus(); return; }  // já aberta
+    await new Promise((ok) => setTimeout(ok, modo ? 40 : 0));  // deixa a tela trocar de modo antes de aparecer
+    tela.hidden = false;
+    tela.classList.remove("fechando", "abrindo");
+    void tela.offsetWidth;  // reinicia a animação
+    tela.classList.add("abrindo");
+    tela.onanimationend = (ev) => {
+      if (ev.target !== tela || !tela.classList.contains("abrindo")) return;
+      tela.classList.remove("abrindo");
+      quadro.focus();
+    };
+  }
+  function fecharCurriculo() {  // o iframe fica: a conversa não se perde
+    const tela = el("curriculoTela");
+    if (tela.hidden || tela.classList.contains("fechando")) return;
+    tela.classList.remove("abrindo");
+    void tela.offsetWidth;
+    tela.classList.add("fechando");
+    tela.onanimationend = (ev) => {
+      if (ev.target !== tela || !tela.classList.contains("fechando")) return;
+      tela.classList.remove("fechando");
+      tela.hidden = true;
+    };
+  }
+  addEventListener("message", (e) => { if (e.data && e.data.tipo === "fecharCurriculo") fecharCurriculo(); });
+  el("botaoCurriculo").addEventListener("click", (e) => { e.currentTarget.blur(); abrirCurriculo(); });
 
   // ---------------------------------------------------------- tema e detalhes
   function aplicarTema(tema) {

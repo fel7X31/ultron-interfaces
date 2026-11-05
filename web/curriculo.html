@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Currículo · Ultron</title>
+<link rel="icon" type="image/svg+xml" href="/icone.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/curriculo-folha.css">
+<style>
+  /* Currículo: início (duas opções), Analisar (você edita, o Ultron aconselha) e Adaptar (o Ultron reescreve com você). */
+  :root { --texto: #1d1f22; --suave: rgba(30, 32, 36, .58); --linha: rgba(30, 32, 36, .12); --vidro: rgba(255, 255, 255, .38);
+    --vidro-borda: rgba(255, 255, 255, .6); --campo: rgba(30, 32, 36, .05); --vermelho: #d7141e; }
+  html, body { margin: 0; height: 100%; font-family: Inter, system-ui, "Segoe UI", sans-serif; color: var(--texto);
+    background: #c3c6cb; background-image: radial-gradient(circle at 50% 30%, #f4f5f7 0%, #cfd2d6 55%, #a3a7ad 100%); }
+  body { display: flex; flex-direction: column; padding: 14px 18px; box-sizing: border-box; overflow: hidden; }
+  body.escuro { --texto: #e9ecef; --suave: rgba(233, 236, 239, .6); --linha: rgba(255, 255, 255, .1); --vidro: rgba(18, 20, 23, .62);
+    --vidro-borda: rgba(255, 255, 255, .08); --campo: rgba(255, 255, 255, .05); color-scheme: dark;
+    background: #030405; background-image: radial-gradient(circle at 50% 30%, #1d2024 0%, #0b0c0e 55%, #000 100%); }
+  button { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+
+  .topo { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex: none; }
+  .titulo { font-size: 13px; letter-spacing: .28em; text-transform: uppercase; font-weight: 600; }
+  .titulo::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--vermelho); margin-right: 9px; vertical-align: 1px; box-shadow: 0 0 8px rgba(215, 20, 30, .6); }
+  .modo-nome { font-size: 13px; color: var(--suave); margin-left: 4px; }
+  .espaco { flex: 1; }
+  .botao { border: 1px solid var(--linha); border-radius: 10px; padding: 7px 12px; font-size: 12px; background: transparent; cursor: pointer; white-space: nowrap; }
+  .botao:hover:not(:disabled) { background: rgba(215, 20, 30, .1); border-color: rgba(215, 20, 30, .35); }
+  .botao:disabled { opacity: .45; cursor: default; }
+  .botao.forte { background: var(--vermelho); color: #fff; border-color: var(--vermelho); font-weight: 600; }
+  .botao.forte:hover:not(:disabled) { background: #b8101a; }
+  .fechar { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; }
+  .fechar span { font-size: 16px; line-height: 1; margin-top: -1px; }
+
+  .vidro { background: var(--vidro); border: 1px solid var(--vidro-borda); border-radius: 16px; box-shadow: 0 10px 30px rgba(40, 44, 50, .18); }
+  body.escuro .vidro { box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+
+  /* início */
+  .inicio { flex: 1; display: grid; place-items: center; }
+  .opcoes { display: grid; grid-template-columns: repeat(2, minmax(240px, 360px)); gap: 22px; }
+  .opcao { text-align: left; padding: 26px 24px; cursor: pointer; transition: transform .15s, border-color .15s; border: 1px solid var(--vidro-borda); }
+  .opcao:hover { transform: translateY(-3px); border-color: rgba(215, 20, 30, .45); }
+  .opcao .icone { font-size: 26px; margin-bottom: 12px; color: var(--vermelho); }
+  .opcao h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+  .opcao p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--suave); }
+  .inicio-sub { text-align: center; color: var(--suave); font-size: 13px; margin-top: 18px; }
+
+  /* área de trabalho */
+  .trabalho { flex: 1; min-height: 0; display: grid; gap: 16px; grid-template-columns: minmax(300px, 1fr) minmax(420px, 1.25fr); }
+  .coluna { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+  .caixa { min-height: 0; display: flex; flex-direction: column; padding: 12px; }
+  .caixa > .cab { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--suave); font-weight: 600; margin: 0 2px 10px; }
+  .caixa > .cab .espaco { flex: 1; }
+  .caixa > .cab .botao { letter-spacing: 0; text-transform: none; font-weight: 500; padding: 4px 9px; }
+
+  /* folha (o papel branco) */
+  .mesa { flex: 1; min-height: 0; overflow: auto; border-radius: 10px; background: rgba(30, 32, 36, .08); padding: 18px; scrollbar-width: thin; }
+  body.escuro .mesa { background: rgba(0, 0, 0, .35); }
+  /* A4 com as mesmas margens do PDF/Word (17 mm × 18 mm): a linha quebra no mesmo lugar. O zoom só encolhe pra caber.
+     A linha vermelha tracejada marca onde termina cada página do PDF. */
+  .mesa .folha { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 17mm 18mm; box-shadow: 0 4px 22px rgba(0, 0, 0, .22);
+    border-radius: 2px; outline: none; zoom: var(--zoom, 1);
+    background: linear-gradient(to bottom, transparent calc(263mm - 1px), rgba(215, 20, 30, .45) calc(263mm - 1px), rgba(215, 20, 30, .45) 263mm, transparent 263mm) 0 0 / 100% 263mm repeat-y content-box,
+      #fff; }
+  .folha[contenteditable="true"] { cursor: text; }
+  .folha[contenteditable="true"]:focus { box-shadow: 0 4px 22px rgba(0, 0, 0, .22), 0 0 0 2px rgba(215, 20, 30, .35); }
+  .folha .vazia { color: #9a9ea5; text-align: center; margin-top: 380px; font-size: 11pt; }
+  .cursor { display: inline-block; width: 2px; height: 1.05em; background: var(--vermelho); vertical-align: -2px; margin-left: 1px; animation: piscar 1s steps(1) infinite; }
+  @keyframes piscar { 50% { opacity: 0; } }
+
+  /* original */
+  .original { flex: 1; min-height: 0; border-radius: 10px; overflow: hidden; background: rgba(30, 32, 36, .08); display: flex; }
+  .original iframe { flex: 1; border: 0; background: #fff; }
+  .original .mesa { padding: 12px; }
+  .original .folha { width: auto; min-height: 0; padding: 34px 36px; font-size: 9.5pt; zoom: 1; background-image: none; }
+  .original .folha h3 { text-transform: uppercase; color: #1f2a44; }
+  .soltar { flex: 1; display: grid; place-items: center; text-align: center; border: 2px dashed var(--linha); border-radius: 12px; cursor: pointer; padding: 20px; transition: border-color .15s, background .15s; }
+  .soltar:hover, .soltar.em-cima { border-color: rgba(215, 20, 30, .55); background: rgba(215, 20, 30, .06); }
+  .soltar .grande { font-size: 34px; color: var(--vermelho); margin-bottom: 8px; }
+  .soltar b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .soltar span { font-size: 12.5px; color: var(--suave); }
+  .soltar-tudo { position: fixed; inset: 0; background: rgba(215, 20, 30, .12); border: 3px dashed var(--vermelho); z-index: 20; display: grid; place-items: center; font-size: 20px; font-weight: 600; pointer-events: none; }
+
+  /* conversa */
+  .conversa { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 9px; padding: 2px; scrollbar-width: thin; }
+  .msg { max-width: 92%; padding: 9px 12px; border-radius: 13px; font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .msg.claude { align-self: flex-start; background: var(--campo); border: 1px solid var(--linha); border-bottom-left-radius: 4px; }
+  .msg.eu { align-self: flex-end; background: rgba(215, 20, 30, .10); border: 1px solid rgba(215, 20, 30, .22); border-bottom-right-radius: 4px; }
+  .msg.erro { align-self: center; background: rgba(215, 20, 30, .08); color: var(--vermelho); font-size: 12.5px; }
+  .status { font-size: 12px; color: var(--suave); min-height: 16px; margin: 6px 2px 0; }
+  .status.trabalhando::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--vermelho); margin-right: 7px; vertical-align: 1px; animation: piscar 1s infinite; }
+  .enviar { display: flex; gap: 8px; margin-top: 8px; }
+  .enviar textarea { flex: 1; resize: none; height: 42px; max-height: 120px; background: var(--campo); border: 1px solid var(--linha); border-radius: 12px; color: var(--texto); font: inherit; font-size: 14px; padding: 10px 12px; outline: none; box-sizing: border-box; }
+  .enviar textarea:focus { border-color: rgba(215, 20, 30, .55); }
+
+  /* análise */
+  .analise { flex: 1.4; min-height: 0; overflow: auto; scrollbar-width: thin; padding: 2px; }
+  .nota { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .nota .num { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; font-weight: 700; color: #fff; flex: none; }
+  .nota .resumo { font-size: 13.5px; line-height: 1.5; }
+  .bloco-titulo { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--suave); font-weight: 600; margin: 14px 0 7px; }
+  .fortes { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; }
+  .conselho { border: 1px solid var(--linha); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; background: var(--campo); }
+  .conselho.feito { opacity: .5; }
+  .conselho .linha1 { display: flex; align-items: center; gap: 8px; }
+  .conselho .pri { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 2px 7px; border-radius: 999px; color: #fff; flex: none; }
+  .pri.alta { background: #d7141e; } .pri.media { background: #d39a12; } .pri.baixa { background: #2e9d5b; }
+  .conselho .tit { font-weight: 600; font-size: 13.5px; flex: 1; }
+  .conselho .secao { font-size: 11px; color: var(--suave); }
+  .conselho .det { font-size: 13px; line-height: 1.5; margin-top: 6px; }
+  .conselho .ex { margin-top: 7px; font-size: 12.5px; line-height: 1.45; padding: 7px 9px; border-left: 3px solid rgba(215, 20, 30, .5); background: rgba(215, 20, 30, .05); border-radius: 0 8px 8px 0; white-space: pre-wrap; }
+  .conselho .acoes { display: flex; gap: 6px; margin-top: 8px; }
+  .conselho .acoes .botao { padding: 3px 9px; font-size: 11.5px; }
+  .aviso-vazio { color: var(--suave); font-size: 13px; text-align: center; margin-top: 40px; line-height: 1.6; }
+  /* Barra de edição estilo Word (em cima da folha) */
+  .barra { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px; margin: 0 0 8px; border-radius: 10px; background: var(--campo); border: 1px solid var(--linha); }
+  .barra button, .barra select { height: 28px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--texto); font: inherit; font-size: 12.5px; padding: 0 8px; cursor: pointer; }
+  .barra select { border-color: var(--linha); padding: 0 4px; }
+  body.escuro .barra select option { background: #1d2024; }
+  .barra button:hover:not(:disabled), .barra select:hover:not(:disabled) { background: rgba(215, 20, 30, .1); }
+  .barra button.ativo { background: rgba(215, 20, 30, .16); border-color: rgba(215, 20, 30, .4); }
+  .barra :disabled { opacity: .4; cursor: default; }
+  .barra .sep { width: 1px; height: 20px; background: var(--linha); margin: 0 3px; }
+  .barra .cor { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--suave); padding: 0 4px; }
+  .barra input[type=color] { width: 26px; height: 24px; border: 1px solid var(--linha); border-radius: 6px; padding: 1px; background: transparent; cursor: pointer; }
+  .barra .b { font-weight: 700; } .barra .i { font-style: italic; font-family: Georgia, serif; }
+  .salvo { font-size: 11px; color: var(--suave); letter-spacing: 0; text-transform: none; font-weight: 400; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); display: grid; place-items: center; z-index: 30; }
+  .modal .vidro { width: min(900px, 92vw); height: 86vh; display: flex; flex-direction: column; padding: 12px; background: var(--vidro); backdrop-filter: blur(18px); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #1d1f22; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px; z-index: 40; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+  @media (max-width: 980px) { .trabalho { grid-template-columns: 1fr; overflow: auto; } .coluna { min-height: 70vh; } .opcoes { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="topo">
+  <span class="titulo">Currículo</span>
+  <span class="modo-nome" id="modoNome"></span>
+  <span class="espaco"></span>
+  <button class="botao" id="btnInicio" hidden>← Voltar</button>
+  <button class="botao" id="btnTrocar" hidden title="Abrir outro arquivo">Trocar arquivo</button>
+  <button class="botao" id="btnRecomecar" hidden title="Apaga a conversa deste modo e começa de novo">Recomeçar</button>
+  <button class="botao" id="btnWord" hidden>Exportar Word</button>
+  <button class="botao forte" id="btnPdf" hidden>Exportar PDF</button>
+  <button class="botao fechar" id="btnFechar" title="Fechar o currículo (Esc). O progresso fica salvo.">Fechar <span>×</span></button>
+</div>
+
+<!-- início: as duas opções -->
+<section class="inicio" id="telaInicio">
+  <div>
+    <div class="opcoes">
+      <button class="opcao vidro" data-modo="analisar">
+        <div class="icone">◎</div>
+        <h2>Analisar currículo</h2>
+        <p>O Ultron lê o seu currículo, dá uma nota e lista conselhos. Você mesmo edita a folha, seguindo as dicas, e pode perguntar o que quiser.</p>
+      </button>
+      <button class="opcao vidro" data-modo="adaptar">
+        <div class="icone">✎</div>
+        <h2>Adaptar currículo</h2>
+        <p>Seu arquivo de um lado e uma folha em branco do outro. O Ultron reescreve o currículo, pergunta o que falta e dá ideias pra complementar.</p>
+      </button>
+    </div>
+    <div class="inicio-sub" id="inicioSub">Aceita PDF ou Word (.docx). No fim, exporte pra Word ou PDF.</div>
+  </div>
+</section>
+
+<!-- área de trabalho (os dois modos usam a mesma grade) -->
+<section class="trabalho" id="telaTrabalho" hidden>
+  <div class="coluna" id="colEsquerda"></div>
+  <div class="coluna" id="colDireita"></div>
+</section>
+
+<input type="file" id="arquivo" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+<div class="soltar-tudo" id="soltarTudo" hidden>Solte o currículo aqui</div>
+<div class="modal" id="modalOriginal" hidden><div class="vidro"><div class="caixa" style="flex:1;padding:0"><div class="cab">Original <span class="espaco"></span><button class="botao" id="fecharOriginal">Fechar</button></div><div class="original" id="modalOriginalCorpo"></div></div></div></div>
+
+<script>
+(() => {
+  const el = (id) => document.getElementById(id);
+  const criar = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
+  document.body.classList.toggle("escuro", (localStorage.getItem("tema") || "prata") === "escuro");
+  addEventListener("storage", (e) => { if (e.key === "tema") document.body.classList.toggle("escuro", e.newValue === "escuro"); });
+
+  let estado = null, modo = null, rodando = false;
+  const dentroDoUltron = window.parent !== window;
+  // Fechar: por cima do Ultron, só esconde (a conversa continua viva). Aberta sozinha numa janela/aba,
+  // fecha a janela; se o navegador não deixar, volta pra tela do Ultron. Tudo fica salvo no servidor.
+  function fecharTela() {
+    if (dentroDoUltron) { window.parent.postMessage({ tipo: "fecharCurriculo" }, "*"); return; }
+    if (rodando && !confirm("O Ultron ainda está escrevendo. Fechar agora perde essa resposta. Fechar mesmo assim?")) return;
+    window.close();
+    setTimeout(() => { if (!window.closed) location.href = "/"; }, 150);
+  }
+  el("btnFechar").addEventListener("click", fecharTela);
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !el("modalOriginal").hidden) { el("modalOriginal").hidden = true; return; }
+    if (e.key === "Escape" && !document.activeElement.closest("textarea,[contenteditable]")) fecharTela();
+  });
+
+  function toast(texto) {
+    const t = criar("div", "toast", texto); document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+
+  // ---------------------------------------------------------- Markdown simples -> HTML da folha
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  function inline(t) {
+    return esc(t)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>")
+      .replace(/\[([^\]\n]{2,})\]/g, '<span class="marcador">[$1]</span>');
+  }
+  function mdParaHtml(md) {
+    const out = []; let lista = false, anterior = null;
+    for (const bruta of md.split("\n")) {
+      const l = bruta.trim();
+      if (!l) { if (anterior !== "h1") anterior = null; continue; }
+      const recuo = Math.min(3, Math.floor((bruta.length - bruta.replace(/^ +/, "").length) / 2));  // 2 espaços = 1 nível
+      if (l === "&nbsp;") {  // linha em branco
+        if (lista) { out.push("</ul>"); lista = false; }
+        out.push('<p class="espaco"><br></p>'); anterior = "espaco"; continue;
+      }
+      let tipo, t = l;
+      if (/^((-\s*){3,}|(\*\s*){3,}|(_\s*){3,})$/.test(l)) {  // "---": linha separadora
+        if (lista) { out.push("</ul>"); lista = false; }
+        out.push("<hr>"); anterior = "hr"; continue;
+      }
+      if (l.startsWith("### ")) { tipo = "h3"; t = l.slice(4); }
+      else if (l.startsWith("## ")) { tipo = "h2"; t = l.slice(3); }
+      else if (l.startsWith("# ")) { tipo = "h1"; t = l.slice(2); }
+      else if (/^[-*•]\s+/.test(l)) { tipo = "li"; t = l.replace(/^[-*•]\s+/, ""); }
+      else if (/^#{1,3}$/.test(l)) continue;
+      else tipo = anterior === "h1" ? "contato" : "p";
+      if (tipo === "li" && !lista) { out.push("<ul>"); lista = true; }
+      if (tipo !== "li" && lista) { out.push("</ul>"); lista = false; }
+      const cls = recuo && ["p", "li", "h3"].includes(tipo) ? ` class="r${recuo}"` : "";
+      out.push(tipo === "contato" ? `<p class="contato">${inline(t)}</p>` : `<${tipo}${cls}>${inline(t)}</${tipo}>`);
+      anterior = tipo;
+    }
+    if (lista) out.push("</ul>");
+    return out.join("");
+  }
+  // folha editada (HTML) -> Markdown
+  function inlineMd(no) {
+    let s = "";
+    for (const n of no.childNodes) {
+      if (n.nodeType === 3) s += n.textContent;
+      else if (n.nodeType === 1) {
+        const tag = n.tagName;
+        if (tag === "BR") s += " ";
+        else if (tag === "STRONG" || tag === "B") { const x = inlineMd(n); s += x.trim() ? "**" + x.trim() + "** " : x; }
+        else if (tag === "EM" || tag === "I") { const x = inlineMd(n); s += x.trim() ? "*" + x.trim() + "* " : x; }
+        else s += inlineMd(n);
+      }
+    }
+    return s.replace(/ /g, " ").replace(/\s+/g, " ").replace(/ ([.,;:])/g, "$1");
+  }
+  const nivelRecuo = (no) => { const m = /\br([1-3])\b/.exec(no.className || ""); return m ? +m[1] : 0; };
+  function htmlParaMd(folha) {
+    const linhas = [];
+    const bloco = (n) => {
+      if (n.nodeType === 3) { if (n.textContent.trim()) linhas.push(n.textContent.trim()); return; }
+      if (n.nodeType !== 1) return;
+      const t = n.tagName, txt = () => inlineMd(n).trim();
+      const rec = (no) => "  ".repeat(nivelRecuo(no));
+      if (n.classList.contains("vazia") || n.classList.contains("cursor")) return;
+      if (t === "HR") linhas.push("", "---", "");
+      else if (t === "H1") linhas.push("# " + txt());
+      else if (t === "H2") linhas.push("", "## " + txt());
+      else if (t === "H3") linhas.push(rec(n) + "### " + txt());
+      else if (t === "UL" || t === "OL") n.querySelectorAll(":scope > li").forEach((li) => { const x = inlineMd(li).trim(); if (x) linhas.push(rec(li) + "- " + x); });
+      else if (t === "LI") { const x = txt(); if (x) linhas.push(rec(n) + "- " + x); }
+      else if ((t === "DIV" || t === "P") && n.querySelector("h1,h2,h3,ul,ol,p,div")) n.childNodes.forEach(bloco);
+      else if ((t === "DIV" || t === "P") && n.querySelector("br") && txt()) {
+        let atual = document.createElement("span");
+        const soltar = () => { const x = inlineMd(atual).trim(); if (x) linhas.push(rec(n) + x); atual = document.createElement("span"); };
+        n.childNodes.forEach((f) => { if (f.nodeName === "BR") soltar(); else atual.appendChild(f.cloneNode(true)); });
+        soltar();
+      }
+      else { const x = txt(); if (x) linhas.push(rec(n) + x); else if (t === "P" || t === "DIV") linhas.push("&nbsp;"); }
+    };
+    folha.childNodes.forEach(bloco);
+    return linhas.join("\n").replace(/^\n+/, "").replace(/\n{3,}/g, "\n\n").replace(/(^|\n)(#{1,3}) (\n|$)/g, "$1");
+  }
+
+  // ---------------------------------------------------------- máquina de escrever (rápida, alcança o Ultron)
+  function Maquina(folha) {
+    this.folha = folha; this.alvo = ""; this.antigo = ""; this.n = 0; this.ativa = false; this.terminou = true;
+  }
+  Maquina.prototype.comecar = function (antigo) {
+    this.antigo = antigo || ""; this.alvo = ""; this.n = 0; this.terminou = false; this.desenhar();
+  };
+  Maquina.prototype.atualizar = function (alvo) {
+    this.alvo = alvo;
+    if (!this.ativa) { this.ativa = true; requestAnimationFrame(() => this.passo()); }
+  };
+  Maquina.prototype.finalizar = function (alvo) {
+    if (alvo !== undefined) this.alvo = alvo;
+    this.terminou = true;
+    if (!this.ativa) { this.ativa = true; requestAnimationFrame(() => this.passo()); }
+  };
+  Maquina.prototype.passo = function () {
+    // trecho igual ao da versão anterior aparece na hora; o que mudou é "digitado"
+    let igual = 0; const lim = Math.min(this.alvo.length, this.antigo.length);
+    while (igual < lim && this.alvo[igual] === this.antigo[igual]) igual++;
+    if (this.n < igual) this.n = igual;
+    const falta = this.alvo.length - this.n;
+    if (falta > 0) this.n += Math.max(4, Math.ceil(falta / 60));  // ~240 letras/s, acelera se ficar pra trás
+    if (this.n > this.alvo.length) this.n = this.alvo.length;
+    this.desenhar();
+    if (this.n < this.alvo.length || !this.terminou) requestAnimationFrame(() => this.passo());
+    else { this.ativa = false; this.desenhar(true); if (this.aoTerminar) this.aoTerminar(); }
+  };
+  Maquina.prototype.desenhar = function (fim) {
+    const parte = this.alvo.slice(0, this.n);
+    this.folha.innerHTML = mdParaHtml(parte) || (fim ? "" : "");
+    if (!fim) {
+      const c = criar("span", "cursor");
+      const ultimo = this.folha.lastElementChild;
+      const alvoC = ultimo ? (ultimo.tagName === "UL" ? ultimo.lastElementChild || ultimo : ultimo) : this.folha;
+      alvoC.appendChild(c);
+      const mesa = this.folha.closest(".mesa");
+      if (mesa) { const r = c.getBoundingClientRect(), m = mesa.getBoundingClientRect(); if (r.bottom > m.bottom - 40) mesa.scrollTop += r.bottom - m.bottom + 80; }
+    }
+  };
+
+  // ---------------------------------------------------------- servidor
+  async function buscarEstado() {
+    estado = await (await fetch("/api/curriculo/estado")).json();
+    return estado;
+  }
+  function enviarArquivo(arquivo) {
+    if (!arquivo) return;
+    if (rodando) { toast("Espere o Ultron terminar."); return; }
+    if (!/\.(pdf|docx)$/i.test(arquivo.name)) { toast(/\.doc$/i.test(arquivo.name) ? "Arquivo .doc antigo: salve como .docx ou PDF." : "Use um PDF ou Word (.docx)."); return; }
+    const temAlgo = estado && (estado.modos.analisar.conversa.length || estado.modos.adaptar.conversa.length);
+    if (temAlgo && !confirm("Abrir outro arquivo começa as duas conversas do zero. Continuar?")) return;
+    toast("Abrindo " + arquivo.name + "…");
+    fetch("/api/curriculo/arquivo", { method: "POST", headers: { "X-Nome": encodeURIComponent(arquivo.name) }, body: arquivo })
+      .then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.erro || "Falhou."); estado = d; desenhar(true); })
+      .catch((e) => toast(e.message));
+  }
+  el("arquivo").addEventListener("change", (e) => { enviarArquivo(e.target.files[0]); e.target.value = ""; });
+  const escolherArquivo = () => el("arquivo").click();
+  el("btnTrocar").addEventListener("click", escolherArquivo);
+  // arrastar em qualquer lugar da tela
+  let arrastos = 0;
+  addEventListener("dragenter", (e) => { if (e.dataTransfer.types.includes("Files")) { arrastos++; el("soltarTudo").hidden = false; } });
+  addEventListener("dragleave", () => { if (--arrastos <= 0) { arrastos = 0; el("soltarTudo").hidden = true; } });
+  addEventListener("dragover", (e) => e.preventDefault());
+  addEventListener("drop", (e) => {
+    e.preventDefault(); arrastos = 0; el("soltarTudo").hidden = true;
+    if (e.dataTransfer.files[0]) { if (!modo) abrirModo("adaptar", true); enviarArquivo(e.dataTransfer.files[0]); }
+  });
+
+  // ---------------------------------------------------------- telas
+  document.querySelectorAll(".opcao").forEach((b) => b.addEventListener("click", () => abrirModo(b.dataset.modo)));
+  el("btnInicio").addEventListener("click", () => {
+    if (rodando) { toast("Espere o Ultron terminar."); return; }
+    modo = null; desenhar();
+  });
+  el("btnRecomecar").addEventListener("click", async () => {
+    if (rodando) return;
+    if (!confirm("Apagar a conversa e a folha deste modo e começar de novo?")) return;
+    estado = await (await fetch("/api/curriculo/recomecar", { method: "POST", body: JSON.stringify({ modo }) })).json();
+    desenhar(true);
+  });
+  function abrirModo(m, semDesenhar) { modo = m; if (!semDesenhar) desenhar(true); }
+
+  let maquina = null, ui = {};
+  function desenhar(podeComecar) {
+    const temOriginal = estado && estado.original && estado.original.tipo;
+    el("telaInicio").hidden = !!modo;
+    el("telaTrabalho").hidden = !modo;
+    ["btnInicio", "btnRecomecar", "btnWord", "btnPdf"].forEach((id) => el(id).hidden = !modo);
+    el("btnTrocar").hidden = !modo || !temOriginal;
+    el("modoNome").textContent = modo === "analisar" ? "· Analisar" : modo === "adaptar" ? "· Adaptar" : "";
+    el("inicioSub").textContent = temOriginal ? "Arquivo aberto: " + estado.original.nome + ". Você pode trocar depois."
+      : "Aceita PDF ou Word (.docx). No fim, exporte pra Word ou PDF.";
+    if (!modo) return;
+    const e = estado.modos[modo];
+    if (modo === "adaptar") montarAdaptar(temOriginal, e); else montarAnalisar(temOriginal, e);
+    atualizarBotoes();
+    // abriu o arquivo e ainda não conversou: o Ultron começa sozinho
+    // no analisar com Word a folha já vem pronta (igual ao arquivo): a análise começa mesmo assim
+    const comecar = modo === "analisar" ? !e.analise : !e.curriculo;
+    if (podeComecar && temOriginal && !e.conversa.length && comecar && !rodando) conversar("");
+  }
+  function atualizarBotoes() {
+    ["btnRecomecar", "btnWord", "btnPdf", "btnTrocar", "btnInicio"].forEach((id) => el(id).disabled = rodando);
+    if (ui.enviar) ui.enviar.disabled = rodando;
+    if (ui.reanalisar) ui.reanalisar.disabled = rodando;
+    const temTexto = !!(estado && estado.modos[modo] && estado.modos[modo].curriculo);
+    if (ui.folha && temTexto) ui.folha.contentEditable = rodando ? "false" : "true";
+    if (ui.barra) ui.barra.querySelectorAll("button,select,input").forEach((x) => x.disabled = rodando || !temTexto);
+  }
+
+  // "Trocar" escolhe outro arquivo na hora; "Fechar arquivo" tira o atual e volta pra área de arrastar.
+  function botoesArquivo(cab) {
+    const trocar = criar("button", "botao", "Trocar"); trocar.title = "Abrir outro currículo no lugar deste";
+    trocar.addEventListener("click", () => { if (rodando) toast("Espere o Ultron terminar."); else escolherArquivo(); });
+    const fechar = criar("button", "botao", "Fechar arquivo"); fechar.title = "Tirar este currículo e abrir outro depois";
+    fechar.addEventListener("click", async () => {
+      if (rodando) { toast("Espere o Ultron terminar."); return; }
+      if (!confirm("Fechar este currículo? A conversa e a folha dos dois modos são apagadas (o que você exportou continua salvo).")) return;
+      const r = await fetch("/api/curriculo/fechar-arquivo", { method: "POST", body: "{}" });
+      const d = await r.json();
+      if (!r.ok) { toast(d.erro || "Não consegui fechar."); return; }
+      estado = d; desenhar(); toast("Arquivo fechado. Arraste ou abra outro.");
+    });
+    cab.append(trocar, fechar);
+  }
+  function caixa(titulo) {
+    const c = criar("div", "caixa vidro");
+    const cab = criar("div", "cab"); cab.append(criar("span", "", titulo), criar("span", "espaco"));
+    c.appendChild(cab); c.cab = cab; return c;
+  }
+  function areaSoltar() {
+    const s = criar("div", "soltar");
+    s.innerHTML = '<div><div class="grande">⇪</div><b>Arraste o seu currículo aqui</b><span>ou clique pra abrir · PDF ou Word (.docx)</span></div>';
+    s.addEventListener("click", escolherArquivo);
+    s.addEventListener("dragenter", () => s.classList.add("em-cima"));
+    s.addEventListener("dragleave", () => s.classList.remove("em-cima"));
+    return s;
+  }
+  function visorOriginal() {
+    const o = criar("div", "original");
+    if (estado.original.tipo === "pdf") {
+      const f = criar("iframe"); f.src = "/api/curriculo/original?v=" + encodeURIComponent(estado.original.nome) + "#view=FitH"; f.title = "Currículo original";
+      o.appendChild(f);
+    } else {
+      const m = criar("div", "mesa"); const f = criar("div", "folha"); f.innerHTML = estado.original.html || "<p>(sem texto)</p>";
+      m.appendChild(f); o.appendChild(m);
+    }
+    return o;
+  }
+  function caixaConversa(titulo, dica) {
+    const c = caixa(titulo);
+    const lista = criar("div", "conversa");
+    const status = criar("div", "status");
+    const form = criar("div", "enviar");
+    const campo = criar("textarea"); campo.placeholder = dica; campo.rows = 1;
+    const enviar = criar("button", "botao forte", "Enviar");
+    campo.addEventListener("input", () => { campo.style.height = "42px"; campo.style.height = Math.min(120, campo.scrollHeight) + "px"; });
+    campo.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); enviar.click(); }
+    });
+    enviar.addEventListener("click", () => {
+      const t = campo.value.trim(); if (!t || rodando) return;
+      campo.value = ""; campo.style.height = "42px"; conversar(t);
+    });
+    form.append(campo, enviar);
+    c.append(lista, status, form);
+    ui.lista = lista; ui.status = status; ui.enviar = enviar; ui.campo = campo;
+    return c;
+  }
+  function desenharConversa(conversa, vazio) {
+    ui.lista.replaceChildren();
+    if (!conversa.length && vazio) ui.lista.appendChild(criar("div", "aviso-vazio", vazio));
+    conversa.forEach((m) => ui.lista.appendChild(criar("div", "msg " + (m.quem === "eu" ? "eu" : "claude"), m.texto)));
+    ui.lista.scrollTop = ui.lista.scrollHeight;
+  }
+
+  function montarAdaptar(temOriginal, e) {
+    ui = {};
+    const esq = el("colEsquerda"), dir = el("colDireita");
+    esq.replaceChildren(); dir.replaceChildren();
+    // esquerda: o original em cima, a conversa embaixo
+    const cOrig = caixa("Seu currículo");
+    cOrig.style.flex = "1.15";
+    if (temOriginal) {
+      cOrig.cab.firstChild.textContent = estado.original.nome;
+      const visor = visorOriginal();
+      cOrig.appendChild(visor);
+      // recolher o original: a conversa ganha o espaço todo (lembra da escolha)
+      const alternar = criar("button", "botao");
+      const aplicar = (recolhido) => {
+        visor.hidden = recolhido;
+        cOrig.style.flex = recolhido ? "none" : "1.15";
+        cOrig.style.paddingBottom = recolhido ? "2px" : "";
+        alternar.textContent = recolhido ? "Mostrar original" : "Ocultar ×";
+        alternar.title = recolhido ? "Mostrar o arquivo original" : "Recolher o arquivo original";
+        localStorage.setItem("curriculoOriginalRecolhido", recolhido ? "1" : "0");
+      };
+      alternar.addEventListener("click", () => aplicar(!visor.hidden));
+      botoesArquivo(cOrig.cab);
+      cOrig.cab.appendChild(alternar);
+      aplicar(localStorage.getItem("curriculoOriginalRecolhido") === "1");
+    }
+    else cOrig.appendChild(areaSoltar());
+    const cConv = caixaConversa("Conversa com o Ultron", "Responda as perguntas, peça mudanças, cole uma vaga…");
+    cConv.style.flex = "1";
+    esq.append(cOrig, cConv);
+    desenharConversa(e.conversa, temOriginal ? "" : "Abra o seu currículo e o Ultron começa a reescrever na folha ao lado.");
+    // direita: a folha em branco
+    const cFolha = caixa("Nova versão (clique pra editar)");
+    const salvo = criar("span", "salvo"); cFolha.cab.insertBefore(salvo, cFolha.cab.lastChild);
+    const mesa = criar("div", "mesa"); const folha = criar("div", "folha");
+    mesa.appendChild(folha); cFolha.appendChild(mesa); dir.appendChild(cFolha);
+    ui.folha = folha; folha.style.cssText = e.estilo_css || "";
+    maquina = new Maquina(folha);
+    if (e.curriculo) folha.innerHTML = e.html || mdParaHtml(e.curriculo);
+    else folha.innerHTML = '<div class="vazia">A folha começa em branco.<br>O Ultron escreve aqui.</div>';
+    ajustarZoom(mesa);
+    ligarEdicao(folha, salvo, "adaptar", !!e.curriculo);
+    cFolha.insertBefore(barraEdicao(folha, "adaptar"), mesa);
+  }
+
+  // Barra estilo Word. Texto: desfazer, tipo do parágrafo, negrito, itálico, lista, linha separadora (mexem no trecho
+  // onde está o cursor). Aparência: fonte, tamanho, cor, espaçamento, alinhamento, linhas e maiúsculas (valem pro
+  // currículo inteiro, na tela, no Word e no PDF; ficam salvas e o Ultron também consegue mudar).
+  const FONTES_BARRA = [["calibri", "Calibri", "Calibri, Carlito, sans-serif"], ["arial", "Arial", "Arial, sans-serif"],
+    ["segoe", "Segoe UI", "'Segoe UI', sans-serif"], ["verdana", "Verdana", "Verdana, sans-serif"],
+    ["times", "Times New Roman", "'Times New Roman', serif"], ["georgia", "Georgia", "Georgia, serif"],
+    ["garamond", "Garamond", "Garamond, serif"], ["cambria", "Cambria", "Cambria, serif"]];
+  const TIPOS_BARRA = [["p", "Texto"], ["h2", "Título de seção"], ["h3", "Cargo / subtítulo"], ["h1", "Nome"], ["contato", "Linha de contato"]];
+  function barraEdicao(folha, m) {
+    const barra = criar("div", "barra"); ui.barra = barra;
+    const sep = () => barra.appendChild(criar("span", "sep"));
+    const botao = (rotulo, titulo, acao, cls) => {
+      const b = criar("button", cls || "", rotulo); b.type = "button"; b.title = titulo;
+      b.addEventListener("mousedown", (ev) => ev.preventDefault());  // não tira o cursor da folha
+      b.addEventListener("click", () => { acao(); folha.dispatchEvent(new Event("input")); });
+      barra.appendChild(b); return b;
+    };
+    const lista = (opcoes, titulo, mudou) => {
+      const sel = criar("select"); sel.title = titulo;
+      opcoes.forEach(([v, t, fonte]) => { const o = criar("option", "", t); o.value = v; if (fonte) o.style.fontFamily = fonte; sel.appendChild(o); });
+      sel.addEventListener("change", () => mudou(sel.value));
+      barra.appendChild(sel); return sel;
+    };
+    const cmd = (c, v) => { folha.focus(); document.execCommand(c, false, v); };
+    // --- texto
+    botao("↶", "Desfazer (Ctrl+Z)", () => cmd("undo"));
+    botao("↷", "Refazer (Ctrl+Y)", () => cmd("redo"));
+    sep();
+    let ultimoBloco = null;
+    const tipo = lista(TIPOS_BARRA, "Tipo do parágrafo onde está o cursor", (v) => {
+      if (ultimoBloco && folha.contains(ultimoBloco)) {  // volta o cursor pro parágrafo escolhido
+        const r = document.createRange(); r.selectNodeContents(ultimoBloco); r.collapse(false);
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      }
+      cmd("formatBlock", v === "contato" ? "p" : v);
+      const b = blocoAtual(); if (b) b.classList.toggle("contato", v === "contato");
+      folha.dispatchEvent(new Event("input"));
+    });
+    const bNeg = botao("B", "Negrito (Ctrl+B)", () => cmd("bold"), "b");
+    const bIta = botao("I", "Itálico (Ctrl+I)", () => cmd("italic"), "i");
+    const bLista = botao("• Lista", "Lista com marcadores", () => cmd("insertUnorderedList"));
+    botao("― Linha", "Linha separadora (igual à das seções) depois deste parágrafo", () => {
+      const b = blocoAtual(); const hr = document.createElement("hr");
+      const alvo = b && b.tagName === "LI" ? b.closest("ul,ol") : b;
+      if (alvo && alvo.parentNode === folha) alvo.after(hr); else folha.appendChild(hr);
+    });
+    sep();
+    botao("↑", "Subir o parágrafo (Alt+↑)", () => mover(-1));
+    botao("↓", "Descer o parágrafo (Alt+↓)", () => mover(1));
+    botao("⇤", "Diminuir recuo (Shift+Tab)", () => recuar(-1));
+    botao("⇥", "Aumentar recuo, pra direita (Tab)", () => recuar(1));
+    sep();
+    // --- aparência (o currículo inteiro)
+    const est = () => estado.modos[m].estilo || {};
+    const mudarEstilo = async (parte) => {
+      estado.modos[m].estilo = Object.assign({}, est(), parte);
+      try {
+        const r = await fetch("/api/curriculo/estilo", { method: "POST", body: JSON.stringify({ modo: m, estilo: parte }) });
+        const d = await r.json(); if (!r.ok) throw new Error(d.erro);
+        estado.modos[m].estilo = d.estilo; estado.modos[m].estilo_css = d.estilo_css;
+        folha.style.cssText = d.estilo_css; barra.mostrar(d.estilo);
+      } catch (e) { toast("Não consegui mudar a aparência agora."); }
+    };
+    const fonte = lista(FONTES_BARRA, "Fonte do currículo", (v) => mudarEstilo({ fonte: v }));
+    const tamanhos = []; for (let t = 8; t <= 20; t += t < 14 ? .5 : 1) tamanhos.push([String(t), String(t).replace(".", ",")]);
+    const tam = lista(tamanhos, "Tamanho do texto (o nome e os títulos crescem junto)", (v) => mudarEstilo({ tamanho: +v }));
+    const corRot = criar("label", "cor", "Títulos"); const cor = criar("input"); cor.type = "color"; cor.title = "Cor dos títulos e das linhas";
+    cor.addEventListener("change", () => mudarEstilo({ cor: cor.value })); corRot.appendChild(cor); barra.appendChild(corRot);
+    const esp = lista([["compacto", "Compacto"], ["normal", "Espaço normal"], ["amplo", "Amplo"]], "Espaçamento", (v) => mudarEstilo({ espacamento: v }));
+    sep();
+    const nomeEsq = botao("⇤ Nome", "Nome e contato à esquerda", () => mudarEstilo({ nome_alinhado: "esquerda" }));
+    const nomeCen = botao("↔ Nome", "Nome e contato no centro", () => mudarEstilo({ nome_alinhado: "centro" }));
+    const txtEsq = botao("≡ Esq.", "Texto alinhado à esquerda", () => mudarEstilo({ texto_alinhado: "esquerda" }));
+    const txtJus = botao("☰ Just.", "Texto justificado", () => mudarEstilo({ texto_alinhado: "justificado" }));
+    sep();
+    const linhas = botao("Linhas", "Linha embaixo do título de cada seção", () => mudarEstilo({ linhas: !est().linhas }));
+    const caixa = botao("AA", "Títulos das seções em MAIÚSCULAS", () => mudarEstilo({ maiusculas: !est().maiusculas }));
+    barra.mostrar = (e) => {
+      e = e || {};
+      fonte.value = e.fonte || "calibri"; tam.value = String(e.tamanho || 10.5); cor.value = e.cor || "#1f2a44";
+      esp.value = e.espacamento || "normal";
+      nomeEsq.classList.toggle("ativo", e.nome_alinhado === "esquerda"); nomeCen.classList.toggle("ativo", e.nome_alinhado !== "esquerda");
+      txtJus.classList.toggle("ativo", e.texto_alinhado === "justificado"); txtEsq.classList.toggle("ativo", e.texto_alinhado !== "justificado");
+      linhas.classList.toggle("ativo", e.linhas !== false); caixa.classList.toggle("ativo", e.maiusculas !== false);
+    };
+    barra.mostrar(est());
+    // mostra o tipo do parágrafo, negrito e itálico de onde está o cursor
+    function blocoAtual() {
+      const sel = getSelection(); if (!sel.rangeCount) return null;
+      let n = sel.anchorNode; if (!n || !folha.contains(n)) return null;
+      while (n && n.parentNode !== folha && !(n.tagName === "LI")) n = n.parentNode;
+      return n && n.nodeType === 1 ? n : null;
+    }
+    const aoSelecionar = () => {
+      if (!document.body.contains(barra)) { document.removeEventListener("selectionchange", aoSelecionar); return; }
+      const b = blocoAtual(); if (!b) return;
+      ultimoBloco = b;
+      const t = b.tagName.toLowerCase();
+      tipo.value = t === "p" && b.classList.contains("contato") ? "contato" : ["h1", "h2", "h3"].includes(t) ? t : "p";
+      bNeg.classList.toggle("ativo", document.queryCommandState("bold"));
+      bIta.classList.toggle("ativo", document.queryCommandState("italic"));
+      bLista.classList.toggle("ativo", t === "li");
+    };
+    document.addEventListener("selectionchange", aoSelecionar);
+    // sobe/desce o parágrafo (ou item da lista) onde está o cursor, trocando de lugar com o vizinho
+    function mover(direcao) {
+      const b = blocoAtual() || ultimoBloco; if (!b || !folha.contains(b)) return;
+      const viz = direcao < 0 ? b.previousElementSibling : b.nextElementSibling;
+      if (viz) { direcao < 0 ? viz.before(b) : viz.after(b); }
+      else if (b.tagName === "LI") {  // primeiro/último item: sai da lista e vira parágrafo do lado
+        const ul = b.closest("ul,ol"), p = document.createElement("p"); p.innerHTML = b.innerHTML;
+        b.remove(); direcao < 0 ? ul.before(p) : ul.after(p); if (!ul.children.length) ul.remove();
+        colocarCursor(p); return;
+      }
+      colocarCursor(b);
+      b.scrollIntoView({ block: "nearest" });
+    }
+    function recuar(delta) {
+      const b = blocoAtual() || ultimoBloco; if (!b || !folha.contains(b)) return;
+      if (!["P", "LI", "H3"].includes(b.tagName) || b.classList.contains("contato") || b.classList.contains("espaco")) return;
+      const n = Math.max(0, Math.min(3, nivelRecuo(b) + delta));
+      b.classList.remove("r1", "r2", "r3"); if (n) b.classList.add("r" + n);
+    }
+    function colocarCursor(no) {
+      const r = document.createRange(); r.selectNodeContents(no); r.collapse(false);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); folha.focus();
+    }
+    // atalhos: Tab / Shift+Tab recuam, Alt+↑ / Alt+↓ movem
+    folha.addEventListener("keydown", (ev) => {
+      if (ev.key === "Tab") { ev.preventDefault(); recuar(ev.shiftKey ? -1 : 1); folha.dispatchEvent(new Event("input")); }
+      else if (ev.altKey && (ev.key === "ArrowUp" || ev.key === "ArrowDown")) {
+        ev.preventDefault(); mover(ev.key === "ArrowUp" ? -1 : 1); folha.dispatchEvent(new Event("input"));
+      }
+    });
+    setTimeout(atualizarBotoes, 0);
+    return barra;
+  }
+
+  // Você edita a folha direto (clica e escreve). Salva sozinho e o Ultron recebe a versão editada na próxima mensagem.
+  let salvarTimer = null;
+  function ligarEdicao(folha, salvo, m, pode) {
+    folha.contentEditable = pode && !rodando ? "true" : "false";
+    folha.spellcheck = true;
+    folha.addEventListener("input", () => {
+      salvo.textContent = "editando…";
+      clearTimeout(salvarTimer);
+      salvarTimer = setTimeout(() => {
+        const md = htmlParaMd(folha); estado.modos[m].curriculo = md;
+        fetch("/api/curriculo/editar", { method: "POST", body: JSON.stringify({ modo: m, curriculo: md, html: folhaLimpa(folha) }) })
+          .then((r) => salvo.textContent = r.ok ? "salvo" : "não salvou").catch(() => salvo.textContent = "não salvou");
+      }, 700);
+    });
+    folha.addEventListener("paste", (ev) => {  // cola só o texto, sem a formatação de fora
+      ev.preventDefault(); document.execCommand("insertText", false, ev.clipboardData.getData("text/plain"));
+    });
+  }
+  function montarAnalisar(temOriginal, e) {
+    ui = {};
+    const esq = el("colEsquerda"), dir = el("colDireita");
+    esq.replaceChildren(); dir.replaceChildren();
+    // esquerda: a folha que VOCÊ edita
+    const cFolha = caixa("Seu currículo (clique pra editar)");
+    const salvo = criar("span", "salvo"); cFolha.cab.insertBefore(salvo, cFolha.cab.lastChild);
+    if (temOriginal) {
+      const ver = criar("button", "botao", "Ver original"); ver.addEventListener("click", abrirOriginal);
+      botoesArquivo(cFolha.cab); cFolha.cab.appendChild(ver);
+      const mesa = criar("div", "mesa"); const folha = criar("div", "folha");
+      mesa.appendChild(folha); cFolha.appendChild(mesa);
+      ui.folha = folha; folha.style.cssText = e.estilo_css || "";
+      maquina = new Maquina(folha);
+      folha.innerHTML = e.curriculo ? (e.html || mdParaHtml(e.curriculo)) : '<div class="vazia">Lendo o seu currículo…</div>';
+      ajustarZoom(mesa);
+      ligarEdicao(folha, salvo, "analisar", !!e.curriculo);
+      cFolha.insertBefore(barraEdicao(folha, "analisar"), mesa);
+    } else cFolha.appendChild(areaSoltar());
+    esq.appendChild(cFolha);
+    // direita: análise + conversa
+    const cAn = caixa("Análise e conselhos");
+    cAn.style.flex = "1.5";
+    const re = criar("button", "botao", "Reanalisar"); re.title = "Manda a folha como está agora e pede uma nova análise";
+    re.addEventListener("click", () => conversar("Reanalise o currículo com as minhas edições e atualize a nota e os conselhos."));
+    cAn.cab.appendChild(re); ui.reanalisar = re; re.hidden = !temOriginal;
+    const an = criar("div", "analise"); cAn.appendChild(an); ui.analise = an;
+    const cConv = caixaConversa("Pergunte ao Ultron", "Ex.: como escrevo melhor minha experiência na empresa X?");
+    cConv.style.flex = "1";
+    dir.append(cAn, cConv);
+    desenharAnalise(e.analise, temOriginal);
+    desenharConversa(e.conversa, "");
+  }
+  function corNota(n) { return n >= 8 ? "#2e9d5b" : n >= 6 ? "#d39a12" : "#d7141e"; }
+  const feitos = new Set(JSON.parse(localStorage.getItem("curriculoFeitos") || "[]"));
+  function desenharAnalise(a, temOriginal) {
+    const an = ui.analise; an.replaceChildren();
+    if (!a) { an.appendChild(criar("div", "aviso-vazio", temOriginal ? (rodando ? "O Ultron está lendo e analisando…" : "Sem análise ainda.") : "Abra ou arraste o seu currículo do lado esquerdo.")); return; }
+    const nota = criar("div", "nota");
+    const num = criar("div", "num", String(a.nota ?? "–")); num.style.background = corNota(+a.nota || 0);
+    nota.append(num, criar("div", "resumo", a.resumo || ""));
+    an.appendChild(nota);
+    if ((a.pontos_fortes || []).length) {
+      an.appendChild(criar("div", "bloco-titulo", "Pontos fortes"));
+      const ul = criar("ul", "fortes"); a.pontos_fortes.forEach((p) => ul.appendChild(criar("li", "", p))); an.appendChild(ul);
+    }
+    an.appendChild(criar("div", "bloco-titulo", "Conselhos"));
+    (a.conselhos || []).forEach((c) => {
+      const chave = (c.titulo || "") + "|" + (c.secao || "");
+      const d = criar("div", "conselho" + (feitos.has(chave) ? " feito" : ""));
+      const l1 = criar("div", "linha1");
+      const pri = (c.prioridade || "media").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+      l1.append(criar("span", "pri " + pri, pri === "media" ? "média" : pri), criar("span", "tit", c.titulo || ""), criar("span", "secao", c.secao || ""));
+      d.append(l1, criar("div", "det", c.detalhe || ""));
+      if (c.exemplo) d.appendChild(criar("div", "ex", c.exemplo));
+      const acoes = criar("div", "acoes");
+      if (c.exemplo) {
+        const cp = criar("button", "botao", "Copiar exemplo");
+        cp.addEventListener("click", () => navigator.clipboard.writeText(c.exemplo).then(() => toast("Copiado. Cole na folha onde quiser.")));
+        acoes.appendChild(cp);
+      }
+      const feito = criar("button", "botao", feitos.has(chave) ? "Desfazer" : "Feito ✓");
+      feito.addEventListener("click", () => {
+        feitos.has(chave) ? feitos.delete(chave) : feitos.add(chave);
+        localStorage.setItem("curriculoFeitos", JSON.stringify([...feitos]));
+        desenharAnalise(a, temOriginal);
+      });
+      const duvida = criar("button", "botao", "Me ajuda nisso");
+      duvida.addEventListener("click", () => { if (!rodando) conversar(`Me ajuda com o conselho "${c.titulo}": como eu escrevo isso no meu currículo? Me dê o texto pronto.`); });
+      acoes.append(duvida, feito);
+      d.appendChild(acoes);
+      an.appendChild(d);
+    });
+  }
+  function abrirOriginal() {
+    const corpo = el("modalOriginalCorpo"); corpo.replaceChildren(visorOriginal().firstChild);
+    el("modalOriginal").hidden = false;
+  }
+  el("fecharOriginal").addEventListener("click", () => el("modalOriginal").hidden = true);
+
+  // ---------------------------------------------------------- conversar (resposta sai aos poucos)
+  async function conversar(mensagem) {
+    if (rodando || !modo) return;
+    const m = modo, e = estado.modos[m];
+    rodando = true; atualizarBotoes();
+    if (mensagem) { ui.lista.querySelector(".aviso-vazio")?.remove(); ui.lista.appendChild(criar("div", "msg eu", mensagem)); }
+    const bolha = criar("div", "msg claude"); bolha.hidden = true; ui.lista.appendChild(bolha);
+    ui.lista.scrollTop = ui.lista.scrollHeight;
+    ui.status.textContent = "O Ultron está pensando…"; ui.status.className = "status trabalhando";
+    const corpo = { modo: m, mensagem };
+    // manda a folha como está na tela (com as edições à mão, mesmo as que ainda não salvaram)
+    if (e.curriculo && ui.folha) { clearTimeout(salvarTimer); corpo.curriculo = htmlParaMd(ui.folha); corpo.html = folhaLimpa(ui.folha); e.curriculo = corpo.curriculo; }
+    let escrevendoFolha = false, analiseMontando = false;
+    const antigo = m === "adaptar" ? e.curriculo : "";
+    try {
+      const r = await fetch("/api/curriculo/conversar", { method: "POST", body: JSON.stringify(corpo) });
+      if (!r.ok && r.headers.get("Content-Type")?.includes("json") && !r.body) throw new Error("Falhou.");
+      const leitor = r.body.getReader(), dec = new TextDecoder();
+      let buf = "", fim = null;
+      while (true) {
+        const { value, done } = await leitor.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf("\n")) >= 0) {
+          const linha = buf.slice(0, i); buf = buf.slice(i + 1);
+          if (!linha.trim()) continue;
+          const ev = JSON.parse(linha);
+          if (modo !== m) continue;  // voltou pro início no meio: só guarda no fim
+          if (ev.t === "erro") throw new Error(ev.erro);
+          if (ev.t === "lendo") ui.status.textContent = "O Ultron está lendo o seu arquivo e pensando…";
+          if (ev.t === "parcial") {
+            if (ev.estilo_css !== undefined && ui.folha) ui.folha.style.cssText = ev.estilo_css;  // fonte/cor/espaço mudam na hora
+            if (ev.mensagem) { bolha.hidden = false; bolha.textContent = ev.mensagem; ui.lista.scrollTop = ui.lista.scrollHeight; }
+            if (ev.folha !== undefined && ui.folha && m === "analisar" && !e.curriculo) {  // cópia fiel do PDF chegando
+              ui.folha.contentEditable = "false"; ui.folha.innerHTML = ev.folha || "";
+              ui.status.textContent = "O Ultron está montando a folha igual ao seu arquivo…";
+              const mesa = ui.folha.closest(".mesa"); if (mesa) mesa.scrollTop = mesa.scrollHeight;
+            }
+            if (ev.curriculo !== undefined && ui.folha && (m === "adaptar" || !e.curriculo)) {
+              if (!escrevendoFolha) { escrevendoFolha = true; maquina.comecar(antigo); ui.folha.contentEditable = "false"; }
+              maquina.atualizar(ev.curriculo);
+              ui.status.textContent = "O Ultron está escrevendo na folha…";
+            }
+            if (ev.analise !== undefined && !analiseMontando) { analiseMontando = true; ui.status.textContent = "Montando os conselhos…"; }
+          }
+          if (ev.t === "fim") fim = ev.estado;
+        }
+      }
+      if (!fim) throw new Error("A resposta parou no meio. Tente de novo.");
+      estado = fim;
+      if (modo === m) {
+        const e2 = estado.modos[m];
+        const terminar = () => {
+          rodando = false;
+          if (modo !== m) return;
+          if (ui.folha) ui.folha.style.cssText = e2.estilo_css || "";
+          if (ui.barra) ui.barra.mostrar(e2.estilo);
+          if (m === "analisar") { ui.folha && (ui.folha.innerHTML = e2.html || mdParaHtml(e2.curriculo || "")); desenharAnalise(e2.analise, true); }
+          else if (ui.folha && e2.curriculo) ui.folha.innerHTML = e2.html || mdParaHtml(e2.curriculo);
+          desenharConversa(e2.conversa, "");
+          ui.status.textContent = ""; ui.status.className = "status"; atualizarBotoes();
+          if (ui.campo && m === "adaptar") ui.campo.focus();
+        };
+        if (escrevendoFolha) { maquina.aoTerminar = () => { maquina.aoTerminar = null; terminar(); }; maquina.finalizar(e2.curriculo); }
+        else terminar();
+      } else rodando = false;
+    } catch (erro) {
+      rodando = false;
+      if (modo === m) {
+        bolha.remove(); ui.lista.appendChild(criar("div", "msg erro", erro.message || "Deu erro."));
+        ui.status.textContent = ""; ui.status.className = "status";
+        await buscarEstado().catch(() => {});
+        if (maquina && escrevendoFolha) maquina.finalizar();
+        atualizarBotoes();
+      }
+    }
+  }
+
+  // ---------------------------------------------------------- exportar
+  // A folha como está na tela, sem o cursor nem avisos: é isso que vira PDF e Word.
+  function folhaLimpa(folha) {
+    const c = folha.cloneNode(true);
+    c.querySelectorAll(".cursor, .vazia").forEach((x) => x.remove());
+    return c.innerHTML;
+  }
+  // Zoom da folha: ela tem sempre a largura de um A4; se a coluna for mais estreita, encolhe por inteiro (sem mudar as quebras).
+  function ajustarZoom(mesa) {
+    const calc = () => {
+      const folha = mesa.querySelector(".folha"); if (!folha) return;
+      const larg = 210 * 96 / 25.4;  // 210 mm em px
+      const z = Math.min(1, (mesa.clientWidth - 36) / larg);
+      mesa.style.setProperty("--zoom", z > 0.2 ? z.toFixed(3) : "1");
+    };
+    calc();
+    if (!mesa._obs) { mesa._obs = new ResizeObserver(calc); mesa._obs.observe(mesa); }
+  }
+  function textoAtual() {
+    // a folha como está na tela (com as suas edições), nos dois modos
+    if (ui.folha && estado.modos[modo].curriculo) return htmlParaMd(ui.folha);
+    return estado.modos[modo].curriculo || "";
+  }
+  async function exportar(formato) {
+    const md = textoAtual();
+    if (!md.trim()) { toast("A folha está vazia."); return; }
+    const faltam = (md.match(/\[[^\]\n]{2,}\]/g) || []).length;
+    if (faltam && !confirm(`Ainda tem ${faltam} lacuna(s) entre colchetes pra preencher, ex.: ${md.match(/\[[^\]\n]{2,}\]/)[0]}\n\nExportar mesmo assim?`)) return;
+    const b = formato === "pdf" ? el("btnPdf") : el("btnWord");
+    const antes = b.textContent; b.textContent = "Gerando…"; b.disabled = true;
+    try {
+      const r = await fetch("/api/curriculo/exportar", { method: "POST", body: JSON.stringify({ formato, curriculo: md, estilo: estado.modos[modo].estilo,
+        html: ui.folha && estado.modos[modo].curriculo ? folhaLimpa(ui.folha) : "" }) });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.erro || "Não consegui exportar."); }
+      const nome = decodeURIComponent(r.headers.get("X-Nome") || "curriculo." + formato);
+      const url = URL.createObjectURL(await r.blob());
+      const a = criar("a"); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast("Pronto: " + nome + " (uma cópia ficou na pasta curriculo do segundo cérebro).");
+    } catch (erro) { toast(erro.message); }
+    finally { b.textContent = antes; b.disabled = rodando; }
+  }
+  el("btnWord").addEventListener("click", () => exportar("docx"));
+  el("btnPdf").addEventListener("click", () => exportar("pdf"));
+
+  // ---------------------------------------------------------- começo
+  addEventListener("message", (e) => {
+    if (!e.data) return;
+    if (e.data.tipo === "abrirModo" && !rodando) abrirModo(e.data.modo);
+  });
+  buscarEstado().then(() => {
+    const pedido = new URLSearchParams(location.search).get("modo");
+    if (pedido === "analisar" || pedido === "adaptar") abrirModo(pedido); else desenhar();
+  }).catch(() => toast("Não consegui falar com o servidor do Ultron."));
+})();
+</script>
+</body>
+</html>

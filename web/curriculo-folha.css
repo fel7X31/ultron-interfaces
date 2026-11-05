@@ -1,0 +1,28 @@
+/* A folha do currículo: usada na tela (curriculo.html) e no PDF (curriculo.py). */
+@page { size: A4; margin: 17mm 18mm; }
+/* Aparência controlada pelo Ultron (variáveis --cv-*, ver css_estilo em curriculo.py); os valores daqui são o padrão. */
+.folha { box-sizing: border-box; background: #fff; color: #1b1d21; font-family: var(--cv-fonte, Calibri, Carlito, "Segoe UI", Arial, sans-serif);
+  font-size: var(--cv-tam, 10.5pt); line-height: var(--cv-linha, 1.38); word-break: break-word; }
+.folha h1 { font-size: 2em; font-weight: 700; text-align: var(--cv-alinh, center); margin: 0 0 2px; letter-spacing: .01em; color: #111; line-height: 1.2; }
+.folha .contato { text-align: var(--cv-alinh, center); color: #555; font-size: .9em; margin: 0 0 calc(12px * var(--cv-esp, 1)); }
+.folha h2 { font-size: 1.1em; font-weight: 700; text-transform: var(--cv-caixa, uppercase); letter-spacing: .06em; color: var(--cv-cor, #1f2a44);
+  border-bottom: var(--cv-borda, 1.2px) solid var(--cv-cor, #1f2a44); padding-bottom: 2px; margin: calc(14px * var(--cv-esp, 1)) 0 calc(6px * var(--cv-esp, 1)); }
+.folha h3 { font-size: 1em; font-weight: 700; margin: calc(8px * var(--cv-esp, 1)) 0 2px; color: #111; }
+.folha p { margin: 0 0 calc(5px * var(--cv-esp, 1)); text-align: var(--cv-texto-alinh, left); }
+.folha p.contato { text-align: var(--cv-alinh, center); }
+.folha ul { margin: 0 0 calc(6px * var(--cv-esp, 1)); padding-left: 17px; }
+.folha li { margin: 0 0 calc(2px * var(--cv-esp, 1)); text-align: var(--cv-texto-alinh, left); }
+/* linhas criadas com Enter viram <div>: seguem o alinhamento do texto, sem espaço extra (igual no Word e no PDF) */
+.folha div { text-align: var(--cv-texto-alinh, left); }
+/* o navegador às vezes "gruda" fonte/tamanho/cor antigos no texto editado: aqui manda sempre o estilo da folha */
+.folha span:not(.marcador):not(.cursor), .folha font { font-size: inherit !important; font-family: inherit !important;
+  color: inherit !important; background: none !important; line-height: inherit !important; }
+.folha p[style], .folha div[style], .folha li[style], .folha b[style], .folha i[style] { font-size: inherit !important;
+  font-family: inherit !important; line-height: inherit !important; }
+.folha .r1 { margin-left: 2em; } .folha .r2 { margin-left: 4em; } .folha .r3 { margin-left: 6em; }
+.folha p.espaco { margin: 0; }
+.folha hr { border: 0; border-top: 1.2px solid var(--cv-cor, #1f2a44); margin: calc(8px * var(--cv-esp, 1)) 0; height: 0; }
+.folha .marcador { background: #fff3c4; color: #7a5600; border-radius: 3px; padding: 0 2px; }
+body.impressao { margin: 0; }
+body.impressao .folha { padding: 0; }
+body.impressao .folha .marcador { background: none; color: inherit; }
