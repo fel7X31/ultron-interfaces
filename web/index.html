@@ -709,7 +709,7 @@
   const corpo = document.body;
   let estado = "iniciando";
   let nomeDono = "Miguel";  // vem do perfil (/api/config)
-  let atalhoAtivo = false, nivelAtalho = 0;  // Ctrl+Alt+V: quem grava é o palmas.py
+  let atalhoAtivo = false, nivelAtalho = 0;
 
   // Depois que o Ultron termina de falar, a legenda (sua frase + a resposta) some sozinha; ela continua na conversa (C).
   let legendaTimer = null;
@@ -1744,7 +1744,7 @@
         if (chatAberto()) desenharChat();
       } else if (e.tipo === "paineis") {
         carregarPaineis();
-      } else if (e.tipo === "atalho") {  // Ctrl+Alt+V em qualquer janela (palmas.py)
+      } else if (e.tipo === "atalho") {
         if (e.estado === "ouvindo") {
           pararFala();
           atalhoAtivo = true;

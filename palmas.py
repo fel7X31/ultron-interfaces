@@ -26,58 +26,37 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent
 ESTADO = RAIZ / ".estado"
 ESTADO.mkdir(exist_ok=True)
-if sys.stdout is None:  # rodando com pythonw (sem janela, ao ligar o PC): escreve num log
+if sys.stdout is None:
     sys.stdout = sys.stderr = open(ESTADO / "palmas.log", "a", encoding="utf-8", buffering=1)
 
 import numpy as np
 import sounddevice as sd
 
-# ------------------------------------------------------------ sensibilidade
-# Volume mínimo de uma palma, de 0 a 1 (1 = o máximo que o microfone capta).
-# Disparou com barulho normal? Aumente. Não reconhece a sua palma? Diminua.
 LIMIAR = 0.08
-# Pelo menos uma das duas palmas precisa chegar neste volume. Barulho de mesa,
-# tosse e cadeira ficam abaixo. Disparou com barulho? Aumente. Precisa bater
-# palma forte demais? Diminua.
 PALMA_FORTE = 0.22
-# Quantas vezes a palma precisa ser mais alta que o barulho de fundo da sala.
 RAZAO_FUNDO = 6.0
-# Uma palma é curta: o som precisa cair em até este tempo (segundos).
-# Fala, música e porta batendo costumam durar mais e são ignoradas.
 DURACAO_MAX = 0.15
-# Intervalo aceito entre a primeira e a segunda palma (segundos).
 INTERVALO_MIN = 0.1
 INTERVALO_MAX = 1.2
-# Modo exclusivo do Windows: lê o microfone cru, sem o filtro de ruído que apaga
-# as palmas (o microfone Intel Smart Sound do notebook apaga). Se der erro,
-# o script cai sozinho pro modo normal.
 MODO_EXCLUSIVO = True
-# ------------------------------------------------------------ tela e desligar
-# Abre a esfera em tela cheia, numa janela própria (F11 sai da tela cheia).
 TELA_CHEIA = True
-# Frases que desligam. Vale o que você falou ou a resposta "Desligando, Senhor."
-# Ex.: "Ultron, desligar", "Ultron desliga", "desliga o Ultron", "pode desligar", "desligar".
-NOME = r"(ultr\w*|altr\w*|outro|oculto|jarvis)"  # a transcrição às vezes escreve o nome errado
+NOME = r"(ultr\w*|altr\w*|outro|oculto|jarvis)"
 DESLIGAR_VOCE = re.compile(
     rf"^\W*(pode\s+)?deslig\w*\W*$|\b{NOME}\W+(pode\s+)?(se\s+)?deslig\w*"
     rf"|\bdeslig\w*\s+(o\s+|a\s+)?({NOME}|sistema|tudo)\b|\bse\s+deslig\w*\b",
     re.I)
 DESLIGAR_RESPOSTA = re.compile(r"^\W*desligando\b", re.I)
-# Fechou a janela da esfera? Desliga depois deste tempo sem nenhuma tela aberta (segundos).
 SEM_TELA_DESLIGA = 3
-# ------------------------------------------------------------ atalho global
-# Segure Ctrl+Alt+V em qualquer janela, fale e solte: o Ultron escuta (precisa estar ligado).
 ATALHO_GLOBAL = True
-ATALHO_TECLA = 0x56     # V (códigos de tecla do Windows)
-ATALHO_BIPE = True      # bipe curto ao começar e ao terminar de gravar
-ATALHO_MAX_S = 30       # grava no máximo isso
-ATALHO_CAUDA_S = 0.25   # continua gravando um pouco depois de soltar, pra não cortar a última palavra
-# ----------------------------------------------------------------------------
+ATALHO_TECLA = 0x56
+ATALHO_BIPE = True
+ATALHO_MAX_S = 30
+ATALHO_CAUDA_S = 0.25
 
-BLOCO_S = 0.01  # cerca de 10 ms por bloco
-PID = ESTADO / "servidor.pid"     # o servidor que este script ligou
-PID_TELA = ESTADO / "tela.pid"    # a janela da esfera que este script abriu
-LOG = ESTADO / "log.jsonl"        # o log de pedidos que o server.py escreve
+BLOCO_S = 0.01
+PID = ESTADO / "servidor.pid"
+PID_TELA = ESTADO / "tela.pid"
+LOG = ESTADO / "log.jsonl"
 
 
 def matar(arquivo_pid):
@@ -86,7 +65,7 @@ def matar(arquivo_pid):
     except (FileNotFoundError, ValueError):
         return False
     arquivo_pid.unlink(missing_ok=True)
-    if os.name == "nt":  # /T fecha junto os processos filhos (a sessão do Claude)
+    if os.name == "nt":
         r = subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True,
                            creationflags=subprocess.CREATE_NO_WINDOW)
         return r.returncode == 0
@@ -167,8 +146,6 @@ def abrir_tela():
     if not exe:
         webbrowser.open(URL)
         return
-    # Perfil próprio: a janela é um processo só dela (dá pra fechar sem mexer no seu navegador)
-    # e lembra a permissão do microfone. Na primeira vez, clique em "Permitir".
     perfil = ESTADO / "navegador"
     proc = subprocess.Popen([exe, f"--app={URL}", "--start-fullscreen", f"--user-data-dir={perfil}",
                              "--no-first-run", "--no-default-browser-check"])
@@ -180,11 +157,8 @@ def ligar_ultron():
         print("O Ultron já está no ar. Só vou abrir a tela.")
     else:
         print("Ligando o Ultron...")
-        # Sem janela: o que o servidor escreveria vai pro log.
         log = open(ESTADO / "servidor.log", "a", encoding="utf-8")
         extra = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
-        # python.exe (não pythonw): com a janela escondida, o Claude que ele abre herda o
-        # console escondido. Com pythonw, o Windows abria um terminal novo pro Claude.
         py = Path(sys.executable)
         if py.name.lower() == "pythonw.exe" and (py.parent / "python.exe").exists():
             py = py.parent / "python.exe"
@@ -203,7 +177,7 @@ def ligar_ultron():
 def acompanhar():
     """Espera o Ultron ser desligado: por voz, fechando a janela ou de fora."""
     pos = LOG.stat().st_size if LOG.exists() else 0
-    desligar_em = None  # hora marcada pra desligar (depois de ele falar "Desligando")
+    desligar_em = None
     sem_tela_desde = None
     viu_tela = False
     while True:
@@ -211,7 +185,6 @@ def acompanhar():
         s = saude()
         if s is None:
             return
-        # 1) Pedido de desligar no log
         if LOG.exists() and LOG.stat().st_size > pos:
             with open(LOG, encoding="utf-8", errors="replace") as f:
                 f.seek(pos)
@@ -226,13 +199,12 @@ def acompanhar():
                         DESLIGAR_VOCE.search(ev.get("voce") or "")
                         or DESLIGAR_RESPOSTA.search(ev.get("resposta") or "")):
                     print("Pedido de desligar.")
-                    desligar_em = time.time() + 8  # tempo máximo pra ele terminar de falar
+                    desligar_em = time.time() + 8
                 elif desligar_em and ev.get("evento") == "tela" and ev.get("tipo") == "voz_tocou":
                     desligar_em = time.time() + 0.5
         if desligar_em and time.time() >= desligar_em:
             desligar_ultron()
             return
-        # 2) Janela fechada
         telas = s.get("telas", 0)
         if telas:
             viu_tela, sem_tela_desde = True, None
@@ -249,16 +221,16 @@ def ouvir(calibrar=False):
     blocos = queue.Queue()
 
     def receber(dados, _frames, _tempo, _status):
-        blocos.put(np.max(np.abs(dados), axis=1))  # o canal mais alto de cada amostra
+        blocos.put(np.max(np.abs(dados), axis=1))
 
-    fundo = 0.01       # barulho de fundo (média lenta)
-    inicio = None      # quando começou o som alto atual
+    fundo = 0.01
+    inicio = None
     pico_som = 0.0
-    descartar = False  # som alto demais de comprido: espera passar
-    ultima = None      # hora da última palma
-    pico_ultima = 0.0  # volume da última palma
+    descartar = False
+    ultima = None
+    pico_ultima = 0.0
     t = 0.0
-    janela_inicio, janela_pico = 0.0, 0.0  # só pro medidor da calibração
+    janela_inicio, janela_pico = 0.0, 0.0
 
     stream, taxa, modo = abrir_microfone(receber)
     with stream:
@@ -269,7 +241,7 @@ def ouvir(calibrar=False):
             t += len(bloco) / taxa
             pico = float(np.max(bloco))
             rms = float(np.sqrt(np.mean(bloco ** 2)))
-            if calibrar:  # medidor: maior volume de cada quarto de segundo, se passar de 0,03
+            if calibrar:
                 janela_pico = max(janela_pico, pico)
                 if t - janela_inicio >= 0.25:
                     if janela_pico >= 0.03:
@@ -286,7 +258,7 @@ def ouvir(calibrar=False):
                 continue
 
             pico_som = max(pico_som, pico)
-            if pico < LIMIAR * 0.3:  # o som caiu: foi curto, conta como palma
+            if pico < LIMIAR * 0.3:
                 duracao = t - inicio
                 if calibrar:
                     print(f"  palma? pico {pico_som:.2f}  fundo {fundo:.3f}  duração {duracao:.2f} s")
@@ -300,13 +272,13 @@ def ouvir(calibrar=False):
                 else:
                     ultima, pico_ultima = inicio, pico_som
                 inicio = None
-            elif t - inicio > DURACAO_MAX:  # durou demais: não é palma
+            elif t - inicio > DURACAO_MAX:
                 if calibrar:
                     print(f"  ignorado (longo): pico {pico_som:.2f}  fundo {fundo:.3f}")
                 inicio, descartar = None, True
 
 
-TAXA_MIC = None  # descoberta no primeiro uso do atalho
+TAXA_MIC = None
 
 
 def avisar_tela(dados):
@@ -336,7 +308,7 @@ def gravar_enquanto_segura(bipe):
                             callback=lambda d, *_: pedacos.append(d[:, 0].copy()))
     with stream:
         limite = time.time() + 2
-        while not pedacos and time.time() < limite:  # espera o primeiro pedaço de áudio chegar de verdade
+        while not pedacos and time.time() < limite:
             time.sleep(0.005)
         bipe(880)
         avisar_tela({"estado": "ouvindo"})
@@ -344,7 +316,7 @@ def gravar_enquanto_segura(bipe):
         ultimo_nivel = 0.0
         while segura() and time.time() - inicio < ATALHO_MAX_S:
             time.sleep(0.01)
-            if time.time() - ultimo_nivel >= 0.08:  # a esfera pulsa com a sua voz
+            if time.time() - ultimo_nivel >= 0.08:
                 ultimo_nivel = time.time()
                 bloco = pedacos[-1]
                 avisar_tela({"nivel": min(1.0, float(np.sqrt(np.mean(bloco ** 2))) * 15)})
@@ -355,10 +327,10 @@ def gravar_enquanto_segura(bipe):
         return None
     audio = np.concatenate(pedacos)
     pico = float(np.max(np.abs(audio)))
-    if pico < 0.005:  # só silêncio
+    if pico < 0.005:
         return None
-    audio = audio * (0.9 / pico)  # o modo normal do microfone é baixo: sobe até quase o máximo, sem estourar
-    if taxa > 16000:  # 16 kHz basta pra voz: arquivo 3x menor, transcrição mais rápida
+    audio = audio * (0.9 / pico)
+    if taxa > 16000:
         n = int(len(audio) * 16000 / taxa)
         audio = np.interp(np.linspace(0, len(audio) - 1, n), np.arange(len(audio)), audio)
         taxa = 16000
@@ -391,7 +363,7 @@ def atalho_global():
         if not saude():
             print("Ctrl+Alt+V: o Ultron está desligado. Bata duas palmas antes.")
             continue
-        try:  # se ele estava trabalhando num pedido, para (igual apertar o espaço na tela)
+        try:
             urllib.request.urlopen(urllib.request.Request(URL + "/api/interromper", data=b"", method="POST"), timeout=2)
         except Exception:
             pass
@@ -401,7 +373,7 @@ def atalho_global():
             print(f"Ctrl+Alt+V: não consegui gravar ({erro}).")
             avisar_tela({"estado": "cancelado"})
             continue
-        if not wav:  # toque rápido ou só silêncio
+        if not wav:
             avisar_tela({"estado": "cancelado"})
             continue
         avisar_tela({"estado": "parado"})
@@ -425,12 +397,12 @@ def main():
         import threading
         threading.Thread(target=atalho_global, daemon=True).start()
     while True:
-        if saude():  # já está no ar (ligado à mão): o microfone fica livre pra ele
+        if saude():
             acompanhar()
             continue
         try:
-            ouvir()  # ao sair daqui o microfone já foi fechado
-        except Exception as erro:  # microfone ainda não pronto (logo ao ligar o PC) ou ocupado
+            ouvir()
+        except Exception as erro:
             print(f"Microfone indisponível ({erro}). Tentando de novo em 5 s.")
             time.sleep(5)
             continue
