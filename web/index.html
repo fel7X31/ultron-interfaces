@@ -2577,48 +2577,48 @@
 
   // ---------------------------------------------------------- currículo (tela inteira, por cima)
   // A tela já fica carregada escondida: quando abre, o conteúdo está pronto e a animação aparece de verdade.
+  const curriculoTela = el("curriculoTela");
   let curriculoPronto = null;
+  const esperar = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  const curriculoVisivel = () => !curriculoTela.hidden && !curriculoTela.classList.contains("fechando");
+
   function quadroCurriculo() {
-    const tela = el("curriculoTela");
-    let quadro = tela.querySelector("iframe");
+    let quadro = curriculoTela.querySelector("iframe");
     if (!quadro) {
       quadro = document.createElement("iframe");
       quadro.title = "Currículo";
       curriculoPronto = new Promise((ok) => quadro.addEventListener("load", () => setTimeout(ok, 120), { once: true }));
       quadro.src = "/curriculo.html";
-      tela.appendChild(quadro);
+      curriculoTela.appendChild(quadro);
     }
     return quadro;
   }
   setTimeout(quadroCurriculo, 1500);
-  async function abrirCurriculo(modo) {
-    const tela = el("curriculoTela");
-    const quadro = quadroCurriculo();
-    await Promise.race([curriculoPronto, new Promise((ok) => setTimeout(ok, 2500))]);
-    if (modo) quadro.contentWindow.postMessage({ tipo: "abrirModo", modo }, "*");
-    if (!tela.hidden && !tela.classList.contains("fechando")) { quadro.focus(); return; }  // já aberta
-    await new Promise((ok) => setTimeout(ok, modo ? 40 : 0));  // deixa a tela trocar de modo antes de aparecer
-    tela.hidden = false;
-    tela.classList.remove("fechando", "abrindo");
-    void tela.offsetWidth;  // reinicia a animação
-    tela.classList.add("abrindo");
-    tela.onanimationend = (ev) => {
-      if (ev.target !== tela || !tela.classList.contains("abrindo")) return;
-      tela.classList.remove("abrindo");
-      quadro.focus();
+
+  function animarCurriculo(classe, aoTerminar) {
+    curriculoTela.classList.remove("abrindo", "fechando");
+    void curriculoTela.offsetWidth;  // reinicia a animação
+    curriculoTela.classList.add(classe);
+    curriculoTela.onanimationend = (ev) => {
+      if (ev.target !== curriculoTela || !curriculoTela.classList.contains(classe)) return;
+      curriculoTela.classList.remove(classe);
+      aoTerminar();
     };
   }
+
+  async function abrirCurriculo(modo) {
+    const quadro = quadroCurriculo();
+    await Promise.race([curriculoPronto, esperar(2500)]);
+    if (modo) quadro.contentWindow.postMessage({ tipo: "abrirModo", modo }, "*");
+    if (curriculoVisivel()) return quadro.focus();
+    if (modo) await esperar(40);  // deixa a tela trocar de modo antes de aparecer
+    curriculoTela.hidden = false;
+    animarCurriculo("abrindo", () => quadro.focus());
+  }
+
   function fecharCurriculo() {  // o iframe fica: a conversa não se perde
-    const tela = el("curriculoTela");
-    if (tela.hidden || tela.classList.contains("fechando")) return;
-    tela.classList.remove("abrindo");
-    void tela.offsetWidth;
-    tela.classList.add("fechando");
-    tela.onanimationend = (ev) => {
-      if (ev.target !== tela || !tela.classList.contains("fechando")) return;
-      tela.classList.remove("fechando");
-      tela.hidden = true;
-    };
+    if (!curriculoVisivel()) return;
+    animarCurriculo("fechando", () => { curriculoTela.hidden = true; });
   }
   addEventListener("message", (e) => { if (e.data && e.data.tipo === "fecharCurriculo") fecharCurriculo(); });
   el("botaoCurriculo").addEventListener("click", (e) => { e.currentTarget.blur(); abrirCurriculo(); });
