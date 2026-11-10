@@ -81,6 +81,8 @@ def mexer_tarefas(pedido):
             texto = " ".join(str(pedido.get("texto", "")).split())[:200]
             if texto:
                 linhas.append(f"- [ ] {texto}")
+        elif acao == "limpar_feitas":  # tira todas as já marcadas
+            linhas = [l for l in linhas if not ((m := RE_TAREFA.match(l)) and m.group(2) != " ")]
         elif acao in ("marcar", "apagar", "editar", "dificuldade", "prioridade", "prazo", "refazer"):
             alvo, n = int(pedido.get("indice", -1)), -1
             for i, l in enumerate(linhas):

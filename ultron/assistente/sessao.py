@@ -145,8 +145,11 @@ class SessaoClaude:
 
     def comando(self):
         trava = f'"{sys.executable}" "{RAIZ / "hooks" / "trava.py"}"'
+        registro = f'"{sys.executable}" "{RAIZ / "hooks" / "registro.py"}"'
         ajustes = {"hooks": {
             "PreToolUse": [{"matcher": "*", "hooks": [{"type": "command", "command": trava}]}],
+            "PostToolUse": [{"matcher": "Edit|MultiEdit|Write|NotebookEdit",
+                             "hooks": [{"type": "command", "command": registro}]}],
         }}
         cmd = [
             claude_bin(), "-p",
