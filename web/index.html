@@ -2579,6 +2579,7 @@
       else if (acao === "fechar") mostrar(false);
       else mostrar(true);
     }
+    window.musicaAbafar = (abafar) => { if (player && pronto) player.setVolume(abafar ? 0 : Number(el("muVolume").value)); };
     window.musicaRitmo = () => {
       if (!tocando) return null;
       let h = 0; for (const c of atualId) h = (h * 31 + c.charCodeAt(0)) >>> 0;
