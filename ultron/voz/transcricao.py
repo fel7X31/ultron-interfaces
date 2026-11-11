@@ -10,13 +10,14 @@ from pathlib import Path
 from ..nucleo.config import CFG
 from ..nucleo.log import log
 from ..nucleo.texto import normalizar
+from .recorte import sem_silencio
 
 # Frases que o whisper "inventa" quando o áudio é quase só silêncio (vêm de legendas de vídeo).
 ALUCINACOES = [re.compile(p) for p in (
     r"^legendas? (por|pela|de)\b", r"\bruberti\b", r"\bamara org\b", r"\bobrigad[oa] por assistir", r"\binscreva se\b",
 )]
 IDIOMA = {"livre": False}
-TERMOS = ["Ultron", "modo entrevista"]  # o Scribe puxa o que ouviu pra estas palavras
+TERMOS = ["Ultron", "modo entrevista", "currículo", "abrir currículo"]  # o Scribe puxa o que ouviu pra estas palavras
 TERMOS_ENTREVISTA = ["interview mode", "Amazon", "AWS", "Pulumi", "Qyon", "Geiko", "Omie", "Univesp", "LeetCode"]
 
 
@@ -69,6 +70,11 @@ def transcrever_scribe(audio, mime):
 
 def transcrever(audio, mime):
     """Texto do que foi falado, ou "" se era só silêncio/ruído."""
+    if "wav" in mime:
+        audio = sem_silencio(audio)
+        if audio is None:
+            log({"evento": "audio_sem_voz"})
+            return ""
     modo = CFG["transcricao"]
     if modo in ("auto", "whisper"):
         try:

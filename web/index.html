@@ -873,6 +873,7 @@
     if (estado === "falando" && novo === "parado" && !turnoAberto) apagarLegenda(tempoDeLeitura());
     else if (novo !== "parado") manterLegenda();
     estado = novo;
+    if (window.musicaAbafar) window.musicaAbafar(novo === "ouvindo");  // o microfone não pega a música junto com a fala
     corpo.dataset.estado = novo;
     el("estadoTexto").textContent = NOMES[novo] || novo;
   }

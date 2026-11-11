@@ -35,6 +35,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │   └── claude_cli.py        claude_json(): uma consulta avulsa ao Claude, fora da conversa
 │   ├── voz/
 │   │   ├── transcricao.py       áudio → texto (whisper local ou ElevenLabs Scribe)
+│   │   ├── recorte.py           tira o silêncio das pontas da fala e descarta áudio sem voz
 │   │   └── fala.py              texto → voz (ElevenLabs ou Fish Audio), url_fala()
 │   ├── recursos/              uma funcionalidade por arquivo
 │   │   ├── paineis.py           PAINEIS: o que os painéis da tela mostram
