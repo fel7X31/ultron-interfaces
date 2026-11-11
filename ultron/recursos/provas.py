@@ -37,7 +37,11 @@ def _escrever_markdown(lista):
     for q in lista:
         marca = {"certa": "✅ certa", "errada": "❌ errada"}.get(q.get("status"), "— sem marcar")
         linhas.append(f"- {q['quando'][:16]} · {marca} · {q['questao'][:120]}")
-    (pasta / "historico.md").write_text("\n".join(linhas) + "\n", encoding="utf-8")
+    texto = "\n".join(linhas) + "\n"
+    (pasta / "historico.md").write_text(texto, encoding="utf-8")
+    notas = CFG["pasta"] / "notas"
+    notas.mkdir(parents=True, exist_ok=True)
+    (notas / "provas.md").write_text(texto, encoding="utf-8")  # o mesmo histórico, onde as notas ficam
 
 
 def registrar_prova(questao, resposta):
