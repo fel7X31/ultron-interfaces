@@ -15,11 +15,15 @@ from ..nucleo.texto import normalizar
 ALUCINACOES = [re.compile(p) for p in (
     r"^legendas? (por|pela|de)\b", r"\bruberti\b", r"\bamara org\b", r"\bobrigad[oa] por assistir", r"\binscreva se\b",
 )]
+IDIOMA = {"livre": False}
+TERMOS = ["Ultron", "modo entrevista"]  # o Scribe puxa o que ouviu pra estas palavras
+TERMOS_ENTREVISTA = ["interview mode", "Amazon", "AWS", "Pulumi", "Qyon", "Geiko", "Omie", "Univesp", "LeetCode"]
 
 
 def multipart(campos, nome_arquivo, conteudo, mime, campo_arquivo="file"):
     limite = uuid.uuid4().hex
-    partes = [f'--{limite}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode() for k, v in campos.items()]
+    partes = [f'--{limite}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{item}\r\n'.encode()
+              for k, v in campos.items() for item in (v if isinstance(v, list) else [v])]
     partes.append(f'--{limite}\r\nContent-Disposition: form-data; name="{campo_arquivo}"; filename="{nome_arquivo}"\r\n'
                   f"Content-Type: {mime}\r\n\r\n".encode() + conteudo + b"\r\n")
     partes.append(f"--{limite}--\r\n".encode())
@@ -43,8 +47,20 @@ def transcrever_whisper(audio, mime):
         return json.loads(r.read().decode("utf-8")).get("text", "")
 
 
+def liberar_idioma(livre):
+    """Livre: o Scribe descobre o idioma sozinho (modo entrevista). Preso: só português, que erra menos em frase curta."""
+    IDIOMA["livre"] = livre
+
+
+def _campos_scribe():
+    if IDIOMA["livre"]:
+        return {"model_id": "scribe_v2", "keyterms": TERMOS + TERMOS_ENTREVISTA}
+    return {"model_id": "scribe_v2", "keyterms": TERMOS, "language_code": "por"}
+
+
 def transcrever_scribe(audio, mime):
-    corpo, tipo = multipart({"model_id": "scribe_v1", "language_code": "por", "keyterms": "Ultron"}, "fala.webm", audio, mime)
+    nome = "fala.wav" if "wav" in mime else "fala.webm"
+    corpo, tipo = multipart(_campos_scribe(), nome, audio, mime)
     req = urllib.request.Request("https://api.elevenlabs.io/v1/speech-to-text", data=corpo,
                                  headers={"Content-Type": tipo, "xi-api-key": CFG["eleven_key"]})
     with urllib.request.urlopen(req, timeout=60) as r:

@@ -838,6 +838,7 @@
 
 <div class="dica" id="dica">Segure <b>espaço</b> pra falar · <b>C</b> conversa · <b>N</b> nova conversa · <b>H</b> <span id="dicaH">minimizar detalhes</span></div>
 
+<script src="/wav.js"></script>
 <script>
 (() => {
   const NOMES = {
@@ -852,8 +853,11 @@
 
   // Depois que o Ultron termina de falar, a legenda (sua frase + a resposta) some sozinha; ela continua na conversa (C).
   let legendaTimer = null;
+  let modoEntrevista = false;  // a legenda fica até a próxima fala e o microfone fica aberto pra não comer o começo da frase
+  const tempoDeLeitura = () => Math.max(8000, 120 * el("resposta").textContent.length);
   function apagarLegenda(depois) {
     clearTimeout(legendaTimer);
+    if (modoEntrevista) return;
     legendaTimer = setTimeout(() => {
       const leg = document.querySelector(".legenda");
       leg.classList.add("sumindo");
@@ -866,7 +870,7 @@
   }
   function manterLegenda() { clearTimeout(legendaTimer); document.querySelector(".legenda").classList.remove("sumindo"); }
   function mudarEstado(novo) {
-    if (estado === "falando" && novo === "parado" && !turnoAberto) apagarLegenda(2500);
+    if (estado === "falando" && novo === "parado" && !turnoAberto) apagarLegenda(tempoDeLeitura());
     else if (novo !== "parado") manterLegenda();
     estado = novo;
     corpo.dataset.estado = novo;
@@ -1609,6 +1613,8 @@
   let picoGravacao = 0, medidor = null;
   let querGravar = false, limiteGravacao = null;
   const MAX_GRAVACAO = 30000;  // 30 s: depois disso para sozinho
+  const CAUDA_GRAVACAO = 350;
+  let caudaGravacao = null;
 
   // Espaço a qualquer momento: se ele estiver falando, cala; se estiver trabalhando, cancela o pedido.
   function interromper() {
@@ -1619,7 +1625,7 @@
   }
 
   async function comecarGravacao() {
-    if (gravando || querGravar) return;
+    if (gravando || querGravar || caudaGravacao) return;
     if (estado === "iniciando") { avisar("Um momento, " + nomeDono + ". Ainda estou ligando."); return; }  // aquecendo: pode falar, ele responde assim que ficar pronto
     interromper();
     querGravar = true;
@@ -1673,15 +1679,18 @@
     clearTimeout(limiteGravacao);
     if (!gravando) return;
     gravando = false;
-    clearInterval(medidor);
-    gravador.stop();
+    caudaGravacao = setTimeout(() => {  // grava mais um pouquinho: soltar o espaço não corta a última palavra
+      caudaGravacao = null;
+      clearInterval(medidor);
+      gravador.stop();
+    }, CAUDA_GRAVACAO);
   }
 
   async function enviarGravacao() {
     // Solta o microfone assim que a fala acaba: o Windows deixa de tratar como "chamada"
     // (que abafa e abaixa o som do PC) e outros apps podem usar o microfone.
-    soltarMicrofone();
-    const curta = performance.now() - inicioGravacao < 350;
+    if (!modoEntrevista) soltarMicrofone();
+    const curta = performance.now() - inicioGravacao < 350 + CAUDA_GRAVACAO;
     const blob = new Blob(pedacos, { type: (gravador && gravador.mimeType) || "audio/webm" });
     if (curta || blob.size < 2000) { mudarEstado("parado"); return; }
     if (picoGravacao < 0.06) {  // só silêncio: o whisper inventa frase ("Legenda por...")
@@ -1694,7 +1703,8 @@
     novoTurno();
     mudarEstado("transcrevendo");
     try {
-      const r = await fetch("/api/audio", { method: "POST", headers: { "Content-Type": blob.type }, body: blob });
+      const fala = await falaParaEnviar(blob, audioCtx);
+      const r = await fetch("/api/audio", { method: "POST", headers: { "Content-Type": fala.type }, body: fala });
       if (r.status === 409) ocupadoNoServidor();
     } catch (erro) {
       avisar("Não consegui falar com o servidor.");
@@ -1923,8 +1933,11 @@
         el("chatDigitando").textContent = "";
         el("tempo").textContent = "respondeu em " + String(e.segundos).replace(".", ",") + " s";
         manterLegenda();
-        if (!e.audio) apagarLegenda(Math.min(15000, 4000 + 55 * (e.texto || "").length));  // sem voz: dá tempo de ler e some
+        if (!e.audio) apagarLegenda(tempoDeLeitura());  // sem voz: dá tempo de ler e some
         falar(e.audio);
+      } else if (e.tipo === "entrevista") {
+        modoEntrevista = e.ligado;
+        if (!e.ligado) soltarMicrofone();
       } else if (e.tipo === "aviso") {
         avisar(e.texto);
       }

@@ -17,6 +17,7 @@ from ..nucleo.eventos import EVENTOS
 from ..nucleo.log import log_erro
 from ..nucleo.texto import normalizar
 from ..recursos import musica
+from ..voz.transcricao import IDIOMA, liberar_idioma
 
 SILENCIO = ""
 COMANDOS = []
@@ -51,6 +52,31 @@ def tentar(fala):
         if resposta is not None:
             return resposta
     return None
+
+
+# ---------------------------------------------------------------- modo entrevista
+LIGAR_ENTREVISTA = re.compile(r"\bmod\w* (d[eo] )?entre ?v\w*|\binterview mode\b")  # a transcrição erra: "módulo entrevistas", "modo entre vídeos"
+FIM_ENTREVISTA = re.compile(r"^(ultron )?(terminar|encerrar|end( the)? interview)\b"
+                            r"|\b(sai\w*|deslig\w*|termin\w*|encerr\w*) (do |o |da )?modo (de )?entrevista\b")
+
+
+def _modo_entrevista(ligado):
+    if IDIOMA["livre"] == ligado:
+        return
+    liberar_idioma(ligado)
+    EVENTOS.emitir({"tipo": "entrevista", "ligado": ligado})
+    EVENTOS.aviso("Ouvindo em inglês." if ligado else "Ouvindo em português.")
+
+
+@comando
+def idioma_da_entrevista(fala):
+    """Só troca o idioma da transcrição e avisa a tela. Quem conduz a entrevista é o Claude (persona), então devolve None."""
+    if not fala.curta(8):
+        return
+    if FIM_ENTREVISTA.search(fala.frase):
+        _modo_entrevista(False)
+    elif LIGAR_ENTREVISTA.search(fala.frase):
+        _modo_entrevista(True)
 
 
 # ---------------------------------------------------------------- modo prova
