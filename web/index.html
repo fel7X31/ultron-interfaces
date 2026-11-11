@@ -580,6 +580,7 @@
   .painel .minimizar:hover { background: rgba(215, 20, 30, .15); }
   .painel .conteudo { padding: 0 14px 12px; max-height: 32vh; overflow: auto; scrollbar-width: thin; }
   .painel.min .conteudo { display: none !important; }  /* !important: a agenda redimensionada tem display:flex mais específico e não minimizava */
+  #entregaSemanal { flex: none; overflow: visible; }  /* as barras não dividem a altura com a lista de tarefas */
   .linha-painel { padding: 7px 0; border-top: 1px solid rgba(30, 32, 36, .08); font-size: 13px; color: var(--texto); }
   .linha-painel:first-child { border-top: 0; }
   .linha-painel .sub { font-size: 11px; color: var(--suave); margin-top: 2px; }
@@ -625,7 +626,7 @@
 </div>
 <div class="paineis dir">
   <section class="painel" data-painel="mercado"><header><span class="titulo">Mercado</span><span class="contador"></span><button class="minimizar" title="Minimizar">–</button></header><div class="conteudo"></div></section>
-  <section class="painel" data-painel="tarefas"><header><span class="titulo">Tarefas</span><span class="contador"></span><button class="mais" id="filtroTarefa" title="Filtro: todas">☰</button><button class="mais" id="abrirQuadro" title="Abrir o quadro de tarefas (cards com prompt)">⤢</button><button class="mais" id="maisTarefa" title="Nova tarefa">+</button><button class="minimizar" title="Minimizar">–</button></header><div class="conteudo"></div></section>
+  <section class="painel" data-painel="tarefas"><header><span class="titulo">Tarefas</span><span class="contador"></span><button class="mais" id="filtroTarefa" title="Filtro: todas">☰</button><button class="mais" id="limparFeitas" title="Limpar as tarefas já feitas">✓×</button><button class="mais" id="abrirQuadro" title="Abrir o quadro de tarefas (cards com prompt)">⤢</button><button class="mais" id="maisTarefa" title="Nova tarefa">+</button><button class="minimizar" title="Minimizar">–</button></header><div class="conteudo"></div><div class="conteudo" id="entregaSemanal" title="Tarefas concluídas por semana"></div></section>
   <section class="painel" data-painel="musica"><header><span class="titulo">Música</span><span class="contador" id="muContador"></span><button class="minimizar" title="Minimizar">–</button></header>
     <div class="mu-mini"><img id="muMiniCapa" alt=""><div class="txt"><div class="t" id="muMiniTitulo">Escolha uma música</div><div class="a" id="muMiniArtista"></div></div>
       <button id="muMiniAnt" title="Anterior"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button><button id="muMiniTocar" title="Tocar / pausar"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button><button id="muMiniProx" title="Próxima"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button></div>
@@ -1855,6 +1856,7 @@
     document.querySelector('.painel[data-painel="agenda"] .contador').textContent = d.google_quando ? "às " + d.google_quando : "";
     desenharCalendario();
     preencher("mercado", d.mercado, itemMercado, "Sem cotação agora.");
+    desenharEntregas(d.entregas);
     atualizarQuadro(d.tarefas);
     if (editandoTarefa) { tarefasGuardadas = d.tarefas; return; }  // não apaga o campo de edição no meio
     desenharTarefas(d.tarefas);
@@ -2714,6 +2716,26 @@
   var FILTROS_TAREFA = ["todas", "pendentes", "feitas"];
   var filtroTarefa = FILTROS_TAREFA.includes(localStorage.getItem("filtroTarefa")) ? localStorage.getItem("filtroTarefa") : "todas";
   var ultimasTarefas;
+  // Taxa de entrega: tarefas concluídas nas últimas 4 semanas (a última barra é a semana atual)
+  function desenharEntregas(semanas) {
+    const caixa = el("entregaSemanal");
+    if (!caixa || !semanas) return;
+    const maior = Math.max(1, ...semanas);
+    caixa.replaceChildren();
+    const barras = document.createElement("div");
+    barras.style.cssText = "display:flex;align-items:flex-end;gap:6px;height:34px;margin-top:8px";
+    semanas.forEach((n, i) => {
+      const b = document.createElement("div");
+      b.style.cssText = "flex:1;border-radius:3px 3px 0 0;background:" + (i === semanas.length - 1 ? "#d7141e" : "rgba(215,20,30,.45)") +
+        ";height:" + Math.max(3, Math.round(n / maior * 100)) + "%";
+      b.title = (i === semanas.length - 1 ? "Esta semana" : "Há " + (semanas.length - 1 - i) + " sem.") + ": " + n + " concluída(s)";
+      barras.appendChild(b);
+    });
+    const rotulo = document.createElement("div");
+    rotulo.style.cssText = "font-size:11px;opacity:.7;margin-top:3px";
+    rotulo.textContent = "Entregues por semana: " + semanas.join(" · ") + " (esta é a última)";
+    caixa.append(barras, rotulo);
+  }
   function desenharTarefas(lista) {
     ultimasTarefas = lista;
     const ordem = ordenarTarefas((lista || []).map((x, i) => Object.assign({ indice: i }, x)), "prioridade");
@@ -2857,6 +2879,10 @@
     filtroTarefa = FILTROS_TAREFA[(FILTROS_TAREFA.indexOf(filtroTarefa) + 1) % FILTROS_TAREFA.length];
     localStorage.setItem("filtroTarefa", filtroTarefa);
     if (!editandoTarefa) desenharTarefas(ultimasTarefas);
+  });
+  el("limparFeitas").addEventListener("click", (e) => {
+    e.currentTarget.blur();
+    if (confirm("Apagar todas as tarefas já feitas?")) mexerTarefa({ acao: "limpar_feitas" });
   });
   el("maisTarefa").addEventListener("click", (e) => {
     e.currentTarget.blur();
