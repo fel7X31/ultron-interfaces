@@ -11,7 +11,7 @@
 .folha ul { margin: 0 0 calc(6px * var(--cv-esp, 1)); padding-left: 17px; }
 .folha li { margin: 0 0 calc(2px * var(--cv-esp, 1)); text-align: var(--cv-texto-alinh, left); }
 .folha div { text-align: var(--cv-texto-alinh, left); }
-.folha span:not(.marcador):not(.cursor), .folha font { font-size: inherit !important; font-family: inherit !important;
+.folha span:not(.marcador):not(.cursor):not(.trecho), .folha font { font-size: inherit !important; font-family: inherit !important;
   color: inherit !important; background: none !important; line-height: inherit !important; }
 .folha p[style], .folha div[style], .folha li[style], .folha b[style], .folha i[style] { font-size: inherit !important;
   font-family: inherit !important; line-height: inherit !important; }
