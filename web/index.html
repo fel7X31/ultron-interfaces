@@ -1646,6 +1646,7 @@
       botao.title = min ? "Expandir" : "Minimizar";
     };
     botao.addEventListener("click", () => {
+      if (p.dataset.painel === "agenda") el("novoEvento").hidden = true;  // o modal do compromisso fecha junto com o "–"
       if (minimizados.has(p.dataset.painel)) minimizados.delete(p.dataset.painel);
       else minimizados.add(p.dataset.painel);
       localStorage.setItem("paineisMin", JSON.stringify([...minimizados]));
