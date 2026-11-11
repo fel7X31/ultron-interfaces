@@ -3,6 +3,8 @@ import json
 import re
 import unicodedata
 
+LIMITE_FALA = 2500  # cabe o feedback do modo entrevista; quem mantém as respostas curtas é a persona
+
 
 def normalizar(texto):
     """Minúsculo, sem acento e sem pontuação, em palavras: "Próxima música!" -> ["proxima", "musica"]."""
@@ -17,8 +19,16 @@ def limpar_para_fala(texto):
     texto = re.sub(r"https?://\S+", "", texto)
     texto = re.sub(r"[*_#`>|]", "", texto)
     texto = re.sub(r"^\s*[-•]\s*", "", texto, flags=re.M)
-    texto = " ".join(texto.split())
-    return texto[:700]
+    return _cortar_na_frase(" ".join(texto.split()), LIMITE_FALA)
+
+
+def _cortar_na_frase(texto, limite):
+    """Até o limite, terminando numa frase inteira sempre que der."""
+    if len(texto) <= limite:
+        return texto
+    corte = texto[:limite]
+    fim = max(corte.rfind(sinal) for sinal in ".!?")
+    return corte[:fim + 1] if fim > 0 else corte
 
 
 def json_do_texto(texto):
