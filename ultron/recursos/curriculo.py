@@ -841,12 +841,44 @@ def html_folha(md):
 
 
 _TAGS = {"p", "div", "h1", "h2", "h3", "ul", "ol", "li", "br", "b", "strong", "i", "em", "u", "hr", "span"}
-_CLASSES = {"contato", "espaco", "r1", "r2", "r3", "marcador"}
+_CLASSES = {"contato", "espaco", "r1", "r2", "r3", "marcador", "trecho"}
 _BLOCOS = {"p", "div", "h1", "h2", "h3", "ul", "ol", "li", "hr"}
+_TAMANHO_TRECHO = re.compile(r"font-size:\s*(\d+(?:\.\d+)?)pt", re.I)
+_COR_HEX = re.compile(r"(?<![-\w])color:\s*#([0-9a-f]{6})\b", re.I)
+_COR_RGB = re.compile(r"(?<![-\w])color:\s*rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)", re.I)
+
+
+def _cor_trecho(css):
+    """A cor do trecho em #rrggbb, ou None."""
+    if m := _COR_HEX.search(css):
+        return "#" + m[1].lower()
+    if m := _COR_RGB.search(css):
+        return "#" + "".join(f"{min(255, int(c)):02x}" for c in m.groups())
+    return None
+
+
+def _estilo_trecho(css):
+    """Do style de um trecho, só o tamanho (pt) e a cor, já validados."""
+    estilo = {}
+    if m := _TAMANHO_TRECHO.search(css):
+        estilo["tam"] = max(6.0, min(40.0, float(m[1])))
+    if cor := _cor_trecho(css):
+        estilo["cor"] = cor
+    return estilo
+
+
+def _css_trecho(estilo):
+    partes = []
+    if "tam" in estilo:
+        partes.append(f"font-size:{estilo['tam']:g}pt")
+    if "cor" in estilo:
+        partes.append(f"color:{estilo['cor']}")
+    return ";".join(partes)
 
 
 class _Leitor(HTMLParser):
-    """Lê o HTML da folha guardando só o que importa (tags de texto e as classes da folha). Estilos colados somem."""
+    """Lê o HTML da folha guardando só o que importa (tags de texto, classes da folha e o estilo dos trechos marcados).
+    Estilos colados somem: só o que a barra marcou com a classe trecho fica."""
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.raiz = {"tag": "raiz", "cls": [], "filhos": []}
@@ -860,6 +892,8 @@ class _Leitor(HTMLParser):
             tag = "span"
         cls = [c for c in (dict(attrs).get("class") or "").split() if c in _CLASSES]
         no = {"tag": tag, "cls": cls, "filhos": []}
+        if tag == "span" and "trecho" in cls:
+            no["estilo"] = _estilo_trecho(dict(attrs).get("style") or "")
         self.pilha[-1]["filhos"].append(no)
         if tag not in ("br", "hr"):
             self.pilha.append(no)
@@ -893,11 +927,14 @@ def _html_no(no):
     cls = f' class="{" ".join(no["cls"])}"' if no["cls"] else ""
     if no["tag"] in ("br", "hr"):
         return f"<{no['tag']}{cls}>"
-    return f"<{no['tag']}{cls}>{dentro}</{no['tag']}>"
+    css = _css_trecho(no.get("estilo") or {})
+    estilo = f' style="{css}"' if css else ""
+    return f"<{no['tag']}{cls}{estilo}>{dentro}</{no['tag']}>"
 
 
 def sanear_html(bruto):
-    """HTML da tela -> (HTML limpo, árvore). Fica só texto, negrito, itálico, sublinhado, listas, títulos, linhas e recuos."""
+    """HTML da tela -> (HTML limpo, árvore). Fica só texto, negrito, itálico, sublinhado, listas, títulos, linhas, recuos
+    e o tamanho e a cor dos trechos marcados na barra."""
     leitor = _Leitor()
     leitor.feed(str(bruto or "")[:300000])
     leitor.close()
@@ -924,19 +961,21 @@ def _corpo_docx_html(arvore, est):
             x += f'<w:ind w:left="{ind}"' + (f' w:hanging="{pendurado}"' if pendurado else "") + "/>"
         return x + (f'<w:jc w:val="{jc}"/>' if jc else "")
 
-    def pedacos(no, b=False, i=False, u=False, fora=()):
-        """Texto inline -> [(texto, b, i, u)] e "BR" pras quebras de linha."""
+    def pedacos(no, b=False, i=False, u=False, fora=(), trecho=None):
+        """Texto inline -> [(texto, b, i, u, trecho)] e "BR" pras quebras de linha. trecho: tamanho e cor marcados na barra."""
+        trecho = trecho or {}
         if isinstance(no, str):
-            return [(re.sub(r"\s+", " ", no), b, i, u)]
+            return [(re.sub(r"\s+", " ", no), b, i, u, trecho)]
         t = no["tag"]
         if t == "br":
             return ["BR"]
         if t in fora or t == "lixo":
             return []
         b, i, u = b or t in ("b", "strong"), i or t in ("i", "em"), u or t == "u"
+        trecho = {**trecho, **no.get("estilo", {})}
         saida = []
         for f in no["filhos"]:
-            saida += pedacos(f, b, i, u, fora)
+            saida += pedacos(f, b, i, u, fora, trecho)
         return saida
 
     def runs(lista, negrito=False, tam=None, cor_run=None, maiusc=False):
@@ -948,7 +987,7 @@ def _corpo_docx_html(arvore, est):
                     xml.append("<w:r><w:br/></w:r>")
                 inicio = True
                 continue
-            texto, b, i, u = x
+            texto, b, i, u, trecho = x
             if inicio:
                 texto = texto.lstrip()
             if k == len(lista) - 1 or lista[k + 1] == "BR":
@@ -958,9 +997,12 @@ def _corpo_docx_html(arvore, est):
             inicio = False
             if maiusc:
                 texto = texto.upper()
+            cor_final = trecho["cor"].lstrip("#").upper() if "cor" in trecho else cor_run
+            tam_final = round(trecho["tam"] * 2) if "tam" in trecho else tam
             props = ("<w:b/>" if b or negrito else "") + ("<w:i/>" if i else "") + \
-                    (f'<w:color w:val="{cor_run}"/>' if cor_run else "") + \
-                    (f'<w:sz w:val="{tam}"/><w:szCs w:val="{tam}"/>' if tam else "") + ('<w:u w:val="single"/>' if u else "")
+                    (f'<w:color w:val="{cor_final}"/>' if cor_final else "") + \
+                    (f'<w:sz w:val="{tam_final}"/><w:szCs w:val="{tam_final}"/>' if tam_final else "") + \
+                    ('<w:u w:val="single"/>' if u else "")
             xml.append(f'<w:r><w:rPr>{props}</w:rPr><w:t xml:space="preserve">{html.escape(texto, quote=False)}</w:t></w:r>')
         return "".join(xml)
 

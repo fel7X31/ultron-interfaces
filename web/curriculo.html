@@ -516,6 +516,36 @@
     });
     const bNeg = botao("B", "Negrito (Ctrl+B)", () => cmd("bold"), "b");
     const bIta = botao("I", "Itálico (Ctrl+I)", () => cmd("italic"), "i");
+    const bSub = botao("U", "Sublinhado (Ctrl+U)", () => cmd("underline"), "u");
+    // Tamanho e cor: com texto selecionado, valem só nele; sem seleção, valem pro currículo inteiro.
+    let trecho = null;
+    const temTrecho = () => trecho && !trecho.collapsed && folha.contains(trecho.commonAncestorContainer);
+    const voltarAoTrecho = () => { folha.focus(); if (trecho) { const s = getSelection(); s.removeAllRanges(); s.addRange(trecho); } };
+    // O execCommand cria <font>; cada um vira <span class="trecho">, a única marca que o servidor guarda e exporta.
+    const estilizarTrecho = (comando, valor, seletor, aplicar) => {
+      voltarAoTrecho();
+      document.execCommand("styleWithCSS", false, false);
+      document.execCommand(comando, false, valor);
+      const novos = [...folha.querySelectorAll(seletor)].map((f) => {
+        const s = criar("span", "trecho"); aplicar(s.style); s.append(...f.childNodes); f.replaceWith(s); return s;
+      });
+      if (novos.length) { const r = document.createRange(); r.setStartBefore(novos[0]); r.setEndAfter(novos[novos.length - 1]); const s = getSelection(); s.removeAllRanges(); s.addRange(r); trecho = r.cloneRange(); }
+      folha.dispatchEvent(new Event("input"));
+    };
+    const mudarTamanho = (v) => {
+      if (!temTrecho()) return mudarEstilo({ tamanho: +v });
+      estilizarTrecho("fontSize", "7", 'font[size="7"]', (st) => { st.fontSize = v + "pt"; });
+      barra.mostrar(est());
+    };
+    const mudarCor = (v) => {
+      if (!temTrecho()) return mudarEstilo({ cor: v });
+      estilizarTrecho("foreColor", v, "font[color]", (st) => { st.color = v; });
+      barra.mostrar(est());
+    };
+    const mesaZoom = () => folha.closest(".mesa");
+    const zoomar = (d) => { const m = mesaZoom(); if (!m) return; m._fator = Math.max(.5, Math.min(1.6, (m._fator || 1) + d)); m._recalcular && m._recalcular(); };
+    botao("🔍−", "Diminuir o zoom da folha", () => zoomar(-.1));
+    botao("🔍+", "Aumentar o zoom da folha", () => zoomar(.1));
     const bLista = botao("• Lista", "Lista com marcadores", () => cmd("insertUnorderedList"));
     botao("― Linha", "Linha separadora (igual à das seções) depois deste parágrafo", () => {
       const b = blocoAtual(); const hr = document.createElement("hr");
@@ -540,9 +570,9 @@
     };
     const fonte = lista(FONTES_BARRA, "Fonte do currículo", (v) => mudarEstilo({ fonte: v }));
     const tamanhos = []; for (let t = 8; t <= 20; t += t < 14 ? .5 : 1) tamanhos.push([String(t), String(t).replace(".", ",")]);
-    const tam = lista(tamanhos, "Tamanho do texto (o nome e os títulos crescem junto)", (v) => mudarEstilo({ tamanho: +v }));
-    const corRot = criar("label", "cor", "Títulos"); const cor = criar("input"); cor.type = "color"; cor.title = "Cor dos títulos e das linhas";
-    cor.addEventListener("change", () => mudarEstilo({ cor: cor.value })); corRot.appendChild(cor); barra.appendChild(corRot);
+    const tam = lista(tamanhos, "Tamanho do texto selecionado (sem seleção, do currículo inteiro)", mudarTamanho);
+    const corRot = criar("label", "cor", "Cor"); const cor = criar("input"); cor.type = "color"; cor.title = "Cor do texto selecionado (sem seleção, dos títulos e das linhas)";
+    cor.addEventListener("change", () => mudarCor(cor.value)); corRot.appendChild(cor); barra.appendChild(corRot);
     const esp = lista([["compacto", "Compacto"], ["normal", "Espaço normal"], ["amplo", "Amplo"]], "Espaçamento", (v) => mudarEstilo({ espacamento: v }));
     sep();
     const nomeEsq = botao("⇤ Nome", "Nome e contato à esquerda", () => mudarEstilo({ nome_alinhado: "esquerda" }));
@@ -569,12 +599,16 @@
     }
     const aoSelecionar = () => {
       if (!document.body.contains(barra)) { document.removeEventListener("selectionchange", aoSelecionar); return; }
+      const s = getSelection();
+      if (s.rangeCount && folha.contains(s.anchorNode)) trecho = s.getRangeAt(0).cloneRange();
+      else if (s.anchorNode && !barra.contains(s.anchorNode)) trecho = null;  // clicou fora da folha e da barra
       const b = blocoAtual(); if (!b) return;
       ultimoBloco = b;
       const t = b.tagName.toLowerCase();
       tipo.value = t === "p" && b.classList.contains("contato") ? "contato" : ["h1", "h2", "h3"].includes(t) ? t : "p";
       bNeg.classList.toggle("ativo", document.queryCommandState("bold"));
       bIta.classList.toggle("ativo", document.queryCommandState("italic"));
+      bSub.classList.toggle("ativo", document.queryCommandState("underline"));
       bLista.classList.toggle("ativo", t === "li");
     };
     document.addEventListener("selectionchange", aoSelecionar);
@@ -791,9 +825,10 @@
     const calc = () => {
       const folha = mesa.querySelector(".folha"); if (!folha) return;
       const larg = 210 * 96 / 25.4;
-      const z = Math.min(1, (mesa.clientWidth - 36) / larg);
+      const z = Math.min(1, (mesa.clientWidth - 36) / larg) * (mesa._fator || 1);
       mesa.style.setProperty("--zoom", z > 0.2 ? z.toFixed(3) : "1");
     };
+    mesa._recalcular = calc;
     calc();
     if (!mesa._obs) { mesa._obs = new ResizeObserver(calc); mesa._obs.observe(mesa); }
   }
