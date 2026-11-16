@@ -2094,8 +2094,11 @@
     linha.className = "ia-opcao" + (ativa ? " ativa" : "") + (o.ligada ? "" : " desligada");
     linha.innerHTML = '<span class="marca-ia"></span><span class="nome"></span>';
     linha.querySelector(".nome").textContent = o.nome;
-    if (o.ligada) linha.addEventListener("click", () => escolherIa(o));
-    else linha.appendChild(o.entrar ? botaoDeEntrar(o) : notaDeIa("chave no .env"));
+    if (!o.ligada) linha.appendChild(o.entrar ? botaoDeEntrar(o) : notaDeIa("chave no .env"));
+    else {
+      linha.addEventListener("click", () => escolherIa(o));
+      if (o.limite) linha.appendChild(notaDeIa(o.limite));  // "sem limite, volta às 15:00"
+    }
     return linha;
   }
 

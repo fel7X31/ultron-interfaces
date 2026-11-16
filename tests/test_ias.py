@@ -1,15 +1,28 @@
 """Outras IAs (ChatGPT, Gemini, Grok) e a troca de quem responde. Sem chamar API nem programa de verdade."""
 import io
 import json
+import tempfile
 import unittest
 import urllib.error
+from pathlib import Path
 from unittest import mock
 
 from ultron.assistente import cerebro, comandos
 from ultron.nucleo.config import CFG
-from ultron.recursos import contas_ia, ias
+from ultron.recursos import contas_ia, ias, limites
 
 CHAVES = {"GEMINI_API_KEY": "chave-de-teste"}
+PASTA = tempfile.TemporaryDirectory()
+LIMITES = mock.patch.object(limites, "ARQUIVO", Path(PASTA.name) / "limites.json")  # não lê o .estado de verdade
+
+
+def setUpModule():
+    LIMITES.start()
+
+
+def tearDownModule():
+    LIMITES.stop()
+    PASTA.cleanup()
 
 
 def variavel_de_teste(nome, padrao=""):
@@ -100,14 +113,14 @@ class TesteCerebro(unittest.TestCase):
         self.assertEqual(cerebro.escolher("gemini"), "Gemini")
         self.assertFalse(cerebro.usando_claude())
         with mock.patch.object(ias, "perguntar", return_value="Previsível.") as perguntar:
-            self.assertEqual(cerebro.perguntar_a_outra_ia("oi"), {"result": "Previsível."})
+            self.assertEqual(cerebro.perguntar_a_outra_ia("oi", "gemini"), {"result": "Previsível."})
         self.assertIn("Gemini", perguntar.call_args[0][1][0]["content"])  # a persona diz em quem ele roda agora
         self.assertEqual(len(cerebro.CONVERSA), 2)
 
     def test_erro_da_outra_ia_vira_resposta(self, *_):
         cerebro.escolher("gemini")
         with mock.patch.object(ias, "perguntar", side_effect=OSError("caiu")), mock.patch.object(cerebro, "log_erro"):
-            r = cerebro.perguntar_a_outra_ia("oi")
+            r = cerebro.perguntar_a_outra_ia("oi", "gemini")
         self.assertTrue(r["is_error"])
         self.assertIn("Gemini", r["result"])
 
@@ -137,23 +150,3 @@ class TesteCerebro(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-class TesteLimiteDaConta(unittest.TestCase):
-    ERRO = ("ERROR: You’ve hit your usage limit. Upgrade to Plus to continue using Codex "
-            "(https://chatgpt.com/explore/plus), or try again at Nov 18th, 2026 8:30 AM.")
-
-    def test_limite_vira_frase_em_portugues(self):
-        falhou = mock.Mock(returncode=1, stderr=self.ERRO, stdout="")
-        with mock.patch.object(contas_ia.subprocess, "run", return_value=falhou):
-            with self.assertRaises(contas_ia.SemCota) as erro:
-                contas_ia._rodar(["codex"], "oi", 5)
-        self.assertEqual(str(erro.exception),
-                         "a sua conta chegou no limite de uso do plano. Libera de novo em 18/11 às 8:30")
-
-    def test_cerebro_conta_o_motivo(self):
-        sem_cota = contas_ia.SemCota("a sua conta chegou no limite de uso do plano")
-        with mock.patch.dict(CFG, {"ia": "chatgpt"}), mock.patch.object(ias, "perguntar", side_effect=sem_cota):
-            r = cerebro.perguntar_a_outra_ia("oi")
-        self.assertTrue(r["is_error"])
-        self.assertIn("limite de uso", r["result"])

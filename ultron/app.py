@@ -7,11 +7,12 @@ import threading
 import time
 import webbrowser
 
+from .assistente import cerebro
 from .assistente.sessao import SESSAO
 from .assistente.turno import aquecer
 from .http.servidor import criar_servidor
 from .nucleo.config import CFG, ESTADO, WEB
-from .nucleo.log import log
+from .nucleo.log import log, log_erro
 from .recursos import curriculo
 from .recursos.google import atualizar_google
 from .recursos.historico import manutencao
@@ -24,6 +25,14 @@ def _em_segundo_plano(funcao):
     threading.Thread(target=funcao, daemon=True).start()
 
 
+def _sem_derrubar(funcao):
+    """Roda a função; se ela falhar, anota no log e o relógio das rotinas segue."""
+    try:
+        funcao()
+    except Exception as erro:
+        log_erro(f"{funcao.__name__}_falhou", erro)
+
+
 def rotinas():
     """Relógio dos painéis. Checa a cada 3 s; cada coisa tem o seu intervalo."""
     proximo_mercado = 0
@@ -32,6 +41,7 @@ def rotinas():
     while True:
         agora = time.time()
         atualizar_tarefas()                # só lê o tarefas.md: barato
+        _sem_derrubar(cerebro.conferir_quem_responde)  # o limite da IA escolhida liberou: a tela mostra a volta
         if agora >= proxima_manutencao:
             proxima_manutencao = agora + 3600
             _em_segundo_plano(manutencao)

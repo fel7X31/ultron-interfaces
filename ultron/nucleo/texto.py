@@ -1,4 +1,5 @@
 """Funções de texto usadas em vários lugares."""
+import datetime as dt
 import json
 import re
 import unicodedata
@@ -20,6 +21,14 @@ def limpar_para_fala(texto):
     texto = re.sub(r"[*_#`>|]", "", texto)
     texto = re.sub(r"^\s*[-•]\s*", "", texto, flags=re.M)
     return _cortar_na_frase(" ".join(texto.split()), LIMITE_FALA)
+
+
+def falar_quando(momento, agora=None):
+    """"às 15:30", "amanhã às 9:00" ou "dia 20/11 às 8:00"."""
+    agora = agora or dt.datetime.now()
+    dias = (momento.date() - agora.date()).days
+    dia = "" if dias == 0 else "amanhã " if dias == 1 else f"dia {momento:%d/%m} "
+    return f"{dia}às {momento.hour}:{momento:%M}"
 
 
 def _cortar_na_frase(texto, limite):

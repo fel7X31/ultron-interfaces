@@ -1,4 +1,6 @@
-"""O turno inteiro de uma fala: ouvir -> comando rápido ou Claude -> responder (texto na tela + voz).
+"""O turno inteiro de uma fala: ouvir -> comando rápido ou a IA -> responder (texto na tela + voz).
+
+A IA é a que você escolheu ou, se ela chegou no limite de uso do plano, a próxima que ainda tem.
 
 - processar(audio=..., texto=...): roda um turno (uma thread por fala; um turno de cada vez)
 - interromper(): barra de espaço no meio da resposta
@@ -16,6 +18,7 @@ from ..nucleo.config import ATALHOS, CFG, ESTADO, RAIZ, voz_ligada
 from ..nucleo.eventos import EVENTOS
 from ..nucleo.log import log
 from ..nucleo.texto import limpar_para_fala
+from ..recursos import ias
 from ..recursos.google import atualizar_google
 from ..recursos.provas import registrar_prova
 from ..voz.fala import AVISOS_PRONTOS, com_nome, gravar_avisos_prontos, url_fala
@@ -124,14 +127,39 @@ def _perguntar_ao_claude(texto, registro, inicio):
     return r
 
 
-def _perguntar_a_outra_ia(texto, registro):
+def _perguntar_a_outra_ia(texto, ia, registro):
     """ChatGPT, Gemini...: só conversa, sem ferramenta (os dados da pré-busca vão junto)."""
     EVENTOS.estado("pensando")
     t_ia = time.time()
     SESSAO.ferramentas_turno = []
-    r = cerebro.perguntar_a_outra_ia(texto + prebusca(texto))
-    registro["ia"] = cerebro.nome_atual()
+    r = cerebro.perguntar_a_outra_ia(texto + prebusca(texto), ia)
+    registro["ia"] = ias.nome(ia)
     registro["ia_s"] = round(time.time() - t_ia, 2)
+    return r
+
+
+def _perguntar(texto, registro, inicio):
+    """Pergunta pra quem responde agora. Se ela chegou no limite do plano, anota e pergunta pra próxima que ainda
+    tem; a resposta começa contando a troca ("O Claude chegou no limite de uso, libera às 15:00. Passei pro ChatGPT.")."""
+    avisos, tentadas = [], []
+    while (atual := ias.quem_responde()) not in tentadas:
+        tentadas.append(atual)
+        ia, modelo = atual
+        if ia == "claude":
+            _abrir_trava(texto, registro)
+            r = _perguntar_ao_claude(texto, registro, inicio)
+        else:
+            r = _perguntar_a_outra_ia(texto, ia, registro)
+        if not r.get("limite") or Estado.interrompido or r.get("interrompido"):
+            break
+        avisos.append(cerebro.anotar_limite(ia, modelo, r["limite"]))
+    else:  # todas que dá pra usar chegaram no limite
+        registro["limites"] = avisos
+        return {"is_error": True, "result": " ".join(avisos) + " Nenhuma outra IA tem limite agora."}
+    if avisos:
+        registro["limites"] = avisos
+        cerebro.mostrar_quem_responde()
+        r = {**r, "result": " ".join(avisos) + f" Passei pro {cerebro.nome_atual()}. " + (r.get("result") or "")}
     return r
 
 
@@ -195,11 +223,7 @@ def processar(audio=None, mime="audio/webm", texto=None):
                 EVENTOS.estado("parado")
             return
 
-        if cerebro.usando_claude():
-            _abrir_trava(texto, registro)
-            r = _perguntar_ao_claude(texto, registro, inicio)
-        else:
-            r = _perguntar_a_outra_ia(texto, registro)
+        r = _perguntar(texto, registro, inicio)
         if Estado.interrompido or r.get("interrompido"):
             registro["interrompido"] = True
             return

@@ -4,6 +4,7 @@ pelo Codex (entra com a conta do ChatGPT). São programas de terminal, como o Cl
 Instalar (uma vez): npm install -g @google/gemini-cli @openai/codex
 Entrar: o botão "Entrar" da lista de IAs abre o login de cada um (o navegador abre pra você entrar).
 """
+import datetime as dt
 import json
 import re
 import shutil
@@ -12,20 +13,18 @@ import tempfile
 from pathlib import Path
 
 from ..nucleo.config import ESTADO
+from .limites import SemCota
 
 PASTA_VAZIA = ESTADO / "ias"  # elas rodam aqui dentro: não leem nem mexem nos seus arquivos
 INSTALAR = "npm install -g @google/gemini-cli @openai/codex"
 SEM_JANELA = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 MESES = {m: i for i, m in enumerate(("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), 1)}
-LIBERA = re.compile(r"try again at (\w{3})\w* (\d{1,2})\w*,? \d{4},? (\d{1,2}):(\d{2}) ?(AM|PM)", re.I)
+ACABOU = re.compile(r"usage limit|quota|resource_exhausted|\b429\b", re.I)  # o programa disse que a conta chegou no limite
+LIBERA = re.compile(r"try again at (?:([a-z]{3})[a-z]* (\d{1,2})[a-z]*,? (\d{4}),? )?(\d{1,2}):(\d{2}) ?([ap]m)", re.I)
 CONTAS = {  # ia -> o programa, onde ele guarda o login, o comando de entrar e com o quê
     "gemini": {"programa": "gemini", "login": "~/.gemini/oauth_creds.json", "entrar": ["gemini"], "com": "Google"},
     "chatgpt": {"programa": "codex", "login": "~/.codex/auth.json", "entrar": ["codex", "login"], "com": "ChatGPT"},
 }
-
-
-class SemCota(OSError):
-    """A conta chegou no limite de uso do plano (a mensagem já vem em português, pronta pra falar)."""
 
 
 def instalado(ia):
@@ -79,19 +78,21 @@ def _rodar(cmd, entrada, limite):
                        cwd=str(PASTA_VAZIA), creationflags=SEM_JANELA)
     if r.returncode != 0:
         erro = (r.stderr or r.stdout).strip()
-        if "usage limit" in erro.lower() or "quota" in erro.lower():
-            raise SemCota("a sua conta chegou no limite de uso do plano" + _quando_libera(erro))
+        if ACABOU.search(erro):
+            raise SemCota(_libera_em(erro))
         raise OSError(erro[-300:])
     return r.stdout
 
 
-def _quando_libera(erro):
-    """" Libera de novo em 18/11 às 8:30", a partir do "try again at Nov 18th, 2026 8:30 AM" do programa."""
+def _libera_em(erro, hoje=None):
+    """A hora Unix do "try again at Nov 18th, 2026 8:30 AM" (ou só "8:30 AM", quando é hoje) que o Codex escreve."""
     m = LIBERA.search(erro)
-    if not m or m.group(1).title() not in MESES:
-        return ""
-    hora = int(m.group(3)) % 12 + (12 if m.group(5).upper() == "PM" else 0)
-    return f". Libera de novo em {int(m.group(2)):02d}/{MESES[m.group(1).title()]:02d} às {hora}:{m.group(4)}"
+    if not m or (m.group(1) and m.group(1).title() not in MESES):
+        return None
+    mes, dia, ano, hora, minuto, periodo = m.groups()
+    data = dt.date(int(ano), MESES[mes.title()], int(dia)) if mes else (hoje or dt.date.today())
+    hora = int(hora) % 12 + (12 if periodo.lower() == "pm" else 0)
+    return dt.datetime.combine(data, dt.time(hora, int(minuto))).timestamp()
 
 
 def _conversa_em_texto(mensagens):

@@ -1,13 +1,14 @@
 """Quem responde: o Claude (e qual modelo) ou outra IA. A tela e a barra mostram as opções e trocam por aqui."""
 from ...assistente import cerebro
-from ...nucleo.config import CFG
 from ...recursos import contas_ia, ias
 from ..servidor import rota
 
 
 @rota("GET", "/api/ias")
 def ver(pedido):
-    return {"ia": CFG["ia"], "modelo": CFG["modelo"], "nome": cerebro.nome_atual(), "opcoes": ias.opcoes()}
+    """Quem responde agora (outra, se a que você escolheu chegou no limite) e as opções."""
+    ia, modelo = ias.quem_responde()
+    return {"ia": ia, "modelo": modelo, "nome": ias.nome(ia, modelo), "opcoes": ias.opcoes()}
 
 
 @rota("POST", "/api/ias")

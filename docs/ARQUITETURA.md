@@ -47,7 +47,8 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │   ├── musica.py            playlists e busca no YouTube
 │   │   ├── curriculo.py         tela do currículo (analisar e adaptar)
 │   │   ├── ias.py               outras IAs (ChatGPT, Gemini, Grok), pela API de cada uma
-│   │   └── contas_ia.py         as mesmas IAs pela sua conta, sem chave (Gemini CLI com o Google, Codex com o ChatGPT)
+│   │   ├── contas_ia.py         as mesmas IAs pela sua conta, sem chave (Gemini CLI com o Google, Codex com o ChatGPT)
+│   │   └── limites.py           até quando cada IA está sem limite do plano (ias.quem_responde passa pra próxima)
 │   ├── assistente/
 │   │   ├── sessao.py            o processo do Claude Code que fica aberto (SESSAO)
 │   │   ├── comandos.py          comandos de voz que respondem sem o Claude

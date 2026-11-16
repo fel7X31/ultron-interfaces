@@ -79,6 +79,13 @@ Depois escolha no chip ou diga "usa o Gemini" / "volta pro Claude". Com outra IA
 comandos na hora continuam valendo. O modelo de cada uma muda no `.env` (`ULTRON_MODELO_CHATGPT`,
 `ULTRON_MODELO_GEMINI`, `ULTRON_MODELO_GROK`).
 
+**Quando o limite acaba:** se quem responde chega no limite de uso do plano (o de 5 horas ou o da semana do Claude, a
+cota do ChatGPT ou do Gemini), o Ultron anota até quando, passa pra próxima que ainda tem e responde a mesma pergunta
+com ela, avisando: "O Claude chegou no limite de uso, libera às 15:00. Passei pro ChatGPT." A ordem é a que você
+escolheu, depois o Claude (o seu modelo e os outros, porque ele tem ferramentas) e depois ChatGPT, Gemini e Grok.
+Quando o limite libera, ele volta sozinho pra que você escolheu. A lista de IAs mostra "sem limite, volta às 15:00"
+em cada uma que chegou; escolher uma dessas na mão faz ele tentar de novo. Fica anotado em `.estado/limites.json`.
+
 ### Whisper local (opcional)
 
 Sem ele, o Ultron usa o ElevenLabs Scribe sozinho (`ULTRON_TRANSCRICAO=auto`). Pra transcrever de graça:

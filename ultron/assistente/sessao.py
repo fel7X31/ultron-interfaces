@@ -2,6 +2,7 @@
 
 - SessaoClaude.perguntar(texto): manda a fala e espera a resposta (com o aviso rápido "Um instante..." no meio)
 - SessaoClaude.interromper(): para o Claude na hora (barra de espaço) e a conversa continua
+- com_limite(): marca a resposta que falhou porque a conta chegou no limite do plano (o turno passa pra outra IA)
 - rotulo_ferramenta(): o nome amigável do que ele está usando, pra tela mostrar
 """
 import json
@@ -18,9 +19,11 @@ from ..nucleo.claude_cli import claude_bin
 from ..nucleo.config import CFG, ESTADO, RAIZ, persona
 from ..nucleo.eventos import EVENTOS
 from ..nucleo.log import log
+from ..recursos import ias
 from ..recursos.provas import lembrete_prova
 
 ESPERA_AVISO = 0.3  # só fala "um instante" se o trabalho com ferramenta passar disso
+LIMITE_NO_TEXTO = re.compile(r"hit your limit|usage limit|limit reached", re.I)  # o aviso do Claude Code, em inglês
 
 
 # ---------------------------------------------------------------- o que vai junto de cada fala
@@ -105,6 +108,7 @@ class TurnoClaude:
         self.avisou = False
         self.ao_avisar = ao_avisar
         self.agendado = False
+        self.limite = None  # {"ate", "tipo"}: o Claude Code avisou que a conta chegou no limite do plano
         self.trava = threading.Lock()
         self.marcas = {"envio": time.time()}  # tempos de cada etapa, pro log
 
@@ -142,8 +146,14 @@ class SessaoClaude:
         self.livre = threading.Event()  # o Claude fecha a rodada uns segundos depois da resposta
         self.livre.set()
         self.ferramentas_turno = []
+        self.modelo_aberto = None  # o modelo com que o processo do Claude abriu
 
-    def comando(self):
+    def modelo_agora(self):
+        """O modelo que você escolheu ou, se ele chegou no limite da semana, outro do Claude que ainda tem."""
+        ia, modelo = ias.quem_responde()
+        return modelo if ia == "claude" else CFG["modelo"]
+
+    def comando(self, modelo):
         trava = f'"{sys.executable}" "{RAIZ / "hooks" / "trava.py"}"'
         registro = f'"{sys.executable}" "{RAIZ / "hooks" / "registro.py"}"'
         ajustes = {"hooks": {
@@ -163,8 +173,8 @@ class SessaoClaude:
         ]
         if CFG["contexto"] == "leve":
             cmd += ["--add-dir", str(CFG["pasta"])]
-        if CFG["modelo"]:
-            cmd += ["--model", CFG["modelo"]]
+        if modelo:
+            cmd += ["--model", modelo]
         if CFG["esforco"]:
             cmd += ["--effort", CFG["esforco"]]
         if CFG["bloquear"]:
@@ -188,8 +198,9 @@ class SessaoClaude:
         env["ULTRON_ESTADO"] = str(ESTADO)
         env["ULTRON_PASTA"] = str(CFG["pasta"])
         self.livre.set()
+        self.modelo_aberto = self.modelo_agora()
         self.proc = subprocess.Popen(
-            self.comando(), cwd=self.pasta_de_abertura(), env=env,
+            self.comando(self.modelo_aberto), cwd=self.pasta_de_abertura(), env=env,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, bufsize=1, encoding="utf-8",
         )
@@ -228,6 +239,8 @@ class SessaoClaude:
     def perguntar(self, texto, limite=300, ao_avisar=None, aviso_apos=None):
         """Manda a fala e espera a resposta. aviso_apos: se demorar isso (s), fala o aviso rápido mesmo sem ferramenta."""
         with self.lock:
+            if self.vivo() and self.modelo_aberto != self.modelo_agora():
+                self.parar()  # o modelo chegou no limite (ou voltou): abre de novo com o certo
             if not self.vivo():
                 self.iniciar()
             espera = time.time()
@@ -242,10 +255,11 @@ class SessaoClaude:
             if aviso_apos:
                 _depois(aviso_apos, turno.avisar)
             try:
-                return turno.fila.get(timeout=limite)
+                r = turno.fila.get(timeout=limite)
             except queue.Empty:
                 self.parar()
                 return {"is_error": True, "result": f"Demorei demais e reiniciei a conversa, {CFG['nome']}. Repita."}
+            return com_limite(r, turno.limite)
 
     # -------------------------------------------------- leitura da saída do Claude (uma thread por processo)
     def _ler_saida(self, proc):
@@ -282,6 +296,10 @@ class SessaoClaude:
                     elif bloco.get("type") == "tool_use":
                         self._usou_ferramenta(turno, bloco, texto_msg)
                         texto_msg = ""
+            elif tipo == "rate_limit_event":
+                info = e.get("rate_limit_info") or {}
+                if turno and info.get("status") == "rejected":
+                    turno.limite = {"ate": _segundos(info.get("resetsAt")), "tipo": str(info.get("rateLimitType") or "")}
             elif tipo == "result":
                 if turno:
                     turno.entregar(e)
@@ -308,6 +326,29 @@ class SessaoClaude:
             for linha in proc.stderr:
                 f.write(linha)
                 f.flush()
+
+
+def com_limite(r, limite=None):
+    """A resposta falhou porque a conta chegou no limite do plano? Junta o limite ({"ate", "tipo"}) nela.
+
+    Vale o aviso do Claude Code (rate_limit_event) ou, se ele não veio, o texto do erro.
+    """
+    if not r.get("is_error"):
+        return r
+    texto = str(r.get("result") or "")
+    if not limite and LIMITE_NO_TEXTO.search(texto):
+        hora = re.search(r"\|(\d{10})\b", texto)  # o aviso antigo: "Claude AI usage limit reached|1763226000"
+        limite = {"ate": float(hora.group(1)) if hora else None, "tipo": ""}
+    return {**r, "limite": limite} if limite else r
+
+
+def _segundos(valor):
+    """A hora Unix (em segundos) do resetsAt do aviso de limite; aceita em milissegundos também."""
+    try:
+        valor = float(valor)
+    except (TypeError, ValueError):
+        return None
+    return valor / 1000 if valor > 1e12 else valor
 
 
 SESSAO = SessaoClaude()
