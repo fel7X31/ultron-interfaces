@@ -526,6 +526,13 @@
   body.escuro .escolha-dif { background: rgba(18, 20, 23, .97); border-color: rgba(255, 255, 255, .08); box-shadow: 0 12px 34px rgba(0, 0, 0, .6); }
   .tarefa .nova-tarefa.editando { flex: 1; margin: -4px 0; padding: 4px 8px; width: auto; }
   .nova-tarefa { width: 100%; box-sizing: border-box; margin: 2px 0 8px; background: rgba(30, 32, 36, .05); border: 1px solid rgba(30, 32, 36, .15); border-radius: 10px; color: var(--texto); font: inherit; font-size: 13px; padding: 8px 10px; outline: none; }
+  .visor-camada { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
+  .visor-janela { position: absolute; width: min(30vw, 340px); height: min(70vh, 520px); min-width: 200px; min-height: 160px; max-width: 96vw; max-height: 96vh; resize: both; overflow: hidden; pointer-events: auto; padding: 12px; display: flex; flex-direction: column; }
+  .visor-janela .config-topo { margin-bottom: 10px; cursor: move; touch-action: none; }
+  .visor-janela .config-titulo { font-size: 11px; letter-spacing: .18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .visor-corpo { flex: 1; min-height: 0; overflow: hidden; position: relative; touch-action: none; }
+  .visor-corpo img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; pointer-events: none; user-select: none; transform-origin: 50% 50%; }
+  .visor-corpo iframe { width: 100%; height: 100%; border: 0; border-radius: 8px; background: #fff; }
   .leitor-cab { font-size: 13px; color: var(--suave); margin-bottom: 4px; }
   .leitor-assunto { font-size: 17px; font-weight: 600; margin-bottom: 12px; }
   .leitor-texto { font-size: 14px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; max-height: 58vh; overflow: auto; user-select: text; }
@@ -767,6 +774,8 @@
     <div id="leitorTexto" class="leitor-texto"></div>
   </div>
 </div>
+
+<div id="visor" class="config visor-camada" hidden></div>
 
 <div id="novoEvento" class="config" hidden>
   <div class="config-caixa" role="dialog" aria-modal="true" aria-label="Novo compromisso">
@@ -1898,6 +1907,8 @@
         if (e.abrir) abrirQuadro(); else fecharQuadro();
       } else if (e.tipo === "curriculo") {
         if (e.abrir) abrirCurriculo(e.modo); else fecharCurriculo();
+      } else if (e.tipo === "visor") {  // "mostra essa foto / abre esse arquivo" na tela
+        abrirVisor(e.item);
       } else if (e.tipo === "limpeza") {
         podarHistorico();
         if (chatAberto()) desenharChat();
@@ -1953,7 +1964,7 @@
 
   // ---------------------------------------------------------- configurações (engrenagem)
   const painel = el("config");
-  const configAberta = () => !painel.hidden || !el("chat").hidden || !el("perfil").hidden || !el("leitor").hidden || !el("novoEvento").hidden || !el("recorte").hidden || !el("provas").hidden || !el("quadro").hidden;
+  const configAberta = () => !painel.hidden || !el("chat").hidden || !el("perfil").hidden || !el("leitor").hidden || !el("novoEvento").hidden || !el("recorte").hidden || !el("provas").hidden || !el("quadro").hidden || !el("visor").hidden;
   let config = null;
   let mouseTimer = null;
 
@@ -2296,6 +2307,82 @@
       el("leitorTexto").textContent = "Não consegui abrir esse e-mail agora.";
     }
   }
+  const visorEl = el("visor");
+  // Várias janelas ao mesmo tempo; cada uma se arrasta pela barra de cima.
+  let visorZ = 1;
+  function abrirVisor(item) {
+    const janela = document.createElement("div");
+    janela.className = "config-caixa visor-janela";
+    janela.setAttribute("role", "dialog");
+    const topo = document.createElement("div");
+    topo.className = "config-topo";
+    const nome = document.createElement("span");
+    nome.className = "config-titulo";
+    nome.textContent = item.nome || "";
+    const fechar = document.createElement("button");
+    fechar.className = "config-fechar";
+    fechar.setAttribute("aria-label", "Fechar");
+    fechar.textContent = "×";
+    topo.append(nome, fechar);
+    const corpo = document.createElement("div");
+    corpo.className = "visor-corpo";
+    const peca = document.createElement(item.tipo === "imagem" ? "img" : "iframe");
+    peca.src = item.url;
+    if (item.tipo === "imagem") peca.alt = item.nome || "";
+    corpo.append(peca);
+    if (item.tipo === "imagem") {  // zoom com a roda, arrastar para mover, duplo clique volta ao normal
+      let z = 1, px = 0, py = 0;
+      const aplicar = () => {
+        const mx = corpo.clientWidth * (z - 1) / 2, my = corpo.clientHeight * (z - 1) / 2;
+        px = Math.max(-mx, Math.min(mx, px)); py = Math.max(-my, Math.min(my, py));
+        peca.style.transform = `translate(${px}px, ${py}px) scale(${z})`;
+      };
+      corpo.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        z = Math.max(1, Math.min(8, z * Math.exp(-e.deltaY * 0.0015)));
+        aplicar();
+      }, { passive: false });
+      corpo.addEventListener("dblclick", () => { z = 1; px = py = 0; aplicar(); });
+      corpo.addEventListener("pointerdown", (e) => {
+        if (z <= 1) return;
+        const x0 = e.clientX - px, y0 = e.clientY - py;
+        corpo.setPointerCapture(e.pointerId);
+        const mover = (ev) => { px = ev.clientX - x0; py = ev.clientY - y0; aplicar(); };
+        const soltar = () => { corpo.removeEventListener("pointermove", mover); corpo.removeEventListener("pointerup", soltar); };
+        corpo.addEventListener("pointermove", mover);
+        corpo.addEventListener("pointerup", soltar);
+      });
+    }
+    janela.append(topo, corpo);
+    const n = visorEl.children.length;
+    janela.style.left = Math.max(8, Math.min(innerWidth - 500, 40 + n * 60)) + "px";
+    janela.style.top = (40 + n * 40) + "px";
+    janela.style.zIndex = ++visorZ;
+    visorEl.append(janela);
+    visorEl.hidden = false;
+    janela.addEventListener("pointerdown", () => { janela.style.zIndex = ++visorZ; });
+    topo.addEventListener("pointerdown", (e) => {
+      if (e.target === fechar) return;
+      const dx = e.clientX - janela.offsetLeft, dy = e.clientY - janela.offsetTop;
+      topo.setPointerCapture(e.pointerId);
+      const mover = (ev) => {
+        janela.style.left = Math.max(0, Math.min(innerWidth - 80, ev.clientX - dx)) + "px";
+        janela.style.top = Math.max(0, Math.min(innerHeight - 40, ev.clientY - dy)) + "px";
+      };
+      const soltar = () => { topo.removeEventListener("pointermove", mover); topo.removeEventListener("pointerup", soltar); };
+      topo.addEventListener("pointermove", mover);
+      topo.addEventListener("pointerup", soltar);
+    });
+    fechar.addEventListener("click", () => { janela.remove(); if (!visorEl.children.length) visorEl.hidden = true; });
+  }
+  addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !visorEl.hidden && visorEl.lastElementChild) {
+      let topoJ = visorEl.lastElementChild;
+      for (const j of visorEl.children) if (+j.style.zIndex > +topoJ.style.zIndex) topoJ = j;
+      topoJ.remove();
+      if (!visorEl.children.length) visorEl.hidden = true;
+    }
+  });
   el("fecharLeitor").addEventListener("click", () => { leitorEl.hidden = true; });
   leitorEl.addEventListener("click", (e) => { if (e.target === leitorEl) leitorEl.hidden = true; });
 
