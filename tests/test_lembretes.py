@@ -102,7 +102,7 @@ class TesteLembretesETimers(unittest.TestCase):
         self.assertEqual(tentar("cancela o timer"), "2 timers cancelados.")
         self.assertEqual(tentar("cancela o timer"), "Não tem timer rodando.")
         resposta = tentar("me lembra de beber água daqui a 20 minutos")
-        self.assertTrue(resposta.startswith("Combinado. Às "), resposta)
+        self.assertRegex(resposta, r"^Combinado\. (Às|Amanhã às) ")  # perto da meia-noite, 20 minutos já é amanhã
         self.assertTrue(resposta.endswith("eu te lembro: beber água."), resposta)
         self.assertEqual(lembretes.ler()[0]["texto"], "beber água")
         self.assertTrue(tentar("me lembra de comprar pão").startswith("Pra quando?"))
