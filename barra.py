@@ -21,7 +21,8 @@ from ultron.recursos.pc import janelas
 
 URL = f"http://127.0.0.1:{CFG['porta']}"
 ESCONDIDO = 12              # px da janela acima da tela: os cantos de cima somem e sobra o entalhe (igual ao barra.css)
-FECHADA = (132, 34)         # o entalhe compacto, em px da página (a LARGURA_COMPACTA do barra.js; com música, 600)
+FECHADA = (132, 34)         # o entalhe compacto, em px da página (a LARGURA_COMPACTA do barra.js; com música, 470)
+JANELA = (900, 548)         # a janela tem sempre o tamanho do painel aberto (LARGURA_ABERTA e ALTURA_ABERTA do barra.js)
 FUNDO = {"prata": "#cfd2d6", "escuro": "#0b0c0e"}  # a cor antes da página carregar (evita um clarão)
 NA_FRENTE, SEM_ATIVAR, SO_FICAR_NA_FRENTE = -1, 0x10, 0x13
 MOSTRAR_SEM_ATIVAR, ESCONDER = 4, 0
@@ -35,12 +36,14 @@ TELA_OCUPADA = (2, 3, 4)  # o Windows diz: app em tela cheia, jogo DirectX em te
 ANIMACAO_S = 0.22         # quanto o painel leva pra abrir ou minimizar
 QUADRO_S = 1 / 120        # um quadro da animação (o timer de 1 ms do main() deixa o sleep chegar perto disso)
 RAIO = 18                 # o arredondado do recorte enquanto ele cresce ou encolhe, em px da página
-SEM_REDESENHAR = 0x8
 
 user32 = ctypes.WinDLL("user32")
 shell32 = ctypes.WinDLL("shell32")
 gdi32 = ctypes.WinDLL("gdi32")
-gdi32.CreateRoundRectRgn.restype = wintypes.HRGN
+gdi32.CreateRoundRectRgn.restype = gdi32.CreateRectRgn.restype = wintypes.HRGN
+user32.GetWindowRgn.argtypes = [wintypes.HWND, wintypes.HRGN]
+gdi32.GetRgnBox.argtypes = [wintypes.HRGN, ctypes.c_void_p]
+gdi32.DeleteObject.argtypes = [wintypes.HANDLE]
 user32.SetWindowRgn.argtypes = [wintypes.HWND, wintypes.HRGN, wintypes.BOOL]
 user32.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND] + [ctypes.c_int] * 4 + [ctypes.c_uint]
 user32.MonitorFromWindow.restype = wintypes.HMONITOR
@@ -62,7 +65,7 @@ class Barra:
         self._janela = None
         self._numero = None          # o identificador da janela no Windows
         self._quer_aparecer = False  # o que a página pediu (o Ultron diz se a tela dele está à vista)
-        self._tamanho = FECHADA      # o tamanho de agora, em px da página
+        self._parte = FECHADA        # o pedaço da janela à vista agora, em px da página
         self._trava = threading.Lock()  # uma animação de cada vez
         self._ordem = 0              # o último pedido de tamanho que valeu (a página numera cada um)
 
@@ -76,24 +79,21 @@ class Barra:
         self._mudar(largura, FECHADA[1], ordem)
 
     def _mudar(self, largura, altura, ordem=None):
-        """Vai do tamanho de agora pro novo sem a página se redesenhar no meio (é isso que travava): a janela fica do
-        maior dos dois tamanhos, recortada no de agora; o recorte cresce ou encolhe até o novo; aí ela fica do novo.
+        """Abre, minimiza ou muda a largura do entalhe mexendo só no recorte: a janela fica sempre do tamanho do painel.
+        Mudar o tamanho dela fazia a página se redesenhar no meio da animação, e enquanto isso aparecia um cinza.
 
         O pywebview roda cada chamada da página numa thread: um "abrir" pode chegar depois do "minimizar" que veio
-        depois dele. Pelo número da ordem, pedido atrasado não vale (senão o painel ficava aberto atrás do entalhe).
-        Devolve se mudou."""
+        depois dele. Pelo número da ordem, pedido atrasado não vale. Devolve se mudou."""
         with self._trava:
             if ordem is not None:
                 if ordem < self._ordem:
                     return False
                 self._ordem = ordem
-            de, para = self._tamanho, (largura, altura)
-            maior = (max(de[0], para[0]), max(de[1], para[1]))
+            de, para = self._parte, (min(largura, JANELA[0]), min(altura, JANELA[1]))
             if de != para:
-                if maior != de:
-                    self._colocar(*maior, recorte=de)
                 self._animar_recorte(de, para)
-            self._colocar(largura, altura)
+            self._parte = para
+            self._recortar(para)
             return True
 
     def aparecer(self, sim):
@@ -116,7 +116,8 @@ class Barra:
         self._janela = janela
         self._numero = janela.native.Handle.ToInt32()
         _arredondar(self._numero)
-        self.recolher()
+        with self._trava:
+            self._colocar()
         threading.Thread(target=self._vigiar, daemon=True).start()
 
     def _animar_recorte(self, de, para):
@@ -126,31 +127,30 @@ class Barra:
         while True:
             passou = min(1.0, (time.perf_counter() - inicio) / ANIMACAO_S)
             t = 1 - (1 - passou) ** 3
-            self._recortar(self._tamanho, (de[0] + (para[0] - de[0]) * t, de[1] + (para[1] - de[1]) * t))
+            self._recortar((de[0] + (para[0] - de[0]) * t, de[1] + (para[1] - de[1]) * t))
             if passou >= 1:
                 return
             time.sleep(QUADRO_S)
 
-    def _recortar(self, janela, parte):
-        """Da janela de tamanho `janela`, só aparece (e recebe clique) a `parte`, no meio do topo. Em px da página."""
-        escala = self._escala()
-        largura, altura = round(parte[0] * escala), round((parte[1] + ESCONDIDO) * escala)
-        x, raio = (round(janela[0] * escala) - largura) // 2, round(RAIO * escala)
+    def _recortar(self, parte):
+        """Só aparece (e recebe clique) a `parte` da janela, no meio do topo; o resto deixa o clique passar. Em px da
+        página."""
+        x, largura, altura, raio = self._recorte_em_px(parte)
         user32.SetWindowRgn(self._numero, gdi32.CreateRoundRectRgn(x, 0, x + largura + 1, altura + 1, raio, raio), True)
 
-    def _colocar(self, largura, altura, recorte=None):
-        """No meio do topo da tela principal, com ESCONDIDO px acima dela. Com `recorte`, só esse pedaço aparece (ele
-        entra antes de mudar o tamanho, pra janela inteira não piscar); sem, a janela inteira."""
-        if recorte:
-            self._recortar((largura, altura), recorte)
-        self._tamanho = (largura, altura)
+    def _recorte_em_px(self, parte):
         escala = self._escala()
-        l, a = round(largura * escala), round((altura + ESCONDIDO) * escala)
+        largura, altura = round(parte[0] * escala), round((parte[1] + ESCONDIDO) * escala)
+        return (round(JANELA[0] * escala) - largura) // 2, largura, altura, round(RAIO * escala)
+
+    def _colocar(self):
+        """No meio do topo da tela principal, com ESCONDIDO px acima dela, do tamanho do painel e recortada na parte
+        de agora (o recorte entra antes, pra janela inteira não piscar)."""
+        self._recortar(self._parte)
+        escala = self._escala()
+        l, a = round(JANELA[0] * escala), round((JANELA[1] + ESCONDIDO) * escala)
         x = (user32.GetSystemMetrics(0) - l) // 2
-        user32.SetWindowPos(self._numero, NA_FRENTE, x, -round(ESCONDIDO * escala), l, a,
-                            SEM_ATIVAR | (0 if recorte else SEM_REDESENHAR))
-        if not recorte:
-            user32.SetWindowRgn(self._numero, None, True)
+        user32.SetWindowPos(self._numero, NA_FRENTE, x, -round(ESCONDIDO * escala), l, a, SEM_ATIVAR)
 
     def _escala(self):
         return user32.GetDpiForWindow(self._numero) / 96
@@ -162,16 +162,22 @@ class Barra:
             time.sleep(0.5)
 
     def _conferir_tamanho(self):
-        """Fora de uma animação, a janela tem que estar do tamanho combinado e sem recorte. Se não está (um pedido
-        perdido, o Windows mexeu nela), volta pro certo: é isso que deixava o painel cinza aparecendo atrás do entalhe."""
+        """Fora de uma animação, a janela tem que estar do tamanho do painel e recortada na parte combinada. Se não
+        está (o Windows ou o WinForms mexeram nela), volta pro certo."""
         if not self._trava.acquire(blocking=False):
             return
         try:
-            escala, r = self._escala(), _Retangulo()
-            user32.GetWindowRect(self._numero, ctypes.byref(r))
-            certo = (round(self._tamanho[0] * escala), round((self._tamanho[1] + ESCONDIDO) * escala))
-            if (r.direita - r.esquerda, r.baixo - r.cima) != certo:
-                self._colocar(*self._tamanho)
+            escala, janela, caixa = self._escala(), _Retangulo(), _Retangulo()
+            user32.GetWindowRect(self._numero, ctypes.byref(janela))
+            certo = (round(JANELA[0] * escala), round((JANELA[1] + ESCONDIDO) * escala))
+            regiao = gdi32.CreateRectRgn(0, 0, 0, 0)
+            tem_recorte = user32.GetWindowRgn(self._numero, regiao) != 0
+            gdi32.GetRgnBox(regiao, ctypes.byref(caixa))
+            gdi32.DeleteObject(regiao)
+            x, largura, _, _ = self._recorte_em_px(self._parte)
+            if ((janela.direita - janela.esquerda, janela.baixo - janela.cima) != certo or not tem_recorte
+                    or abs(caixa.esquerda - x) > 2 or abs(caixa.direita - caixa.esquerda - largura) > 2):
+                self._colocar()
         finally:
             self._trava.release()
 
@@ -257,7 +263,7 @@ def main():
     ctypes.WinDLL("winmm").timeBeginPeriod(1)  # sleep de 1 ms em vez de 15: a animação sai sem tranco
     barra = Barra()
     janela = webview.create_window(
-        "Barra do Ultron", f"{URL}/barra.html", js_api=barra, width=FECHADA[0], height=FECHADA[1] + ESCONDIDO,
+        "Barra do Ultron", f"{URL}/barra.html", js_api=barra, width=JANELA[0], height=JANELA[1] + ESCONDIDO,
         frameless=True, on_top=True, resizable=False, easy_drag=False, shadow=False, hidden=True,
         min_size=(100, 30), background_color=FUNDO.get(CFG["tema"], FUNDO["escuro"]))
     webview.start(barra._comecar, janela)
