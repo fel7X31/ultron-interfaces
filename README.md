@@ -14,7 +14,9 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
   ("usa o Gemini").
 - **Boca:** ElevenLabs ou Fish Audio.
 - **Rosto:** uma esfera na tela, com painéis de e-mail, agenda, tarefas, mercado e música.
-- **Comandos na hora:** "próxima música", "abre o currículo", "ativa o modo prova" respondem sem passar pelo Claude.
+- **Comandos na hora:** "próxima música", "abre o currículo", "ativa o modo prova", "volume 30", "pausa o Spotify",
+  "fecha o Discord" respondem sem passar pelo Claude.
+- **Controle do PC:** volume, música, janelas, programas, brilho, Configurações do Windows e uso do PC (Windows).
 - **Trava:** o que apaga, envia mensagem, publica ou desliga o PC só acontece depois que você diz "confirma".
 - **Extras:** modo prova, tela de currículo (analisar e adaptar, exporta Word e PDF), histórico diário das conversas.
 

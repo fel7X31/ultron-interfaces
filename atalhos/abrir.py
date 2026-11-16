@@ -3,36 +3,19 @@
   python atalhos/abrir.py "https://youtube.com"
   python atalhos/abrir.py "C:/Users/Miguel Felix/Downloads"
   python atalhos/abrir.py spotify        (programa pelo nome: spotify, notepad, calc, explorer, code...)
-Só abre na tela; não apaga nem muda nada.
+Só abre na tela; não apaga nem muda nada. Os nomes conhecidos ficam em ultron/recursos/pc/programas.py.
 """
-import os
-import shutil
-import subprocess
 import sys
+from pathlib import Path
 
-# Programas que não estão no PATH: nome falado -> como o Windows abre
-CONHECIDOS = {
-    "spotify": "spotify:", "whatsapp": "whatsapp:", "configuracoes": "ms-settings:", "configurações": "ms-settings:",
-    "calculadora": "calc", "bloco de notas": "notepad", "explorador": "explorer", "arquivos": "explorer",
-    "vscode": "code", "vs code": "code", "navegador": "https://www.google.com", "chrome": "chrome", "edge": "msedge",
-    "discord": "discord:", "steam": "steam:", "teams": "msteams:",
-}
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from ultron.recursos.pc.programas import abrir  # noqa: E402
 
 
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
-    alvo = " ".join(sys.argv[1:]).strip().strip('"')
-    alvo = CONHECIDOS.get(alvo.lower(), alvo)
-    if sys.platform == "darwin":
-        subprocess.Popen(["open", alvo] if os.path.exists(alvo) or ":" in alvo else ["open", "-a", alvo])
-    elif os.path.exists(alvo) or "://" in alvo or alvo.endswith(":"):
-        os.startfile(alvo)
-    elif shutil.which(alvo):
-        subprocess.Popen([shutil.which(alvo)], creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
-    else:  # deixa o Windows achar (apps da loja, atalhos do menu iniciar)
-        subprocess.Popen(["cmd", "/c", "start", "", alvo], creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-    print("Aberto:", alvo)
+    print("Aberto:", abrir(" ".join(sys.argv[1:])))
 
 
 if __name__ == "__main__":

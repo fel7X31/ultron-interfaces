@@ -48,10 +48,19 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │   ├── curriculo.py         tela do currículo (analisar e adaptar)
 │   │   ├── ias.py               outras IAs (ChatGPT, Gemini, Grok), pela API de cada uma
 │   │   ├── contas_ia.py         as mesmas IAs pela sua conta, sem chave (Gemini CLI com o Google, Codex com o ChatGPT)
-│   │   └── limites.py           até quando cada IA está sem limite do plano (ias.quem_responde passa pra próxima)
+│   │   ├── limites.py           até quando cada IA está sem limite do plano (ias.quem_responde passa pra próxima)
+│   │   └── pc/                  controle do PC (Windows): executar(ação, alvo) e estado()
+│   │       ├── acoes.py           cada ação com a frase do que fez (a porta de entrada)
+│   │       ├── uso.py             processador, memória, disco, placa de vídeo e bateria
+│   │       ├── volume.py          volume e mudo do Windows
+│   │       ├── midia.py           o que está tocando e a capa (o midia.ps1 vigia e avisa) e as teclas de tocar/pular
+│   │       ├── janelas.py         listar, trazer pra frente, minimizar, maximizar e fechar janelas
+│   │       ├── programas.py       abrir e fechar programas pelo nome falado
+│   │       └── sistema.py         bloquear, brilho (brilho.ps1), recorte de tela e Configurações
 │   ├── assistente/
 │   │   ├── sessao.py            o processo do Claude Code que fica aberto (SESSAO)
 │   │   ├── comandos.py          comandos de voz que respondem sem o Claude
+│   │   ├── comandos_pc.py       comandos de voz do PC ("volume 30", "pausa o Spotify", "fecha o Discord")
 │   │   ├── comandos_ia.py       "usa o Gemini", "volta pro Claude", "usa o Opus"
 │   │   ├── cerebro.py           quem responde: o Claude ou outra IA (e a conversa com ela)
 │   │   ├── confirmacao.py       quando a trava abre ("Confirma?" → "sim")
@@ -62,7 +71,8 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │       └── rotas/               um arquivo de rotas por assunto
 ├── web/                       a tela (HTML/CSS/JS, sem build)
 ├── hooks/                     trava.py (o que precisa de confirmação) e registro.py (log das mudanças do Ultron)
-├── atalhos/                   scripts de resposta rápida que o Ultron roda
+├── atalhos/                   scripts que o Ultron roda (pc.py controla o PC, perguntar_ia.py consulta outra IA,
+│                              abrir.py, tela.py, mostrar.py, mercado.py...)
 ├── tests/                     python -m unittest discover -s tests
 └── docs/
 ```

@@ -31,6 +31,7 @@ Se não houver entrada nova, siga direto com a tarefa.
 ## Coisas a saber
 - Mudança em `.py` só vale depois de religar o servidor (o `palmas.py` liga com `server.py --sem-abrir`;
   `.estado/servidor.pid` tem o PID). Em `web/`, basta recarregar a tela.
+- Nos testes do controle do PC, simule `pc.executar` (mock): rodar de verdade bloqueia a tela, pausa o vídeo dele etc.
 - Teste que passa pelo `cerebro` ou pelo `ias.quem_responde()` aponta o `limites.ARQUIVO` pra uma pasta temporária
   (veja `tests/test_limites.py`): senão ele lê e grava o `.estado/limites.json` de verdade.
 - A trava (`hooks/trava.py`) e o `.env` o Ultron nunca pode mudar — só o Claude Code.
