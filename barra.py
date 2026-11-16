@@ -30,8 +30,11 @@ ESTILO, MINIMIZAR_E_MAXIMIZAR = -16, 0x30000
 ESTILO_EXTRA, DE_FERRAMENTA, DE_APP = -20, 0x80, 0x40000
 TELA_PRINCIPAL, MONITOR_MAIS_PERTO = 1, 2
 JA_EXISTE = 183
+COM_BARRA_DE_TITULO, SEMPRE_NA_FRENTE = 0x00C00000, 0x8
+TELA_OCUPADA = (2, 3, 4)  # o Windows diz: app em tela cheia, jogo DirectX em tela cheia ou apresentação
 
 user32 = ctypes.WinDLL("user32")
+shell32 = ctypes.WinDLL("shell32")
 user32.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND] + [ctypes.c_int] * 4 + [ctypes.c_uint]
 user32.MonitorFromWindow.restype = wintypes.HMONITOR
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -93,7 +96,7 @@ class Barra:
     def _vigiar(self):
         while True:
             self._conferir_visibilidade()
-            time.sleep(1)
+            time.sleep(0.5)
 
     def _conferir_visibilidade(self):
         """Aparece quando a página pede, menos com jogo ou vídeo em tela cheia na tela principal.
@@ -111,7 +114,8 @@ class Barra:
             user32.ShowWindow(self._numero, ESCONDER)  # esconder e mostrar de novo tira o botão da barra de tarefas
         if not user32.IsWindowVisible(self._numero) or user32.IsIconic(self._numero):
             user32.ShowWindow(self._numero, MOSTRAR_SEM_ATIVAR)
-        user32.SetWindowPos(self._numero, NA_FRENTE, 0, 0, 0, 0, SO_FICAR_NA_FRENTE)
+        if not user32.GetWindowLongW(self._numero, ESTILO_EXTRA) & SEMPRE_NA_FRENTE:  # só se perdeu: forçar a
+            user32.SetWindowPos(self._numero, NA_FRENTE, 0, 0, 0, 0, SO_FICAR_NA_FRENTE)  # toda hora atrapalha jogos
 
 
 def _arredondar(numero):
@@ -135,9 +139,18 @@ def _manter_jeito_de_entalhe(numero):
 
 def _tela_cheia_na_frente(barra):
     """Jogo, vídeo ou apresentação em tela cheia, na frente de tudo, na tela principal (onde fica a barra)?
-    Janela maximizada não conta: com a barra de tarefas escondida, ela também cobre a tela inteira."""
+
+    Primeiro pergunta pro Windows (o mesmo aviso que ele usa pra calar as notificações durante jogos). Depois confere a
+    janela da frente: cobrindo a tela inteira e sem barra de título. Janela maximizada comum (com barra de título) não
+    conta: com a barra de tarefas escondida, ela também cobre a tela inteira. Jogo em tela cheia sem borda conta.
+    """
+    ocupada = ctypes.c_int(0)
+    if shell32.SHQueryUserNotificationState(ctypes.byref(ocupada)) == 0 and ocupada.value in TELA_OCUPADA:
+        return True
     frente = user32.GetForegroundWindow()
-    if not frente or frente == barra or user32.IsZoomed(frente) or _classe(frente) in janelas.DO_WINDOWS:
+    if not frente or frente == barra or _classe(frente) in janelas.DO_WINDOWS:
+        return False
+    if user32.IsZoomed(frente) and user32.GetWindowLongW(frente, ESTILO) & COM_BARRA_DE_TITULO:
         return False
     monitor = _Monitor(tamanho=ctypes.sizeof(_Monitor))
     user32.GetMonitorInfoW(user32.MonitorFromWindow(frente, MONITOR_MAIS_PERTO), ctypes.byref(monitor))
