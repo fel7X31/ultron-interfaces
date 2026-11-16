@@ -83,7 +83,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │                              temas, usadas pela tela e pela barra
 ├── hooks/                     trava.py (o que precisa de confirmação) e registro.py (log das mudanças do Ultron)
 ├── atalhos/                   scripts que o Ultron roda (pc.py controla o PC, perguntar_ia.py consulta outra IA,
-│                              abrir.py, tela.py, mostrar.py, mercado.py...)
+│                              abrir.py, video.py, tela.py, mostrar.py, mercado.py...)
 ├── tests/                     python -m unittest discover -s tests
 └── docs/
 ```
