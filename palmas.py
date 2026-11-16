@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Liga o Ultron com duas palmas ou dizendo "Ultron".
+"""Liga o Ultron com duas palmas e, com ele no ar, atende quando você chama ("Ultron").
 
-Fica ouvindo o microfone. Quando ouve duas palmas seguidas ou a palavra, solta o
-microfone, liga o server.py sem janela (se ele ainda não estiver no ar) e abre a
-esfera em tela cheia. Desliga quando você manda por voz ("desliga") ou fecha a
-janela. Depois volta a ouvir.
+Fica ouvindo o microfone. Quando ouve duas palmas seguidas, solta o microfone, liga o
+server.py sem janela (se ele ainda não estiver no ar) e abre a esfera em tela cheia.
+Desliga quando você manda por voz ("desliga") ou fecha a janela. Depois volta a ouvir.
 
 Com o Ultron no ar, dizer "Ultron" faz ele ouvir o pedido (bipe, você fala, ele faz),
 pelo reconhecimento de fala do Windows (ultron/voz/chamado.ps1), sem internet.
@@ -12,7 +11,6 @@ O Ctrl+Alt+V (segurar e falar) e o microfone da barra do topo também passam por
 
 Rodar:           py palmas.py
 Testar o nome:   py palmas.py --testar-chamado   (mostra cada "Ultron" que o Windows ouviu e com que certeza)
-Gravar a voz:    py palmas.py --gravar-palavra   (sem isso, só as palmas ligam)
 Calibrar:        py palmas.py --calibrar   (mostra o volume de cada som e não liga nada)
 Desligar:        py palmas.py --desligar   (fecha o Ultron que as palmas ligaram)
 Precisa de:      py -m pip install sounddevice numpy
@@ -42,7 +40,6 @@ if sys.stdout is None:
 import numpy as np
 import sounddevice as sd
 
-from ultron.voz import palavra
 from ultron.voz.chamado import Chamado, FimDaFala
 
 
@@ -78,9 +75,10 @@ ATALHO_TECLA = 0x56
 ATALHO_BIPE = True
 ATALHO_MAX_S = 30
 ATALHO_CAUDA_S = 0.25
-CHAMADO_ACEITA = ("High", "Medium")  # certeza do Windows pra aceitar o "Ultron" (tire "Medium" se ele ouvir sozinho)
+CHAMADO_ACEITA = ("High", "Medium", "Low")  # certeza do Windows pra valer (tire "Low" se ele ouvir sozinho)
+CHAMADO_NOME_MAX_S = 2.0   # "Ultron" ou "Ei, Ultron" é curto: frase comprida que o Windows achou parecida não vale
 CHAMADO_ESPERA_S = 5       # depois do bipe, quanto espera você começar a falar
-CHAMADO_SILENCIO_S = 1.0   # quanto silêncio, depois de falar, encerra o pedido
+CHAMADO_SILENCIO_S = 0.8   # quanto silêncio, depois de falar, encerra o pedido
 CHAMADO_MAX_S = 20
 FALANDO_NO_MAXIMO_S = 60   # sem o aviso de que a voz acabou, depois disso aceita o nome de novo
 
@@ -89,8 +87,6 @@ SEM_AUDIO_S = 3
 PID = ESTADO / "servidor.pid"
 PID_TELA = ESTADO / "tela.pid"
 LOG = ESTADO / "log.jsonl"
-VOZ_GRAVADA = ESTADO / "palavra.npz"
-GRAVACOES = 8
 GRAVANDO = threading.Lock()   # um pedido gravado de cada vez (atalho, nome ou botão)
 VOZ_DO_ULTRON = {"ate": 0.0}  # até quando a resposta dele pode estar tocando (o nome dito por ele não vale)
 
@@ -266,16 +262,23 @@ def atender(eventos, s, chamado):
             em_paralelo(ao_ser_chamado, "botao", 1.0, 0.0)
 
 
+def vale_o_nome(confianca, segundos):
+    """O Windows ouviu o nome com certeza bastante e curto (não era uma frase comprida parecida)?"""
+    return confianca in CHAMADO_ACEITA and segundos <= CHAMADO_NOME_MAX_S
+
+
 def ao_ser_chamado(confianca, certeza, segundos):
     """Ouviu "Ultron" (ou o microfone da barra): bipe, grava o pedido até você parar de falar e manda pro Ultron."""
     pelo_botao = confianca == "botao"
-    if not pelo_botao and confianca not in CHAMADO_ACEITA:
-        print(f"Ouvi algo como \"Ultron\", mas com pouca certeza ({confianca} {certeza:.2f}). Ignorado.")
+    if not pelo_botao and not vale_o_nome(confianca, segundos):
+        print(f"Ouvi algo como \"Ultron\" ({confianca} {certeza:.2f}, {segundos:.1f} s). Não valeu.")
         return
     s = saude()
-    ocupado = not s or s.get("estado") != "parado" or time.time() < VOZ_DO_ULTRON["ate"]
+    falando = time.time() < VOZ_DO_ULTRON["ate"]
+    ocupado = not s or s.get("estado") != "parado" or falando
     if (ocupado and not pelo_botao) or not GRAVANDO.acquire(blocking=False):
-        print(f"\"Ultron\" ignorado: ele está {s.get('estado') if s else 'desligado'} ou falando.")
+        motivo = "falando" if falando else (s.get("estado") if s else "desligado")
+        print(f"\"Ultron\" ignorado: ele está {motivo}.")
         return
     try:
         print(f"Chamado ({confianca} {certeza:.2f}). Ouvindo o pedido...")
@@ -324,7 +327,7 @@ def mandar_fala(audio, quem):
 def testar_chamado():
     """Mostra cada "Ultron" que o Windows reconhece e com que certeza, sem ligar nada. Ctrl+C pra sair."""
     def mostrar(confianca, certeza, segundos):
-        aceito = "  >>> aceito" if confianca in CHAMADO_ACEITA else "  (ignorado)"
+        aceito = "  >>> vale" if vale_o_nome(confianca, segundos) else "  (não vale)"
         print(f"  ouvi \"Ultron\": {confianca} ({certeza:.2f}), {segundos:.2f} s{aceito}")
 
     chamado = Chamado(mostrar)
@@ -371,45 +374,8 @@ def proximo_bloco(blocos):
         raise RuntimeError(f"sem áudio há {SEM_AUDIO_S} s") from None
 
 
-def ouvinte_da_palavra(taxa, mostrar_tudo):
-    """Função que recebe os blocos do microfone e diz se ouviu "Ultron". Sem a voz gravada, nunca ouve."""
-    voz = palavra.carregar(VOZ_GRAVADA)
-    if voz is None:
-        return lambda _bloco: False
-    modelos, limite = voz
-    segmentador = palavra.Segmentador(taxa)
-
-    def ouviu(bloco):
-        trecho = segmentador.receber(bloco)
-        if trecho is None:
-            return False
-        d = palavra.distancia(palavra.coeficientes(trecho, taxa), modelos)
-        if mostrar_tudo or d <= limite:
-            print(f"  palavra? distância {d:.2f}  limite {limite:.2f}  {'>>> ULTRON' if d <= limite else ''}")
-        return d <= limite
-
-    return ouviu
-
-
-def gravar_palavra():
-    """Grava você dizendo "Ultron" algumas vezes e guarda, pra reconhecer depois."""
-    blocos = queue.Queue()
-    stream, taxa, modo = abrir_microfone(lambda dados, *_: blocos.put(dados.copy()))
-    segmentador, trechos = palavra.Segmentador(taxa), []
-    with stream:
-        print(f"Microfone no modo {modo}. Diga \"Ultron\" do jeito que vai chamar, com uma pausa entre cada vez.")
-        while len(trechos) < GRAVACOES:
-            trecho = segmentador.receber(proximo_bloco(blocos)[:, 0])
-            if trecho is not None:
-                trechos.append(trecho)
-                print(f"  {len(trechos)} de {GRAVACOES} ({len(trecho) / taxa:.2f} s)")
-    modelos, limite = palavra.treinar(trechos, taxa)
-    palavra.salvar(VOZ_GRAVADA, modelos, limite)
-    print(f"Pronto. Limite {limite:.2f}. Teste com: py palmas.py --calibrar")
-
-
 def ouvir(calibrar=False):
-    """Fica no microfone até ouvir duas palmas ou a palavra e diz qual foi. Em modo calibrar, nunca retorna."""
+    """Fica no microfone até ouvir duas palmas. Em modo calibrar, só mostra o volume e nunca retorna."""
     blocos = queue.Queue()
 
     def receber(dados, _frames, _tempo, _status):
@@ -425,16 +391,11 @@ def ouvir(calibrar=False):
     janela_inicio, janela_pico = 0.0, 0.0
 
     stream, taxa, modo = abrir_microfone(receber)
-    ouviu_palavra = ouvinte_da_palavra(taxa, mostrar_tudo=calibrar)
     with stream:
-        chamar = " ou diga Ultron" if VOZ_GRAVADA.exists() else ""
-        print(f"Microfone no modo {modo}. " + (f"Ouvindo. Bata duas palmas{chamar} pra ligar." if not calibrar else
-              "Calibrando. Bata palmas, diga Ultron, fale, faça barulho normal. Ctrl+C pra sair."))
+        print(f"Microfone no modo {modo}. " + ("Ouvindo. Bata duas palmas pra ligar." if not calibrar else
+              "Calibrando. Bata palmas, fale, faça barulho normal. Ctrl+C pra sair."))
         while True:
-            cru = proximo_bloco(blocos)
-            if ouviu_palavra(cru[:, 0]) and not calibrar:
-                return "Ouvi a palavra!"
-            bloco = np.max(np.abs(cru), axis=1)
+            bloco = np.max(np.abs(proximo_bloco(blocos)), axis=1)
             t += len(bloco) / taxa
             pico = float(np.max(bloco))
             rms = float(np.sqrt(np.mean(bloco ** 2)))
@@ -572,8 +533,6 @@ def atalho_global():
 def main():
     if "--desligar" in sys.argv:
         return desligar_ultron()
-    if "--gravar-palavra" in sys.argv:
-        return gravar_palavra()
     if "--testar-chamado" in sys.argv:
         try:
             testar_chamado()

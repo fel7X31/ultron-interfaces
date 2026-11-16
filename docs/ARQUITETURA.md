@@ -23,7 +23,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 ```
 (pasta do projeto)/
 ├── server.py                  ponto de entrada (3 linhas). O palmas.py liga por aqui
-├── palmas.py                  liga o Ultron com duas palmas ou dizendo "Ultron" (Windows)
+├── palmas.py                  liga o Ultron com duas palmas e, com ele no ar, atende o "Ultron" (Windows)
 ├── barra.py                   a janela da barra do topo da tela (Windows, pywebview); o app.py abre ela
 ├── ultron/
 │   ├── app.py                 main(): confere o ambiente, sobe o servidor, aquece o Claude, rotinas dos painéis
@@ -38,8 +38,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │   ├── transcricao.py       áudio → texto (whisper local ou ElevenLabs Scribe)
 │   │   ├── recorte.py           tira o silêncio das pontas da fala e descarta áudio sem voz
 │   │   ├── fala.py              texto → voz (ElevenLabs ou Fish Audio), url_fala()
-│   │   ├── chamado.py           ouve o nome "Ultron" (chamado.ps1, o reconhecimento de fala do Windows) e o fim da fala
-│   │   └── palavra.py           reconhece "Ultron" pela sua voz gravada (só usado pelo palmas.py)
+│   │   └── chamado.py           ouve o nome "Ultron" (chamado.ps1, o reconhecimento de fala do Windows) e o fim da fala
 │   ├── recursos/              uma funcionalidade por arquivo
 │   │   ├── paineis.py           PAINEIS: o que os painéis da tela mostram
 │   │   ├── tarefas.py           tarefas.md, dificuldade/prioridade/prazo e prompt de cada tarefa

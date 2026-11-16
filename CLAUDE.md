@@ -1,7 +1,7 @@
 # Ultron (pasta ultron)
 
 Assistente de voz do Miguel. Backend em `ultron/` (camadas: nucleo → voz/recursos → assistente → http → app),
-`server.py` só chama `ultron/app.py`. Mais: `palmas.py` (liga com duas palmas ou dizendo "Ultron"), `web/` (tela), `persona.md`
+`server.py` só chama `ultron/app.py`. Mais: `palmas.py` (liga com duas palmas; no ar, atende o "Ultron"), `web/` (tela), `persona.md`
 (personalidade), `hooks/` (trava e registro), `tests/`.
 
 **Leia `docs/ARQUITETURA.md` antes de criar algo novo** e siga o padrão: regra em `ultron/recursos/<assunto>.py`,

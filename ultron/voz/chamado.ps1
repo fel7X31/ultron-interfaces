@@ -34,8 +34,10 @@ $Resultado = [Windows.Media.SpeechRecognition.SpeechRecognitionResult, Windows.M
 $Idioma = [Windows.Globalization.Language, Windows.Globalization, ContentType = WindowsRuntime]
 $Numeros = [Globalization.CultureInfo]::InvariantCulture
 
-# Só ASCII nas frases: o PowerShell 5 lê o .ps1 no código de página do Windows.
-$FRASES = [string[]]@('Ultron', 'Ei Ultron', 'O Ultron', 'Oi Ultron', 'E ai Ultron', 'Fala Ultron')
+# Só ASCII no arquivo (o PowerShell 5 lê o .ps1 no código de página do Windows): o Ú vai pelo código dele.
+# "Últron" e "Ultrom" são o jeito que se fala aqui; "Ultron" sozinho o Windows lê com a tônica no fim.
+$NOMES = @('Ultron', 'Ultrom', ([string][char]0xDA + 'ltron'))
+$FRASES = [string[]]@(foreach ($antes in @('', 'Ei ', 'Oi ', 'O ', 'Fala ', 'E ai ')) { foreach ($nome in $NOMES) { $antes + $nome } })
 
 $ouvido = $Reconhecedor::new($Idioma::new('pt-BR'))
 # Constraints é uma lista do Windows que o PowerShell 5 não sabe chamar direto: o Add vai por reflexão.
@@ -58,7 +60,7 @@ while (Dono-Vivo) {
         Start-Sleep -Seconds 3
         continue
     }
-    if ($ouviu.Text -and "$($ouviu.Confidence)" -ne 'Rejected') {
+    if ($ouviu.Text) {  # inclusive Rejected: quem decide o que vale é o palmas.py (e o --testar-chamado mostra tudo)
         Escrever ([string]::Format($Numeros, 'ultron {0} {1:0.00} {2:0.00}', $ouviu.Confidence, $ouviu.RawConfidence,
                                    $ouviu.PhraseDuration.TotalSeconds))
     }
