@@ -3,7 +3,8 @@
 // página chama por window.pywebview.api; aberta direto no navegador, funciona só como página.
 // Este arquivo é o miolo: cada seção mora no seu barra-*.js e se registra com Barra.secao(nome, {...}).
 (() => {
-  const LARGURA_FECHADA = 600, LARGURA_ABERTA = 900, ALTURA_ABERTA = 548;
+  // O entalhe é compacto (só o rosto e a hora) quando nada toca, nada foi dito agora e ele está parado; senão, largo.
+  const LARGURA_COMPACTA = 132, LARGURA_LARGA = 470, LARGURA_ABERTA = 900, ALTURA_ABERTA = 548;
   const FALA_NO_ENTALHE_MS = 25000;     // a última coisa dita fica no entalhe por esse tempo
   const DESISTIR_SEM_ULTRON_MS = 20000; // o Ultron foi desligado: a barra fecha junto
   const NOMES = {
@@ -76,10 +77,34 @@
   function fechar() {
     if (!aberta || corpo.classList.contains("fechando")) return;
     corpo.classList.add("fechando");
-    Barra.janela("recolher", LARGURA_FECHADA).then(() => {
+    larguraDoEntalhe = larguraCerta();
+    corpo.classList.toggle("compacta", larguraDoEntalhe === LARGURA_COMPACTA);
+    corpo.style.setProperty("--largura-entalhe", larguraDoEntalhe + "px");
+    Barra.janela("recolher", larguraDoEntalhe).then(() => {
       aberta = false;
       corpo.classList.remove("aberta", "fechando");
     });
+  }
+
+  let larguraDoEntalhe = LARGURA_COMPACTA;
+  function larguraCerta() {
+    const ativo = corpo.classList.contains("com-musica") || corpo.classList.contains("com-fala") ||
+      (corpo.dataset.estado && corpo.dataset.estado !== "parado");
+    return ativo ? LARGURA_LARGA : LARGURA_COMPACTA;
+  }
+
+  function ajustarEntalhe() {  // fechado: cresce quando toca música, ele fala ou trabalha; volta a ser compacto depois
+    const largura = larguraCerta();
+    if (aberta || largura === larguraDoEntalhe) return;
+    larguraDoEntalhe = largura;
+    corpo.style.setProperty("--largura-entalhe", largura + "px");
+    mostrarRelogio();
+    if (largura === LARGURA_COMPACTA) {  // encolhendo: o conteúdo sai antes, a janela encolhe depois
+      corpo.classList.add("compacta");
+      Barra.janela("recolher", largura);
+    } else {  // crescendo: a janela cresce antes, o conteúdo aparece depois
+      Barra.janela("recolher", largura).then(() => corpo.classList.remove("compacta"));
+    }
   }
 
   function ir(nome) {
@@ -97,6 +122,8 @@
   // ---------------------------------------------------------- o entalhe
   function mudarEstado(estado) {
     corpo.dataset.estado = estado;
+    ajustarEntalhe();
+    mostrarRelogio();
     el("status").textContent = el("statusAberto").textContent = NOMES[estado] || estado;
   }
 
@@ -109,7 +136,9 @@
   function mostrarRelogio() {
     const agora = new Date();
     const dia = agora.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" }).replace(/\./g, "");
-    el("relogio").textContent = agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) + " · " + dia;
+    const hora = agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const curto = larguraDoEntalhe === LARGURA_COMPACTA || (corpo.dataset.estado || "parado") !== "parado";
+    el("relogio").textContent = curto ? hora : hora + " · " + dia;  // com o status do lado, só a hora cabe
   }
 
   function falaNoEntalhe(texto, deQuem) {
@@ -117,8 +146,9 @@
     fala.textContent = deQuem === "voce" ? "“" + texto + "”" : texto;
     fala.className = "fala-curta " + deQuem;
     corpo.classList.add("com-fala");
+    ajustarEntalhe();
     clearTimeout(apagarFala);
-    apagarFala = setTimeout(() => corpo.classList.remove("com-fala"), FALA_NO_ENTALHE_MS);
+    apagarFala = setTimeout(() => { corpo.classList.remove("com-fala"); ajustarEntalhe(); }, FALA_NO_ENTALHE_MS);
   }
 
   function nivelDaVoz(nivel) {
@@ -132,6 +162,7 @@
     el("faixaFechada").textContent = tem ? [tocando.titulo, tocando.artista].filter(Boolean).join(" · ") : "Nada tocando";
     corpo.classList.toggle("com-musica", tem);
     corpo.classList.toggle("tocando", tem && !!tocando.tocando);
+    ajustarEntalhe();
     document.querySelectorAll("[data-capa]").forEach((capa) => {
       const url = tem && tocando.capa ? "/api/pc/capa?v=" + encodeURIComponent(tocando.capa) : "";
       capa.style.backgroundImage = url ? `url("${url}")` : "";
@@ -244,6 +275,8 @@
   addEventListener("load", () => {
     Object.values(secoes).forEach((s) => s.iniciar && s.iniciar());
     ir("inicio");
+    corpo.classList.add("compacta");  // começa compacto (o barra.py abre a janela desse tamanho)
+    corpo.style.setProperty("--largura-entalhe", LARGURA_COMPACTA + "px");
     mostrarRelogio();
     setInterval(mostrarRelogio, 15000);
     conectar();

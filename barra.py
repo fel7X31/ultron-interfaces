@@ -21,7 +21,7 @@ from ultron.recursos.pc import janelas
 
 URL = f"http://127.0.0.1:{CFG['porta']}"
 ESCONDIDO = 12              # px da janela acima da tela: os cantos de cima somem e sobra o entalhe (igual ao barra.css)
-FECHADA = (600, 34)         # largura e altura do entalhe, em px da página (a mesma LARGURA_FECHADA do barra.js)
+FECHADA = (132, 34)         # o entalhe compacto, em px da página (a LARGURA_COMPACTA do barra.js; com música, 600)
 FUNDO = {"prata": "#cfd2d6", "escuro": "#0b0c0e"}  # a cor antes da página carregar (evita um clarão)
 NA_FRENTE, SEM_ATIVAR, SO_FICAR_NA_FRENTE = -1, 0x10, 0x13
 MOSTRAR_SEM_ATIVAR, ESCONDER = 4, 0
@@ -65,21 +65,25 @@ class Barra:
         self._trava = threading.Lock()  # uma animação de cada vez
 
     def expandir(self, largura, altura):
-        """Abre o painel. A janela já fica do tamanho dele, mas recortada no tamanho do entalhe, e o recorte cresce até
-        mostrar tudo: a janela não muda de tamanho no meio, então a página não se redesenha e a animação não trava."""
-        with self._trava:
-            entalhe = self._tamanho
-            self._colocar(largura, altura, recorte=entalhe)
-            self._animar_recorte(entalhe, (largura, altura))
-            user32.SetWindowRgn(self._numero, None, True)  # aberta: a janela inteira, com os cantos do Windows
+        """Abre o painel, crescendo do entalhe."""
+        self._mudar(largura, altura)
         user32.SetForegroundWindow(self._numero)  # o campo de pedido e o Esc precisam do teclado
 
     def recolher(self, largura=FECHADA[0]):
-        """Minimiza: o recorte encolhe até o tamanho do entalhe e aí a janela fica desse tamanho."""
+        """Minimiza o painel até o entalhe, ou só muda a largura do entalhe (compacto ou com a música)."""
+        self._mudar(largura, FECHADA[1])
+
+    def _mudar(self, largura, altura):
+        """Vai do tamanho de agora pro novo sem a página se redesenhar no meio (é isso que travava): a janela fica do
+        maior dos dois tamanhos, recortada no de agora; o recorte cresce ou encolhe até o novo; aí ela fica do novo."""
         with self._trava:
-            if self._tamanho[1] > FECHADA[1]:
-                self._animar_recorte(self._tamanho, (largura, FECHADA[1]))
-            self._colocar(largura, FECHADA[1])
+            de, para = self._tamanho, (largura, altura)
+            maior = (max(de[0], para[0]), max(de[1], para[1]))
+            if de != para:
+                if maior != de:
+                    self._colocar(*maior, recorte=de)
+                self._animar_recorte(de, para)
+            self._colocar(largura, altura)
 
     def aparecer(self, sim):
         self._quer_aparecer = bool(sim)
