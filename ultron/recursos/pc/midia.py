@@ -3,21 +3,24 @@
 Um PowerShell só (o midia.ps1, ligado na primeira consulta) fica vigiando e avisa quando a música muda: o Ultron
 guarda a última e manda o evento "tocando" pra tela e pra barra do topo.
 """
+import ctypes
 import json
 import os
 import re
 import subprocess
 import threading
+import time
 from pathlib import Path
 
 from ...nucleo.config import ESTADO
 from ...nucleo.eventos import EVENTOS
-from . import teclado
+from . import janelas, teclado
 
 SCRIPT = Path(__file__).with_name("midia.ps1")
 CAPA = ESTADO / "capa"  # a capa do que está tocando (o midia.ps1 salva; a barra mostra por /api/pc/capa)
 SEM_JANELA = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 BOTOES = {"tocar_pausar": 0xB3, "proxima": 0xB0, "anterior": 0xB1}  # as teclas de mídia do teclado
+ATALHO_DO_SITE = {"proxima": (0x10, ord("N")), "anterior": (0xA6,)}  # Shift+N: próximo vídeo do YouTube; Voltar
 _VIGIA = {"processo": None, "tocando": {}, "leu": threading.Event()}
 _LIGANDO = threading.Lock()
 
@@ -26,16 +29,33 @@ def apertar(botao):
     """Aperta o botão de mídia no que está tocando (Spotify, YouTube no navegador...).
 
     Vai pelo vigia, direto na sessão de mídia do Windows (como os botões do volume do Windows): a tecla de mídia nem
-    sempre chega no app certo. Sem o vigia, aperta a tecla de mídia do teclado.
+    sempre chega no app certo. Vídeo do YouTube fora de playlist não deixa o Windows pular: aí usa o atalho do próprio
+    site, na janela do vídeo. Sem o vigia, aperta a tecla de mídia do teclado.
     """
     if botao not in BOTOES:
         raise ValueError(f"Botão de mídia desconhecido: {botao}.")
-    _ligar_vigia()
+    agora = tocando()
+    if botao in ATALHO_DO_SITE and agora.get(botao) is False:
+        return _pular_na_janela(botao, agora.get("titulo") or "")
     try:
         _VIGIA["processo"].stdin.write(botao + "\n")
         _VIGIA["processo"].stdin.flush()
     except (AttributeError, OSError, ValueError):
         teclado.apertar(BOTOES[botao], estendida=True)
+
+
+def _pular_na_janela(botao, titulo):
+    """Traz a janela do vídeo pra frente, aperta o atalho do site e devolve a frente pra janela de antes."""
+    janela = next((j for j in janelas.listar() if titulo and titulo[:40].lower() in j.titulo.lower()), None)
+    if not janela:
+        raise ValueError("Esse vídeo não deixa pular por fora, e não achei a janela dele. Deixe a aba dele na frente.")
+    antes = ctypes.windll.user32.GetForegroundWindow()
+    janelas.trazer_pra_frente(janela.numero)
+    time.sleep(0.15)  # a janela ganhar o teclado antes do atalho
+    teclado.apertar(*ATALHO_DO_SITE[botao], estendida=botao == "anterior")
+    time.sleep(0.1)
+    if antes and antes != janela.numero:
+        janelas.trazer_pra_frente(antes)
 
 
 def tocando():

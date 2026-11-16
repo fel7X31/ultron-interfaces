@@ -61,12 +61,15 @@ function Tocando {
     if (-not $sessao) { return '{}' }
     $tocando = Esperar ($sessao.TryGetMediaPropertiesAsync()) $Musica
     if ($Capa) { Conferir-Capa $tocando }
+    $info = $sessao.GetPlaybackInfo()
     [ordered]@{
-        titulo  = $tocando.Title
-        artista = $tocando.Artist
-        app     = $sessao.SourceAppUserModelId
-        tocando = [string]$sessao.GetPlaybackInfo().PlaybackStatus -eq 'Playing'
-        capa    = $(if ($script:temCapa) { [string]$script:numeroDaCapa } else { '' })
+        titulo   = $tocando.Title
+        artista  = $tocando.Artist
+        app      = $sessao.SourceAppUserModelId
+        tocando  = [string]$info.PlaybackStatus -eq 'Playing'
+        capa     = $(if ($script:temCapa) { [string]$script:numeroDaCapa } else { '' })
+        proxima  = [bool]$info.Controls.IsNextEnabled      # o app deixa o Windows pular? (vídeo do YouTube fora
+        anterior = [bool]$info.Controls.IsPreviousEnabled  # de playlist, no navegador, não deixa)
     } | ConvertTo-Json -Compress
 }
 

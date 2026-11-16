@@ -115,5 +115,24 @@ class TesteJanelasEProgramas(unittest.TestCase):
         self.assertEqual(midia.nome_do_app("Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic"), "ZuneMusic")
 
 
+class TestePularVideo(unittest.TestCase):
+    """Vídeo do YouTube fora de playlist não deixa o Windows pular: vai pelo atalho do site, na janela dele."""
+
+    def test_usa_o_atalho_na_janela_do_video(self):
+        video = janelas.Janela(7, "(2) Meu vídeo - YouTube - Samsung Internet", "samsunginternet")
+        with mock.patch.object(midia, "tocando", return_value={"titulo": "Meu vídeo", "proxima": False}), \
+                mock.patch.object(janelas, "listar", return_value=[video]), \
+                mock.patch.object(janelas, "trazer_pra_frente") as frente, \
+                mock.patch.object(midia.teclado, "apertar") as apertou, mock.patch.object(midia.time, "sleep"):
+            midia.apertar("proxima")
+        apertou.assert_called_once_with(0x10, ord("N"), estendida=False)
+        self.assertEqual(frente.call_args_list[0], mock.call(7))
+
+    def test_sem_a_janela_do_video_avisa(self):
+        with mock.patch.object(midia, "tocando", return_value={"titulo": "Outro vídeo", "anterior": False}), \
+                mock.patch.object(janelas, "listar", return_value=[]), self.assertRaises(ValueError):
+            midia.apertar("anterior")
+
+
 if __name__ == "__main__":
     unittest.main()
