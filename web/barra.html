@@ -14,7 +14,7 @@
 
 <!-- Fechada: o entalhe no topo da tela -->
 <div id="entalhe" class="entalhe" role="button" tabindex="0" title="Abrir o painel do Ultron">
-  <canvas class="esfera-mini" aria-hidden="true"></canvas><span id="status" class="status"></span>
+  <span class="rosto"></span><span id="status" class="status"></span>
   <span class="divisor"></span>
   <span id="linha" class="linha">
     <span id="relogio" class="relogio"></span>
@@ -40,7 +40,7 @@
 <main id="painel" class="painel">
   <nav class="lado">
     <div class="quem-sou">
-      <canvas class="esfera-mini orbe" aria-hidden="true"></canvas>
+      <span class="rosto orbe"></span>
       <div><b>Ultron</b><small><span id="statusAberto"></span></small></div>
     </div>
     <button id="modeloAtual" class="modelo" type="button" title="Quem responde (troca em Configurações)"></button>
@@ -239,7 +239,7 @@
   <span class="volume-valor"></span>
 </template>
 
-<script src="/esfera-mini.js"></script>
+<script src="/rosto.js"></script>
 <script src="/barra.js"></script>
 <script src="/barra-conversa.js"></script>
 <script src="/barra-memoria.js"></script>

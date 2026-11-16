@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/tema.css">
-<script src="/esfera-mini.js" defer></script>
+<script src="/rosto.js" defer></script>
 <style>
   html, body {
     margin: 0; height: 100%; background: var(--fundo); color: var(--texto);
@@ -30,7 +30,7 @@
   .selo:hover, .selo[aria-expanded="true"] {
     border-color: rgba(215, 20, 30, .45); box-shadow: 0 0 0 4px rgba(215, 20, 30, .08), 0 0 22px rgba(215, 20, 30, .25);
   }
-  .selo .esfera-mini { width: 34px; height: 34px; }
+  .selo .rosto { width: 34px; height: 34px; }
   .menu-cabeca {
     display: flex; justify-content: space-between; align-items: baseline; padding: 8px 12px 10px; margin-bottom: 4px;
     border-bottom: 1px solid var(--linha); font-size: 10px; letter-spacing: .26em; text-transform: uppercase; color: var(--suave);
@@ -648,7 +648,7 @@
 
 <div class="topo">
   <button id="menuTopo" class="selo" type="button" aria-haspopup="true" aria-expanded="false" title="Menu do Ultron">
-    <canvas class="esfera-mini" aria-hidden="true"></canvas>
+    <span class="rosto"></span>
   </button>
   <nav id="menuUltron" class="menu-ultron" hidden aria-label="Menu do Ultron">
     <div class="menu-cabeca"><span class="marca">Ultron</span><span id="estadoTexto">iniciando</span></div>
