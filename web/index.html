@@ -372,7 +372,8 @@
     border: 1px solid rgba(30, 32, 36, .1); border-left: 4px solid var(--cor-prio, rgba(30, 32, 36, .2));
     background: rgba(255, 255, 255, .45); min-width: 0;
   }
-  .card-tarefa.prio-alta { --cor-prio: #d7141e; } .card-tarefa.prio-media { --cor-prio: #d39a12; } .card-tarefa.prio-baixa { --cor-prio: #2e9d5b; }
+  .card-tarefa.dif-1 { --cor-prio: #2e9d5b; } .card-tarefa.dif-2 { --cor-prio: #7fae2e; } .card-tarefa.dif-3 { --cor-prio: #d39a12; }
+  .card-tarefa.dif-4 { --cor-prio: #e0621b; } .card-tarefa.dif-5 { --cor-prio: #d7141e; }
   .card-tarefa.feita { opacity: .6; }
   .card-tarefa.feita .card-titulo span { text-decoration: line-through; text-decoration-color: #d7141e; }
   .card-titulo { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; font-weight: 600; line-height: 1.3; }
@@ -2962,7 +2963,7 @@
   function cardTarefa(x) {
     const i = x.indice;
     const c = document.createElement("article");
-    c.className = "card-tarefa" + (x.feita ? " feita" : "") + (x.prio ? " prio-" + x.prio : "");
+    c.className = "card-tarefa" + (x.feita ? " feita" : "") + (x.dif ? " dif-" + x.dif : "");
     // título + marcar feita + editar/apagar
     const topo = document.createElement("div"); topo.className = "card-titulo";
     const check = document.createElement("button"); check.className = "card-check"; check.type = "button";
