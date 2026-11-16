@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Liga o Ultron com duas palmas.
+"""Liga o Ultron com duas palmas ou dizendo "Ultron".
 
-Fica ouvindo o microfone. Quando ouve duas palmas seguidas, solta o microfone,
-liga o server.py sem janela (se ele ainda não estiver no ar) e abre a esfera
-em tela cheia. Desliga quando você manda por voz ("desliga") ou fecha a janela.
-Depois volta a ouvir as palmas.
+Fica ouvindo o microfone. Quando ouve duas palmas seguidas ou a palavra, solta o
+microfone, liga o server.py sem janela (se ele ainda não estiver no ar) e abre a
+esfera em tela cheia. Desliga quando você manda por voz ("desliga") ou fecha a
+janela. Depois volta a ouvir.
 
 Rodar:           py palmas.py
+Gravar a voz:    py palmas.py --gravar-palavra   (sem isso, só as palmas ligam)
 Calibrar:        py palmas.py --calibrar   (mostra o volume de cada som e não liga nada)
 Desligar:        py palmas.py --desligar   (fecha o Ultron que as palmas ligaram)
 Precisa de:      py -m pip install sounddevice numpy
@@ -35,6 +36,8 @@ if sys.stdout is None:
 
 import numpy as np
 import sounddevice as sd
+
+from ultron.voz import palavra
 
 
 def porta_do_env():
@@ -71,9 +74,12 @@ ATALHO_MAX_S = 30
 ATALHO_CAUDA_S = 0.25
 
 BLOCO_S = 0.01
+SEM_AUDIO_S = 3
 PID = ESTADO / "servidor.pid"
 PID_TELA = ESTADO / "tela.pid"
 LOG = ESTADO / "log.jsonl"
+VOZ_GRAVADA = ESTADO / "palavra.npz"
+GRAVACOES = 8
 
 
 def matar(arquivo_pid):
@@ -249,12 +255,57 @@ def abrir_microfone(receber):
     return stream, taxa, "normal"
 
 
+def proximo_bloco(blocos):
+    """O próximo pedaço de áudio. Dá erro se o microfone parou (o Windows corta o stream ao suspender)."""
+    try:
+        return blocos.get(timeout=SEM_AUDIO_S)
+    except queue.Empty:
+        raise RuntimeError(f"sem áudio há {SEM_AUDIO_S} s") from None
+
+
+def ouvinte_da_palavra(taxa, mostrar_tudo):
+    """Função que recebe os blocos do microfone e diz se ouviu "Ultron". Sem a voz gravada, nunca ouve."""
+    voz = palavra.carregar(VOZ_GRAVADA)
+    if voz is None:
+        return lambda _bloco: False
+    modelos, limite = voz
+    segmentador = palavra.Segmentador(taxa)
+
+    def ouviu(bloco):
+        trecho = segmentador.receber(bloco)
+        if trecho is None:
+            return False
+        d = palavra.distancia(palavra.coeficientes(trecho, taxa), modelos)
+        if mostrar_tudo or d <= limite:
+            print(f"  palavra? distância {d:.2f}  limite {limite:.2f}  {'>>> ULTRON' if d <= limite else ''}")
+        return d <= limite
+
+    return ouviu
+
+
+def gravar_palavra():
+    """Grava você dizendo "Ultron" algumas vezes e guarda, pra reconhecer depois."""
+    blocos = queue.Queue()
+    stream, taxa, modo = abrir_microfone(lambda dados, *_: blocos.put(dados.copy()))
+    segmentador, trechos = palavra.Segmentador(taxa), []
+    with stream:
+        print(f"Microfone no modo {modo}. Diga \"Ultron\" do jeito que vai chamar, com uma pausa entre cada vez.")
+        while len(trechos) < GRAVACOES:
+            trecho = segmentador.receber(proximo_bloco(blocos)[:, 0])
+            if trecho is not None:
+                trechos.append(trecho)
+                print(f"  {len(trechos)} de {GRAVACOES} ({len(trecho) / taxa:.2f} s)")
+    modelos, limite = palavra.treinar(trechos, taxa)
+    palavra.salvar(VOZ_GRAVADA, modelos, limite)
+    print(f"Pronto. Limite {limite:.2f}. Teste com: py palmas.py --calibrar")
+
+
 def ouvir(calibrar=False):
-    """Fica no microfone até ouvir duas palmas. Em modo calibrar, nunca retorna."""
+    """Fica no microfone até ouvir duas palmas ou a palavra e diz qual foi. Em modo calibrar, nunca retorna."""
     blocos = queue.Queue()
 
     def receber(dados, _frames, _tempo, _status):
-        blocos.put(np.max(np.abs(dados), axis=1))
+        blocos.put(dados.copy())
 
     fundo = 0.01
     inicio = None
@@ -266,11 +317,15 @@ def ouvir(calibrar=False):
     janela_inicio, janela_pico = 0.0, 0.0
 
     stream, taxa, modo = abrir_microfone(receber)
+    ouviu_palavra = ouvinte_da_palavra(taxa, mostrar_tudo=calibrar)
     with stream:
-        print(f"Microfone no modo {modo}. " + ("Ouvindo. Bata duas palmas." if not calibrar else
-              "Calibrando. Bata palmas, fale, faça barulho normal. Ctrl+C pra sair."))
+        print(f"Microfone no modo {modo}. " + ("Ouvindo. Bata duas palmas ou diga Ultron." if not calibrar else
+              "Calibrando. Bata palmas, diga Ultron, fale, faça barulho normal. Ctrl+C pra sair."))
         while True:
-            bloco = blocos.get()
+            cru = proximo_bloco(blocos)
+            if ouviu_palavra(cru[:, 0]) and not calibrar:
+                return "Ouvi a palavra!"
+            bloco = np.max(np.abs(cru), axis=1)
             t += len(bloco) / taxa
             pico = float(np.max(bloco))
             rms = float(np.sqrt(np.mean(bloco ** 2)))
@@ -301,7 +356,7 @@ def ouvir(calibrar=False):
                         print(f"  >>> DUAS PALMAS ({inicio - ultima:.2f} s entre elas)")
                         ultima = None
                     else:
-                        return
+                        return "Duas palmas!"
                 else:
                     ultima, pico_ultima = inicio, pico_som
                 inicio = None
@@ -410,6 +465,8 @@ def atalho_global():
 def main():
     if "--desligar" in sys.argv:
         return desligar_ultron()
+    if "--gravar-palavra" in sys.argv:
+        return gravar_palavra()
     if "--calibrar" in sys.argv:
         try:
             ouvir(calibrar=True)
@@ -423,12 +480,11 @@ def main():
             acompanhar()
             continue
         try:
-            ouvir()
+            print(ouvir())
         except Exception as erro:
             print(f"Microfone indisponível ({erro}). Tentando de novo em 5 s.")
             time.sleep(5)
             continue
-        print("Duas palmas!")
         ligar_ultron()
         acompanhar()
         print("O Ultron foi desligado. Voltando a ouvir.")
