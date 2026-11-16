@@ -41,6 +41,8 @@ Se não houver entrada nova, siga direto com a tarefa.
 - O `palmas.py` roda à parte (pythonw, ligado com o Windows): mudança nele ou em `ultron/voz/chamado.*` só vale
   depois de fechar e abrir o `palmas.py` de novo. Ele cuida do microfone fora da tela: palmas, o nome "Ultron",
   o Ctrl+Alt+V e o botão de microfone da barra.
+- Botão novo na tela principal (`web/index.html`) vai dentro do menu do selo do topo (`#menuUltron`, como
+  `.item-menu`), nunca solto no topo: os soltos se empilhavam por cima do resto.
 - A trava (`hooks/trava.py`) e o `.env` o Ultron nunca pode mudar — só o Claude Code.
 - O Miguel pode estar com mais de uma sessão do Claude Code mexendo aqui ao mesmo tempo: leia o trecho de novo
   antes de editar.

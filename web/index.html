@@ -18,14 +18,43 @@
   }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: default; touch-action: none; user-select: none; }
 
-  .topo {
-    position: fixed; top: 28px; left: 32px; right: 270px; display: flex; justify-content: space-between;  /* espaço pros 5 botões do topo (o último acaba em 250px) */
-    align-items: center; font-size: 12px; letter-spacing: .32em; text-transform: uppercase; color: var(--suave);
-    pointer-events: none;
+  /* O selo do topo (● ULTRON PRONTO) abre o menu. Botão novo da tela entra no menu como .item-menu, nunca solto. */
+  .topo { position: fixed; top: 16px; left: 18px; z-index: 7; }
+  .selo {
+    display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px 0 14px; border: 1px solid var(--linha);
+    border-radius: 999px; background: var(--vidro); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    color: var(--suave); font: inherit; font-size: 11px; letter-spacing: .28em; text-transform: uppercase; cursor: pointer;
+    transition: border-color .25s, box-shadow .25s;
   }
-  .marca { color: var(--texto); font-weight: 600; }
-  .estado { display: flex; align-items: center; gap: 10px; }
-  .ponto { width: 7px; height: 7px; border-radius: 50%; background: var(--texto); opacity: .35; transition: opacity .3s, box-shadow .3s; }
+  .selo:hover, .selo[aria-expanded="true"] { border-color: rgba(215, 20, 30, .45); box-shadow: 0 0 0 4px rgba(215, 20, 30, .08); }
+  .selo .marca { color: var(--texto); font-weight: 600; }
+  .selo .seta { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; transition: transform .3s; }
+  .selo[aria-expanded="true"] .seta { transform: rotate(180deg); }
+  .menu-ultron {
+    position: absolute; top: 44px; left: 0; width: 240px; padding: 6px; box-sizing: border-box; border-radius: 18px;
+    background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--vidro-sombra);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); transform-origin: 30px 0;
+    animation: abreMenu .26s cubic-bezier(.2, .9, .3, 1.15) both;
+  }
+  .menu-ultron[hidden] { display: none; }
+  .menu-ultron hr { border: 0; border-top: 1px solid var(--linha); margin: 6px 10px; }
+  .item-menu {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 0; border-radius: 12px;
+    background: none; color: var(--texto); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+    animation: entra .3s ease both; animation-delay: calc(var(--i, 0) * 28ms); transition: background .2s;
+  }
+  .item-menu svg { width: 18px; height: 18px; flex: none; color: var(--suave); transition: color .2s, transform .2s; }
+  .item-menu:hover { background: rgba(215, 20, 30, .09); }
+  .item-menu:hover svg { color: #d7141e; transform: scale(1.1); }
+  .item-menu .dica { margin-left: auto; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #d7141e; }
+  .item-menu:not(.ativo) .dica { display: none; }
+  .item-menu.ativo .dica::after { content: "ligado"; }
+  .item-menu .avatar, .item-menu .avatar-vazio { width: 20px; height: 20px; font-size: 10px; flex: none; }
+  @keyframes abreMenu { from { opacity: 0; transform: translateY(-8px) scale(.92); } to { opacity: 1; transform: none; } }
+  .ponto {
+    width: 7px; height: 7px; border-radius: 50%; background: #d7141e; opacity: .7; box-shadow: 0 0 8px rgba(215, 20, 30, .55);
+    transition: opacity .3s, box-shadow .3s;
+  }
   body[data-estado="ouvindo"] .ponto,
   body[data-estado="falando"] .ponto { opacity: 1; box-shadow: 0 0 14px #d7141e; background: #d7141e; }
   body[data-estado="pensando"] .ponto,
@@ -59,8 +88,8 @@
   }
   .dica b { color: var(--suave); font-weight: 500; }
   /* Tela limpa: só a esfera. H mostra os detalhes (pra testar). */
-  .topo, .ferramentas, .voce, .resposta, .tempo { display: none; }
-  body.detalhes .topo, body.detalhes .ferramentas { display: flex; }
+  .ferramentas, .voce, .resposta, .tempo { display: none; }
+  body.detalhes .ferramentas { display: flex; }
   body.detalhes .voce, body.detalhes .resposta, body.detalhes .tempo { display: block; }
   .dica { transition: opacity 1.2s; }
   body.usado .dica { opacity: 0; }
@@ -72,15 +101,6 @@
     border-radius: 12px; color: var(--texto); font: inherit; font-size: 16px; padding: 14px 16px; outline: none;
   }
   body.digitando #caixa { display: block; }
-
-  /* Botões do topo: sempre à vista (um pouco apagados); acendem quando o mouse mexe. */
-  .engrenagem {
-    position: fixed; top: 14px; right: 14px; z-index: 5; width: 40px; height: 40px; border: 0; border-radius: 999px;
-    background: transparent; color: rgba(30, 32, 36, .5); cursor: pointer; display: grid; place-items: center;
-    opacity: .75; transition: opacity .4s, background .2s, color .2s, transform .4s;
-  }
-  body.mouse .engrenagem, .engrenagem:focus-visible, .engrenagem:hover { opacity: 1; }
-  .engrenagem:hover { color: #1d1f22; background: rgba(30, 32, 36, .08); transform: rotate(30deg); }
 
   .config {
     position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center;
@@ -129,13 +149,6 @@
   .velocidade { width: 100%; accent-color: #d7141e; }
   .config-nota { margin-top: 14px; font-size: 12px; color: var(--fraco); }
 
-  /* Botões do topo (conversa e perfil), ao lado da engrenagem. */
-  /* Da direita pra esquerda: perfil no canto | engrenagem, conversa, provas, música */
-  #botaoPerfil { right: 14px; }
-  #botaoPerfil::before { content: ""; position: absolute; left: -5px; top: 11px; bottom: 11px; width: 1px; background: var(--linha); }
-  #engrenagem { right: 66px; }
-  #botaoChat { right: 114px; }
-  #botaoChat:hover, #botaoPerfil:hover { transform: none; }
   .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; display: block; }
   .avatar-vazio { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: rgba(30, 32, 36, .1); color: var(--texto); font-size: 12px; font-weight: 600; }
 
@@ -228,19 +241,11 @@
   .painel[data-painel="agenda"].dimensionado .cal-dia { display: flex; align-items: center; justify-content: center; }
   .painel[data-painel="agenda"].dimensionado .cal-grade .sem { align-self: end; }
 
-  /* Destacar a conversa e painel de provas */
-  #botaoProvas { right: 162px; }
-  #botaoProvas:hover { transform: none; }
-  #botaoCurriculo { right: 210px; }
-  #botaoCurriculo:hover { transform: none; }
-  #botaoAjuda { right: 258px; }
-  #botaoAjuda:hover { transform: none; }
   .ajuda-lista { max-height: 62vh; overflow: auto; font-size: 14px; line-height: 1.5; }
   .ajuda-lista h4 { margin: 14px 0 4px; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--suave); }
   .ajuda-lista h4:first-child { margin-top: 0; }
   .ajuda-lista p { margin: 0 0 2px; }
   .ajuda-lista b { font-weight: 600; }
-  #botaoProvas.ativo { color: #d7141e; }
   .painel[data-painel="musica"] .conteudo { max-height: none; overflow: hidden; display: flex; flex-direction: column; }
   .painel[data-painel="musica"] .conteudo > * { flex: none; }
   .painel[data-painel="musica"] .conteudo > .mu-fila { flex: 1 1 auto; min-height: 0; }
@@ -579,8 +584,6 @@
   body.escuro .painel .minimizar, body.escuro .painel .mais, body.escuro .config-fechar { background: rgba(255, 255, 255, .08); }
   body.escuro .config { background: rgba(0, 0, 0, .6); }
   body.escuro .config-caixa { background: #0f1113; border-color: rgba(255, 255, 255, .08); box-shadow: 0 30px 80px rgba(0, 0, 0, .7); }
-  body.escuro .engrenagem { color: rgba(233, 236, 239, .6); }
-  body.escuro .engrenagem:hover { color: #fff; background: rgba(255, 255, 255, .08); }
   body.escuro .msg.ele .balao { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .08); }
   body.escuro .chat-rodape input, body.escuro .perfil-campo, body.escuro .nova-tarefa,
   body.escuro .form-evento input, body.escuro .form-evento select, body.escuro #caixa input { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .12); }
@@ -640,8 +643,6 @@
   @keyframes pisca { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
   @keyframes entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   @media (max-width: 600px) {
-    .topo { left: 16px; right: 266px; top: 18px; letter-spacing: .22em; }  /* não passa por baixo dos botões */
-    .topo .atalhos { display: none; }
   }
 </style>
 </head>
@@ -649,8 +650,19 @@
 <canvas id="esfera" aria-label="Esfera do ULTRON. Segure a barra de espaço para falar."></canvas>
 
 <div class="topo">
-  <span class="marca">Ultron</span>
-  <span class="estado"><span class="ponto"></span><span id="estadoTexto">iniciando</span></span>
+  <button id="menuTopo" class="selo" type="button" aria-haspopup="true" aria-expanded="false" title="Menu do Ultron">
+    <span class="ponto"></span><span class="marca">Ultron</span><span id="estadoTexto">iniciando</span>
+    <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <nav id="menuUltron" class="menu-ultron" hidden aria-label="Menu do Ultron">
+    <button id="botaoChat" class="item-menu" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Conversa por texto</span></button>
+    <button id="botaoProvas" class="item-menu" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2h6V3"/><path d="m9 12 2 2 4-4"/><path d="M9 17h6"/></svg><span>Provas</span><span class="dica"></span></button>
+    <button id="botaoCurriculo" class="item-menu" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg><span>Currículo</span></button>
+    <button id="botaoAjuda" class="item-menu" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg><span>Comandos de voz</span></button>
+    <hr>
+    <button id="engrenagem" class="item-menu" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Configurações</span></button>
+    <button id="botaoPerfil" class="item-menu" type="button"><span id="avatarTopo" class="avatar-vazio">?</span><span>Perfil</span></button>
+  </nav>
 </div>
 
 <div class="paineis esq">
@@ -686,18 +698,6 @@
 </div>
 <div id="muPlayer" class="mu-player" aria-hidden="true"></div>
 
-<button id="botaoChat" class="engrenagem" aria-label="Conversa por texto" title="Conversa por texto">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-</button>
-<button id="botaoProvas" class="engrenagem" aria-label="Provas" title="Provas (modo prova)">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2h6V3"/><path d="m9 12 2 2 4-4"/><path d="M9 17h6"/></svg>
-</button>
-<button id="botaoCurriculo" class="engrenagem" aria-label="Currículo" title="Abrir o currículo">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
-</button>
-<button id="botaoAjuda" class="engrenagem" aria-label="Ajuda de comandos" title="Comandos de voz">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg>
-</button>
 <div id="ajuda" class="config" hidden>
   <div class="config-caixa chat-caixa" role="dialog" aria-modal="true" aria-label="Comandos de voz">
     <div class="config-topo">
@@ -757,7 +757,6 @@
     <div id="provasLista" class="provas-lista"></div>
   </div>
 </div>
-<button id="botaoPerfil" class="engrenagem" aria-label="Perfil" title="Perfil"><span id="avatarTopo" class="avatar-vazio">?</span></button>
 
 <div id="quadro" class="config" hidden>
   <div class="config-caixa quadro-caixa" role="dialog" aria-modal="true" aria-label="Quadro de tarefas">
@@ -888,9 +887,6 @@
   </div>
 </div>
 
-<button id="engrenagem" class="engrenagem" aria-label="Configurações" title="Configurações">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-</button>
 
 <div id="config" class="config" hidden>
   <div class="config-caixa" role="dialog" aria-modal="true" aria-label="Configurações">
@@ -2041,7 +2037,7 @@
 
   // ---------------------------------------------------------- configurações (engrenagem)
   const painel = el("config");
-  const configAberta = () => !painel.hidden || !el("chat").hidden || !el("perfil").hidden || !el("leitor").hidden || !el("novoEvento").hidden || !el("recorte").hidden || !el("provas").hidden || !el("quadro").hidden || !el("visor").hidden || !el("ajuda").hidden;
+  const configAberta = () => !painel.hidden || !el("chat").hidden || !el("perfil").hidden || !el("leitor").hidden || !el("novoEvento").hidden || !el("recorte").hidden || !el("provas").hidden || !el("quadro").hidden || !el("visor").hidden || !el("ajuda").hidden || !el("menuUltron").hidden;
   let config = null;
   let mouseTimer = null;
 
@@ -2113,6 +2109,20 @@
     desenharVozes();
     painel.hidden = false;
   }
+
+  // ---------------------------------------------------------- o menu do topo (o selo ● ULTRON)
+  const menuUltron = el("menuUltron"), seloTopo = el("menuTopo");
+  function mostrarMenu(abrir) {
+    menuUltron.hidden = !abrir;
+    seloTopo.setAttribute("aria-expanded", String(abrir));
+  }
+  seloTopo.addEventListener("click", () => { mostrarMenu(menuUltron.hidden); seloTopo.blur(); });
+  menuUltron.querySelectorAll(".item-menu").forEach((item, i) => {
+    item.style.setProperty("--i", i);
+    item.addEventListener("click", () => mostrarMenu(false));
+  });
+  document.addEventListener("click", (ev) => { if (!menuUltron.hidden && !ev.target.closest(".topo")) mostrarMenu(false); });
+  addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !menuUltron.hidden) mostrarMenu(false); });
 
   // ---------------------------------------------------------- quem responde: o chip no meio do topo
   // Os modelos do Claude (com ferramentas) e as outras IAs (só conversa). As que não estão prontas mostram como
