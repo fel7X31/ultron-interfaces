@@ -51,7 +51,7 @@ def carregar_config(base):
         "pasta": Path(base.get("ULTRON_PASTA") or Path.home()).expanduser(),
         "porta": int(base.get("ULTRON_PORTA", "8790")),
         "modelo": base.get("ULTRON_MODELO", "sonnet"),
-        "esforco": base.get("ULTRON_ESFORCO", "low"),
+        "esforcos": {},  # o esforço de cada modelo ("claude:sonnet": "high"...), escolhido na tela
         # leve: o Claude abre numa pasta vazia com a sua pasta anexada (responde em ~1 s);
         # completo: abre direto na sua pasta, carregando o CLAUDE.md e a memória dela (bem mais lento)
         "contexto": base.get("ULTRON_CONTEXTO", "leve"),
@@ -95,6 +95,8 @@ def carregar_preferencias():
             CFG[chave] = p[chave]
     if p.get("tema") in TEMAS:
         CFG["tema"] = p["tema"]
+    if isinstance(p.get("esforcos"), dict):
+        CFG["esforcos"] = {str(k): str(v) for k, v in p["esforcos"].items()}
     if "chamado" in p:
         CFG["chamado"] = bool(p["chamado"])
 
@@ -102,7 +104,8 @@ def carregar_preferencias():
 def salvar_preferencias():
     salvar_json(PREFS, {"voz": CFG["voz"], "velocidade": CFG["velocidade_voz"], "nome": CFG["nome"],
                         "modo_texto": CFG["modo_texto"], "modo_prova": CFG["modo_prova"],
-                        "ia": CFG["ia"], "modelo": CFG["modelo"], "tema": CFG["tema"], "chamado": CFG["chamado"]})
+                        "ia": CFG["ia"], "modelo": CFG["modelo"], "tema": CFG["tema"], "chamado": CFG["chamado"],
+                        "esforcos": CFG["esforcos"]})
 
 
 def persona():

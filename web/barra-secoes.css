@@ -110,6 +110,11 @@ li.feito .marcador::after { content: ""; width: 8px; height: 4px; border: 2px so
 .ias .grupo { color: var(--suave); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; padding: 6px 2px 0; background: none; border: 0; }
 .ias button.entrar { padding: 5px 10px; border: 1px solid rgba(215, 20, 30, .5); border-radius: 999px; background: transparent; font-size: 11.5px; }
 .ias button.entrar:hover { background: rgba(215, 20, 30, .12); }
+.esforco-ias { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.esforco-ias .titulo-esforco { width: 100%; color: var(--suave); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+.esforco-ias button { padding: 5px 11px; border: 1px solid var(--linha); border-radius: 999px; background: transparent; font-size: 11.5px; color: var(--suave); cursor: pointer; }
+.esforco-ias button:hover { color: var(--texto); border-color: rgba(215, 20, 30, .4); }
+.esforco-ias button.ativa { color: var(--texto); border-color: rgba(215, 20, 30, .6); background: rgba(215, 20, 30, .12); }
 
 /* ------------------------------------------------------------------ Meu PC */
 .medidor { display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 10px; padding: 3px 0; }

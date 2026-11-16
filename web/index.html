@@ -575,6 +575,13 @@
   }
   .ia-opcao .entrar:hover { background: rgba(215, 20, 30, .12); }
   .ia-aviso { font-size: 11px; line-height: 1.4; color: var(--suave); padding: 6px 10px 4px; }
+  .ia-pilulas { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 10px 8px; }
+  .ia-pilulas button {
+    font: inherit; font-size: 11px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--linha);
+    background: transparent; color: var(--suave); cursor: pointer; transition: border-color .2s, color .2s, background .2s;
+  }
+  .ia-pilulas button:hover { color: var(--texto); border-color: rgba(215, 20, 30, .4); }
+  .ia-pilulas button.ativa { color: var(--texto); border-color: rgba(215, 20, 30, .6); background: rgba(215, 20, 30, .12); }
 
   /* Tema escuro: o prata vira preto (as cores ficam no tema.css) */
   body.escuro .linha-painel { border-top-color: rgba(255, 255, 255, .07); }
@@ -737,6 +744,7 @@
   </button>
   <div id="menuIas" class="ia-menu" hidden>
     <div id="listaIas"></div>
+    <div id="esforcoIas"></div>
     <div id="iaAviso" class="ia-aviso" hidden></div>
   </div>
 </div>
@@ -2134,6 +2142,30 @@
       grupoDeIas("Claude · com ferramentas"), ...ias.opcoes.filter((o) => o.ia === "claude").map((o) => opcaoDeIa(o, ativa(o))),
       grupoDeIas("Outras IAs · só conversa"), ...ias.opcoes.filter((o) => o.ia !== "claude").map((o) => opcaoDeIa(o, ativa(o))),
     );
+    el("esforcoIas").replaceChildren(...esforcoDaIa(ias.opcoes.find(ativa)));
+  }
+
+  // O esforço (o quanto pensa) de quem responde agora: "Padrão" é o do próprio modelo, sem limitar nada.
+  function esforcoDaIa(o) {
+    if (!o || !(o.esforcos || []).length) return [];
+    const pilulas = document.createElement("div");
+    pilulas.className = "ia-pilulas";
+    [{ valor: "", nome: "Padrão" }, ...o.esforcos].forEach((nivel) => {
+      const botao = document.createElement("button");
+      botao.type = "button";
+      botao.textContent = nivel.nome;
+      botao.classList.toggle("ativa", nivel.valor === (o.esforco || ""));
+      botao.addEventListener("click", (ev) => { ev.stopPropagation(); mudarEsforco(o, nivel.valor); });
+      pilulas.appendChild(botao);
+    });
+    return [grupoDeIas("Esforço · " + o.nome), pilulas];
+  }
+
+  async function mudarEsforco(o, esforco) {
+    const r = await fetch("/api/ias/esforco", { method: "POST",
+      body: JSON.stringify({ ia: o.ia, modelo: o.ia === "claude" ? o.modelo : "", esforco }) });
+    if (!r.ok) return avisarNasIas((await r.json()).erro);
+    carregarIas().catch(() => {});
   }
 
   function grupoDeIas(texto) {

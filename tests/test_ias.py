@@ -57,12 +57,14 @@ class TesteIas(unittest.TestCase):
         self.assertIn("generativelanguage.googleapis.com", pedido.full_url)
         self.assertEqual(pedido.get_header("Authorization"), "Bearer chave-de-teste")
         self.assertEqual(corpo["model"], "gemini-3.8-flash")
-        self.assertEqual(corpo["reasoning_effort"], "low")
+        self.assertNotIn("reasoning_effort", corpo)  # sem escolha, o padrão do modelo: nada limitado
 
-    def test_se_a_api_recusa_o_modo_rapido_tenta_o_padrao(self, *_):
+    def test_vai_com_o_esforco_escolhido_e_sem_ele_se_a_api_recusar(self, *_):
         recusa = urllib.error.HTTPError("url", 400, "Bad Request", {}, io.BytesIO(b"{}"))
-        with mock.patch("urllib.request.urlopen", side_effect=[recusa, resposta_da_api("Feito.")]) as abrir:
+        with mock.patch.dict(CFG["esforcos"], {"gemini": "high"}), \
+                mock.patch("urllib.request.urlopen", side_effect=[recusa, resposta_da_api("Feito.")]) as abrir:
             self.assertEqual(ias.perguntar("gemini", []), "Feito.")
+        self.assertEqual(json.loads(abrir.call_args_list[0][0][0].data)["reasoning_effort"], "high")
         self.assertNotIn("reasoning_effort", json.loads(abrir.call_args[0][0].data))
 
     def test_sem_chave_avisa(self, *_):
@@ -137,6 +139,18 @@ class TesteCerebro(unittest.TestCase):
             self.assertEqual(cerebro.escolher("claude", "opus"), "Claude Opus")
             cerebro.escolher("claude", "opus")
         parar.assert_called_once()
+
+    def test_escolher_o_esforco(self, *_):
+        CFG["modelo"] = "sonnet"
+        with mock.patch.dict(CFG["esforcos"], clear=True), mock.patch.object(cerebro.SESSAO, "parar"), \
+                mock.patch.object(cerebro.SESSAO, "iniciar"):
+            cerebro.escolher_esforco("claude", "opus", "max")
+            self.assertEqual(ias.esforco("claude", "opus"), "max")
+            self.assertEqual(ias.esforco("claude", "sonnet"), "")  # cada modelo tem o seu
+            cerebro.escolher_esforco("claude", "opus", "")
+            self.assertEqual(ias.esforco("claude", "opus"), "")
+            with self.assertRaises(ValueError):
+                cerebro.escolher_esforco("claude", "opus", "infinito")
 
     def test_comandos_de_voz(self, *_):
         with mock.patch.object(cerebro.SESSAO, "parar"), mock.patch.object(cerebro.SESSAO, "iniciar"):

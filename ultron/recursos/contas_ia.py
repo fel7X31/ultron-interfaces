@@ -46,12 +46,12 @@ def entrar(ia):
                      creationflags=SEM_JANELA)
 
 
-def perguntar(ia, mensagens, modelo="", limite=120):
+def perguntar(ia, mensagens, modelo="", limite=120, esforco=""):
     """Manda a conversa pro programa da IA e devolve o texto da resposta."""
     texto = _conversa_em_texto(mensagens)
     if ia == "gemini":
         return _perguntar_ao_gemini(texto, modelo, limite)
-    return _perguntar_ao_codex(texto, modelo, limite)
+    return _perguntar_ao_codex(texto, modelo, limite, esforco)
 
 
 def _perguntar_ao_gemini(texto, modelo, limite):
@@ -63,11 +63,12 @@ def _perguntar_ao_gemini(texto, modelo, limite):
         return saida.strip()
 
 
-def _perguntar_ao_codex(texto, modelo, limite):
+def _perguntar_ao_codex(texto, modelo, limite, esforco=""):
     with tempfile.TemporaryDirectory() as pasta:
         resposta = Path(pasta) / "resposta.txt"
         _rodar([shutil.which("codex"), "exec", "--skip-git-repo-check", "--sandbox", "read-only", "--color", "never",
-                "-o", str(resposta), *(["-m", modelo] if modelo else []), "-"], texto, limite)
+                "-o", str(resposta), *(["-m", modelo] if modelo else []),
+                *(["-c", f"model_reasoning_effort={esforco}"] if esforco else []), "-"], texto, limite)
         return resposta.read_text(encoding="utf-8").strip()
 
 

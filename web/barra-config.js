@@ -37,6 +37,30 @@
       linhas.push(opcaoDeIa(o, o.ia === d.ia && (o.ia !== "claude" || o.modelo === d.modelo)));
     });
     B.el("listaIas").replaceChildren(...linhas);
+    const atual = d.opcoes.find((o) => o.ia === d.ia && (o.ia !== "claude" || o.modelo === d.modelo));
+    B.el("esforcoIas").replaceChildren(...esforco(atual));
+  }
+
+  // O esforço (o quanto pensa) de quem responde agora: "Padrão" é o do próprio modelo, sem limitar nada.
+  function esforco(o) {
+    if (!o || !(o.esforcos || []).length) return [];
+    const titulo = document.createElement("div");
+    titulo.className = "titulo-esforco";
+    titulo.textContent = "Esforço do " + o.nome;
+    const botoes = [{ valor: "", nome: "Padrão" }, ...o.esforcos].map((nivel) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = nivel.nome;
+      b.classList.toggle("ativa", nivel.valor === (o.esforco || ""));
+      b.addEventListener("click", async () => {
+        try {
+          desenharIas(await B.mandar("/api/ias/esforco", { ia: o.ia, modelo: o.ia === "claude" ? o.modelo : "", esforco: nivel.valor }));
+          B.toast("Esforço do " + o.nome + ": " + nivel.nome.toLowerCase() + ".");
+        } catch (erro) { B.toast(erro.message); }
+      });
+      return b;
+    });
+    return [titulo, ...botoes];
   }
 
   function grupo(texto) {

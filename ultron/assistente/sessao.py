@@ -175,8 +175,8 @@ class SessaoClaude:
             cmd += ["--add-dir", str(CFG["pasta"])]
         if modelo:
             cmd += ["--model", modelo]
-        if CFG["esforco"]:
-            cmd += ["--effort", CFG["esforco"]]
+        if ias.esforco("claude", modelo):  # sem escolha, o padrão do modelo (nada limitado)
+            cmd += ["--effort", ias.esforco("claude", modelo)]
         if CFG["bloquear"]:
             cmd += ["--disallowedTools", CFG["bloquear"]]
         return cmd

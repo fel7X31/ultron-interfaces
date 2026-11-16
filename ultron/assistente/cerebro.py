@@ -47,6 +47,21 @@ def escolher(ia, modelo=""):
     return nome_atual()
 
 
+def escolher_esforco(ia, modelo, esforco):
+    """O esforço (o quanto pensa) de uma IA ou modelo do Claude. "" volta pro padrão do modelo."""
+    if esforco and esforco not in ias.esforcos(ia):
+        raise ValueError(f"O {ias.nome(ia, modelo)} não tem o esforço '{esforco}'.")
+    if esforco:
+        CFG["esforcos"][ias.chave(ia, modelo)] = esforco
+    else:
+        CFG["esforcos"].pop(ias.chave(ia, modelo), None)
+    salvar_preferencias()
+    if ia == "claude" and (ia, modelo) == ias.quem_responde():
+        SESSAO.parar()  # o esforço vai na hora de abrir o Claude: abre de novo já com o novo
+        threading.Thread(target=SESSAO.iniciar, daemon=True).start()
+    mostrar_quem_responde()
+
+
 def mostrar_quem_responde():
     """Conta pra tela e pra barra quem responde agora."""
     MOSTRADO["nome"] = nome_atual()

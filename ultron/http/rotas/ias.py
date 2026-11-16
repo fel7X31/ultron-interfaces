@@ -18,6 +18,13 @@ def escolher(pedido):
     return ver(pedido)
 
 
+@rota("POST", "/api/ias/esforco")
+def mudar_esforco(pedido):
+    d = pedido.json()
+    cerebro.escolher_esforco(str(d.get("ia", "")), str(d.get("modelo") or ""), str(d.get("esforco") or ""))
+    return ver(pedido)
+
+
 @rota("POST", "/api/ias/entrar")
 def entrar(pedido):
     """Abre o login da IA (Gemini com o Google, ChatGPT com a conta dele) numa janela do terminal."""

@@ -18,18 +18,38 @@ from . import contas_ia, limites
 
 PROVEDORES = {
     "chatgpt": {"nome": "ChatGPT", "url": "https://api.openai.com/v1/chat/completions",
-                "chave": "OPENAI_API_KEY", "modelo": "gpt-6.1-terra", "rapido": {"reasoning_effort": "low"}},
+                "chave": "OPENAI_API_KEY", "modelo": "gpt-6.1-terra"},
     "gemini": {"nome": "Gemini", "url": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-               "chave": "GEMINI_API_KEY", "modelo": "gemini-3.8-flash", "rapido": {"reasoning_effort": "low"}},
+               "chave": "GEMINI_API_KEY", "modelo": "gemini-3.8-flash"},
     "grok": {"nome": "Grok", "url": "https://api.x.ai/v1/chat/completions",
-             "chave": "XAI_API_KEY", "modelo": "grok-4.7", "rapido": {}},
+             "chave": "XAI_API_KEY", "modelo": "grok-4.7"},
 }
 MODELOS_CLAUDE = {"sonnet": "Claude Sonnet", "opus": "Claude Opus", "haiku": "Claude Haiku"}
+ESFORCOS_CLAUDE = ("low", "medium", "high", "xhigh", "max")  # o --effort do Claude Code
+ESFORCOS_OUTRAS = ("low", "medium", "high")                  # o reasoning_effort da API e do Codex
+NOMES_DO_ESFORCO = {"low": "Baixo", "medium": "Médio", "high": "Alto", "xhigh": "Muito alto", "max": "Máximo"}
 
 
 def modelo(ia):
     """O modelo que a IA usa: o do .env, ou o padrão."""
     return variavel(f"ULTRON_MODELO_{ia.upper()}", PROVEDORES[ia]["modelo"])
+
+
+def chave(ia, modelo=""):
+    """Como cada opção fica nas preferências: "claude:opus", "chatgpt"..."""
+    return f"claude:{modelo}" if ia == "claude" else ia
+
+
+def esforcos(ia):
+    """Os esforços que dá pra escolher pra essa IA (vazio se ela não tem esse ajuste, como o Gemini pela conta)."""
+    if ia == "claude":
+        return ESFORCOS_CLAUDE
+    return ESFORCOS_OUTRAS if ia == "chatgpt" or (ia == "gemini" and tem_chave(ia)) else ()
+
+
+def esforco(ia, modelo=""):
+    """O esforço que você escolheu pra essa IA ou modelo do Claude ("" = o padrão do modelo, sem limitar nada)."""
+    return CFG["esforcos"].get(chave(ia, modelo), "")
 
 
 def tem_chave(ia):
@@ -71,7 +91,9 @@ def opcoes():
     outras = [{"ia": ia, "modelo": modelo(ia), "nome": p["nome"], "ligada": pronta(ia), "chave": p["chave"],
                "entrar": contas_ia.CONTAS[ia]["com"] if ia in contas_ia.CONTAS and not pronta(ia) else ""}
               for ia, p in PROVEDORES.items()]
-    return [{**o, "limite": _nota_de_limite(o["ia"], o["modelo"])} for o in claude + outras]
+    return [{**o, "limite": _nota_de_limite(o["ia"], o["modelo"]), "esforco": esforco(o["ia"], o["modelo"]),
+             "esforcos": [{"valor": v, "nome": NOMES_DO_ESFORCO[v]} for v in esforcos(o["ia"])]}
+            for o in claude + outras]
 
 
 def _nota_de_limite(ia, modelo):
@@ -82,23 +104,24 @@ def _nota_de_limite(ia, modelo):
 def perguntar(ia, mensagens, limite=60):
     """Manda a conversa ({"role", "content"}...) pra IA e devolve o texto da resposta.
 
-    Com chave, vai pela API e pede a resposta rápida (pensando pouco); se a API recusar esse pedido, tenta de novo
-    do jeito padrão. Sem chave, vai pela sua conta, se você já entrou.
+    Com chave, vai pela API, com o esforço que você escolheu (se a API recusar o esforço, vai no padrão dela).
+    Sem chave, vai pela sua conta, se você já entrou.
     """
     provedor = PROVEDORES[ia]
     chave = variavel(provedor["chave"])
     if not chave and contas_ia.conectado(ia):
-        return contas_ia.perguntar(ia, mensagens, variavel(f"ULTRON_MODELO_{ia.upper()}"))
+        return contas_ia.perguntar(ia, mensagens, variavel(f"ULTRON_MODELO_{ia.upper()}"), esforco=esforco(ia))
     if not chave:
         raise ValueError(f"O {provedor['nome']} não está conectado: entre com a sua conta ou coloque a "
                          f"{provedor['chave']} no .env.")
     corpo = {"model": modelo(ia), "messages": mensagens}
+    pensar = {"reasoning_effort": esforco(ia)} if esforco(ia) else {}
     try:
-        return _enviar(provedor["url"], chave, {**corpo, **provedor["rapido"]}, limite)
+        return _enviar(provedor["url"], chave, {**corpo, **pensar}, limite)
     except urllib.error.HTTPError as erro:
-        if erro.code != 400 or not provedor["rapido"]:
+        if erro.code != 400 or not pensar:
             raise
-        return _enviar(provedor["url"], chave, corpo, limite)
+        return _enviar(provedor["url"], chave, corpo, limite)  # a API não aceitou o esforço: vai no padrão dela
 
 
 def _enviar(url, chave, corpo, limite):
