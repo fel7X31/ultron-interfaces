@@ -7,4 +7,4 @@ from . import curriculo  # noqa: F401
 from . import conversa, paineis, provas, sistema  # noqa: F401
 from . import musica, visor  # noqa: F401
 from . import ias, pc  # noqa: F401
-from . import memoria  # noqa: F401
+from . import lembretes, memoria  # noqa: F401

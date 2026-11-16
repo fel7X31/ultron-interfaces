@@ -21,6 +21,7 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
   próprio Windows, sem internet (dá pra desligar em Configurações, na barra).
 - **Memória:** "lembra que minha namorada se chama Ana" guarda no `memoria.md` da sua pasta, e a barra mostra tudo
   num grafo, como o do Obsidian. O Claude recebe a memória toda ao abrir.
+- **Lembretes e timers:** "me lembra de ligar pra mãe às 19h", "timer de 5 minutos". Na hora, ele avisa falando.
 - **Trava:** o que apaga, envia mensagem, publica ou desliga o PC só acontece depois que você diz "confirma".
 - **Extras:** modo prova, tela de currículo (analisar e adaptar, exporta Word e PDF), histórico diário das conversas.
 

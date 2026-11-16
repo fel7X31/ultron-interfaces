@@ -105,7 +105,7 @@ GENERICAS = {"musica", "musicas", "uma", "um", "som", "a", "o", "ai", "de", "nov
              "playlist", "radio", "ela", "essa", "isso", "ali", "aqui", "por", "favor", "la", "tocar", "player", "minha", "minhas"}
 NAO_MUSICA = {"agenda", "tarefa", "tarefas", "lembrete", "lembra", "lista", "alarme", "email", "calendario", "nota", "notas",
               "compromisso", "evento", "arquivo", "pasta", "curriculo", "tela", "volume", "brilho", "timer", "despertador",
-              "spotify", "memoria"}
+              "spotify", "cronometro", "temporizador", "memoria", "lembretes"}
 DO_PC = re.compile(r"\b(volume|mudo|mut\w*|desmut\w*|spotify)\b|\b(que|qual) (musica )?(esta|ta) tocando\b"
                    r"|\bque musica e essa\b")  # isso é do PC (comandos_pc.py), não do player
 MUSICA = re.compile(r"\b(musica\w*|som|playlist|lofi|radio|player|faixa)\b")
@@ -209,4 +209,4 @@ def concordar_no_modo_prova(fala):
         return SILENCIO
 
 
-from . import comandos_ia, comandos_memoria, comandos_pc  # noqa: E402,F401  (registram os comandos deles depois dos daqui)
+from . import comandos_ia, comandos_lembretes, comandos_memoria, comandos_pc  # noqa: E402,F401  (registram os comandos deles depois dos daqui)

@@ -13,7 +13,7 @@ from .assistente.turno import aquecer
 from .http.servidor import criar_servidor
 from .nucleo.config import CFG, ESTADO, WEB
 from .nucleo.log import log, log_erro
-from .recursos import curriculo
+from .recursos import curriculo, lembretes
 from .recursos.google import atualizar_google
 from .recursos.historico import manutencao
 from .recursos.mercado import atualizar_mercado
@@ -41,6 +41,7 @@ def rotinas():
     while True:
         agora = time.time()
         atualizar_tarefas()                # só lê o tarefas.md: barato
+        _sem_derrubar(lembretes.conferir)  # lembrete ou timer venceu: avisa falando
         _sem_derrubar(cerebro.conferir_quem_responde)  # o limite da IA escolhida liberou: a tela mostra a volta
         if agora >= proxima_manutencao:
             proxima_manutencao = agora + 3600
