@@ -78,7 +78,7 @@ def mudar_config(pedido):
         novo = " ".join(d["nome"].split())[:40]
         trocou_nome = novo != CFG["nome"]
         CFG["nome"] = novo
-    for modo in ("modo_prova", "modo_texto"):
+    for modo in ("modo_prova", "modo_texto", "chamado"):
         if modo in d:
             CFG[modo] = bool(d[modo])
     salvar_preferencias()
@@ -97,7 +97,8 @@ def reiniciar(pedido):
 
 @rota("GET", "/api/saude")
 def saude(pedido):
-    return {"claude": SESSAO.vivo(), "pasta": str(CFG["pasta"]), "modelo": CFG["modelo"], "telas": len(EVENTOS.ouvintes)}
+    return {"claude": SESSAO.vivo(), "pasta": str(CFG["pasta"]), "modelo": CFG["modelo"], "telas": len(EVENTOS.ouvintes),
+            "estado": EVENTOS.ultimo_estado.get("estado"), "chamado": CFG["chamado"]}
 
 
 @rota("POST", "/api/atalho")

@@ -17,6 +17,8 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
 - **Comandos na hora:** "próxima música", "abre o currículo", "ativa o modo prova", "volume 30", "pausa o Spotify",
   "fecha o Discord" respondem sem passar pelo Claude.
 - **Controle do PC:** volume, música, janelas, programas, brilho, Configurações do Windows e uso do PC (Windows).
+- **Chamar pelo nome:** com o Ultron no ar, diga "Ultron", espere o bipe e peça. Usa o reconhecimento de fala do
+  próprio Windows, sem internet (dá pra desligar em Configurações, na barra).
 - **Trava:** o que apaga, envia mensagem, publica ou desliga o PC só acontece depois que você diz "confirma".
 - **Extras:** modo prova, tela de currículo (analisar e adaptar, exporta Word e PDF), histórico diário das conversas.
 
@@ -62,7 +64,13 @@ notepad .env
 py -m pip install -r requirements-palmas.txt
 py palmas.py --calibrar   # mostra o volume de cada som, pra ajustar
 py palmas.py              # fica ouvindo; duas palmas ligam o Ultron em tela cheia
+py palmas.py --testar-chamado   # mostra cada "Ultron" que o Windows ouviu e com que certeza
 ```
+
+Com o Ultron no ar, o `palmas.py` também ouve o nome: diga "Ultron", espere o bipe e fale o pedido (ele para de gravar
+quando você fica um segundo quieto). Quem reconhece o nome é o próprio Windows (`ultron/voz/chamado.ps1`), sem
+internet. Se ele ouvir sozinho, tire `"Medium"` de `CHAMADO_ACEITA` no `palmas.py`; pra desligar, use a chave em
+Configurações, na barra (ou `ULTRON_CHAMADO=0` no `.env`). O Ctrl+Alt+V (segurar e falar) continua valendo.
 
 Pra ligar junto com o Windows, crie um atalho de `pythonw palmas.py` na pasta `shell:startup`.
 

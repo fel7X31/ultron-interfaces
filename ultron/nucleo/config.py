@@ -72,6 +72,7 @@ def carregar_config(base):
         "modo_texto": False,   # responde só escrito, sem voz
         "modo_prova": False,   # revisão dupla, correções guardadas, silêncio com "ok"
         "ia": "claude",        # quem responde: o Claude (com ferramentas) ou outra IA (veja recursos/ias.py)
+        "chamado": base.get("ULTRON_CHAMADO", "1") == "1",  # dizer "Ultron" faz ele ouvir o pedido (palmas.py)
     }
 
 
@@ -88,12 +89,14 @@ def carregar_preferencias():
     for chave in ("ia", "modelo"):
         if p.get(chave):
             CFG[chave] = p[chave]
+    if "chamado" in p:
+        CFG["chamado"] = bool(p["chamado"])
 
 
 def salvar_preferencias():
     salvar_json(PREFS, {"voz": CFG["voz"], "velocidade": CFG["velocidade_voz"], "nome": CFG["nome"],
                         "modo_texto": CFG["modo_texto"], "modo_prova": CFG["modo_prova"],
-                        "ia": CFG["ia"], "modelo": CFG["modelo"]})
+                        "ia": CFG["ia"], "modelo": CFG["modelo"], "chamado": CFG["chamado"]})
 
 
 def persona():
@@ -109,7 +112,7 @@ def config_publica():
     """O que a tela pode ver e mudar (sem chaves)."""
     return {"voz": CFG["voz"], "velocidade": CFG["velocidade_voz"], "vozes": VOZES,
             "nome": CFG["nome"], "modo_texto": CFG["modo_texto"], "modo_prova": CFG["modo_prova"],
-            "ia": CFG["ia"], "modelo": CFG["modelo"]}
+            "ia": CFG["ia"], "modelo": CFG["modelo"], "chamado": CFG["chamado"]}
 
 
 def voz_ligada():

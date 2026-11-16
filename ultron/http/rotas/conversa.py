@@ -1,7 +1,8 @@
-"""Falar com o Ultron: áudio (segurou o espaço), texto (digitou) e interromper."""
+"""Falar com o Ultron: áudio (segurou o espaço), texto (digitou), interromper e chamar."""
 import threading
 
 from ...assistente import turno
+from ...nucleo.log import log
 from ..servidor import rota
 
 
@@ -30,3 +31,12 @@ def texto(pedido):
 @rota("POST", "/api/interromper")
 def interromper(pedido):
     return {"interrompeu": turno.interromper()}
+
+
+@rota("POST", "/api/chamar")
+def chamar(pedido):
+    """O botão do microfone da barra: o palmas.py (que cuida do microfone) começa a ouvir, como ao dizer "Ultron"."""
+    if turno.ocupado():
+        return 409, {"ocupado": True}
+    log({"evento": "chamar"})
+    return {"ok": True}

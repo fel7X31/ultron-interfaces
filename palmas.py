@@ -6,7 +6,12 @@ microfone, liga o server.py sem janela (se ele ainda não estiver no ar) e abre 
 esfera em tela cheia. Desliga quando você manda por voz ("desliga") ou fecha a
 janela. Depois volta a ouvir.
 
+Com o Ultron no ar, dizer "Ultron" faz ele ouvir o pedido (bipe, você fala, ele faz),
+pelo reconhecimento de fala do Windows (ultron/voz/chamado.ps1), sem internet.
+O Ctrl+Alt+V (segurar e falar) e o microfone da barra do topo também passam por aqui.
+
 Rodar:           py palmas.py
+Testar o nome:   py palmas.py --testar-chamado   (mostra cada "Ultron" que o Windows ouviu e com que certeza)
 Gravar a voz:    py palmas.py --gravar-palavra   (sem isso, só as palmas ligam)
 Calibrar:        py palmas.py --calibrar   (mostra o volume de cada som e não liga nada)
 Desligar:        py palmas.py --desligar   (fecha o Ultron que as palmas ligaram)
@@ -38,6 +43,7 @@ import numpy as np
 import sounddevice as sd
 
 from ultron.voz import palavra
+from ultron.voz.chamado import Chamado, FimDaFala
 
 
 def porta_do_env():
@@ -72,6 +78,11 @@ ATALHO_TECLA = 0x56
 ATALHO_BIPE = True
 ATALHO_MAX_S = 30
 ATALHO_CAUDA_S = 0.25
+CHAMADO_ACEITA = ("High", "Medium")  # certeza do Windows pra aceitar o "Ultron" (tire "Medium" se ele ouvir sozinho)
+CHAMADO_ESPERA_S = 5       # depois do bipe, quanto espera você começar a falar
+CHAMADO_SILENCIO_S = 1.0   # quanto silêncio, depois de falar, encerra o pedido
+CHAMADO_MAX_S = 20
+FALANDO_NO_MAXIMO_S = 60   # sem o aviso de que a voz acabou, depois disso aceita o nome de novo
 
 BLOCO_S = 0.01
 SEM_AUDIO_S = 3
@@ -80,6 +91,8 @@ PID_TELA = ESTADO / "tela.pid"
 LOG = ESTADO / "log.jsonl"
 VOZ_GRAVADA = ESTADO / "palavra.npz"
 GRAVACOES = 8
+GRAVANDO = threading.Lock()   # um pedido gravado de cada vez (atalho, nome ou botão)
+VOZ_DO_ULTRON = {"ate": 0.0}  # até quando a resposta dele pode estar tocando (o nome dito por ele não vale)
 
 
 def matar(arquivo_pid):
@@ -210,23 +223,118 @@ def hora_de_desligar(eventos, desligar_em):
 
 
 def acompanhar():
-    """Espera o Ultron ser desligado: por voz, fechando a janela ou de fora."""
+    """Espera o Ultron ser desligado (por voz, fechando a janela ou de fora) e, enquanto isso, atende quem chama."""
     pos = LOG.stat().st_size if LOG.exists() else 0
     desligar_em = ultima_tela = None
-    while True:
-        time.sleep(1)
-        s = saude()
-        if s is None:
-            return
-        eventos, pos = eventos_novos(pos)
-        desligar_em = hora_de_desligar(eventos, desligar_em)
-        if s.get("telas"):
-            ultima_tela = time.time()
-        if desligar_em and time.time() >= desligar_em:
-            return desligar_ultron()
-        if ultima_tela and time.time() - ultima_tela >= SEM_TELA_DESLIGA:
-            print("A janela foi fechada.")
-            return desligar_ultron()
+    chamado = Chamado(lambda *ouviu: em_paralelo(ao_ser_chamado, *ouviu))
+    try:
+        while True:
+            time.sleep(0.5)
+            s = saude()
+            if s is None:
+                return
+            eventos, pos = eventos_novos(pos)
+            desligar_em = hora_de_desligar(eventos, desligar_em)
+            atender(eventos, s, chamado)
+            if s.get("telas"):
+                ultima_tela = time.time()
+            if desligar_em and time.time() >= desligar_em:
+                return desligar_ultron()
+            if ultima_tela and time.time() - ultima_tela >= SEM_TELA_DESLIGA:
+                print("A janela foi fechada.")
+                return desligar_ultron()
+    finally:
+        chamado.desligar()
+
+
+def em_paralelo(funcao, *args):
+    threading.Thread(target=funcao, args=args, daemon=True).start()
+
+
+def atender(eventos, s, chamado):
+    """Liga o ouvido do nome (se a preferência da tela deixar), acompanha a voz do Ultron e o microfone da barra."""
+    if s.get("chamado", True):
+        chamado.ligar()
+    else:
+        chamado.desligar()
+    for ev in eventos:
+        if ev.get("evento") == "turno" and ev.get("resposta"):
+            VOZ_DO_ULTRON["ate"] = time.time() + min(FALANDO_NO_MAXIMO_S, 2 + len(ev["resposta"]) / 12)
+        elif ev.get("evento") == "tela" and ev.get("tipo") in ("voz_tocou", "voz_falhou"):
+            VOZ_DO_ULTRON["ate"] = time.time() + 0.5
+        elif ev.get("evento") == "chamar":
+            em_paralelo(ao_ser_chamado, "botao", 1.0, 0.0)
+
+
+def ao_ser_chamado(confianca, certeza, segundos):
+    """Ouviu "Ultron" (ou o microfone da barra): bipe, grava o pedido até você parar de falar e manda pro Ultron."""
+    pelo_botao = confianca == "botao"
+    if not pelo_botao and confianca not in CHAMADO_ACEITA:
+        print(f"Ouvi algo como \"Ultron\", mas com pouca certeza ({confianca} {certeza:.2f}). Ignorado.")
+        return
+    s = saude()
+    ocupado = not s or s.get("estado") != "parado" or time.time() < VOZ_DO_ULTRON["ate"]
+    if (ocupado and not pelo_botao) or not GRAVANDO.acquire(blocking=False):
+        print(f"\"Ultron\" ignorado: ele está {s.get('estado') if s else 'desligado'} ou falando.")
+        return
+    try:
+        print(f"Chamado ({confianca} {certeza:.2f}). Ouvindo o pedido...")
+        if pelo_botao:
+            postar("/api/interromper", b"")
+        mandar_fala(gravar_ate_o_silencio(), "Chamado")
+    except Exception as erro:
+        print(f"Chamado: não consegui gravar ({erro}).")
+        avisar_tela({"estado": "cancelado"})
+    finally:
+        GRAVANDO.release()
+
+
+def gravar_ate_o_silencio():
+    """O pedido falado depois do bipe, até você ficar CHAMADO_SILENCIO_S quieto. None se não falou nada."""
+    taxa, blocos, pedacos = taxa_do_microfone(), queue.Queue(), []
+    bloco_s = 0.05
+    fim = FimDaFala(CHAMADO_ESPERA_S, CHAMADO_SILENCIO_S)
+    with sd.InputStream(samplerate=taxa, channels=1, dtype="float32", blocksize=int(taxa * bloco_s),
+                        callback=lambda d, *_: blocos.put(d[:, 0].copy())):
+        bipe(880)
+        avisar_tela({"estado": "ouvindo"})
+        situacao, inicio = "esperando", time.time()
+        while situacao in ("esperando", "falando") and time.time() - inicio < CHAMADO_MAX_S:
+            bloco = proximo_bloco(blocos)
+            pedacos.append(bloco)
+            situacao = fim.receber(float(np.sqrt(np.mean(bloco ** 2))), bloco_s)
+            if len(pedacos) % 2 == 0:
+                avisar_tela({"nivel": volume(bloco)})
+    bipe(520)
+    return None if situacao == "nada" else np.concatenate(pedacos)
+
+
+def mandar_fala(audio, quem):
+    """Manda o áudio gravado pro Ultron (ou cancela, se foi só silêncio)."""
+    wav = para_wav(audio, taxa_do_microfone()) if audio is not None else None
+    if not wav:
+        avisar_tela({"estado": "cancelado"})
+        return
+    avisar_tela({"estado": "parado"})
+    erro = postar("/api/audio", wav, tipo="audio/wav", timeout=10)
+    if erro:
+        print(f"{quem}: o servidor não aceitou o áudio ({erro}).")
+
+
+def testar_chamado():
+    """Mostra cada "Ultron" que o Windows reconhece e com que certeza, sem ligar nada. Ctrl+C pra sair."""
+    def mostrar(confianca, certeza, segundos):
+        aceito = "  >>> aceito" if confianca in CHAMADO_ACEITA else "  (ignorado)"
+        print(f"  ouvi \"Ultron\": {confianca} ({certeza:.2f}), {segundos:.2f} s{aceito}")
+
+    chamado = Chamado(mostrar)
+    chamado.ligar()
+    print("Diga \"Ultron\" algumas vezes, e também outras palavras e frases. Ctrl+C pra sair.")
+    try:
+        while chamado.ligado():
+            time.sleep(0.5)
+    finally:
+        chamado.desligar()
 
 
 def microfone_exclusivo(receber):
@@ -319,7 +427,8 @@ def ouvir(calibrar=False):
     stream, taxa, modo = abrir_microfone(receber)
     ouviu_palavra = ouvinte_da_palavra(taxa, mostrar_tudo=calibrar)
     with stream:
-        print(f"Microfone no modo {modo}. " + ("Ouvindo. Bata duas palmas ou diga Ultron." if not calibrar else
+        chamar = " ou diga Ultron" if VOZ_GRAVADA.exists() else ""
+        print(f"Microfone no modo {modo}. " + (f"Ouvindo. Bata duas palmas{chamar} pra ligar." if not calibrar else
               "Calibrando. Bata palmas, diga Ultron, fale, faça barulho normal. Ctrl+C pra sair."))
         while True:
             cru = proximo_bloco(blocos)
@@ -430,20 +539,18 @@ def ao_apertar_atalho():
     if not saude():
         print("Ctrl+Alt+V: o Ultron está desligado. Bata duas palmas antes.")
         return
-    postar("/api/interromper", b"")
-    try:
-        audio = gravar_enquanto_segura()
-    except Exception as erro:
-        print(f"Ctrl+Alt+V: não consegui gravar ({erro}).")
-        audio = None
-    wav = para_wav(audio, taxa_do_microfone()) if audio is not None else None
-    if not wav:
-        avisar_tela({"estado": "cancelado"})
+    if not GRAVANDO.acquire(blocking=False):
         return
-    avisar_tela({"estado": "parado"})
-    erro = postar("/api/audio", wav, tipo="audio/wav", timeout=10)
-    if erro:
-        print(f"Ctrl+Alt+V: o servidor não aceitou o áudio ({erro}).")
+    try:
+        postar("/api/interromper", b"")
+        try:
+            audio = gravar_enquanto_segura()
+        except Exception as erro:
+            print(f"Ctrl+Alt+V: não consegui gravar ({erro}).")
+            audio = None
+        mandar_fala(audio, "Ctrl+Alt+V")
+    finally:
+        GRAVANDO.release()
 
 
 def atalho_global():
@@ -467,6 +574,12 @@ def main():
         return desligar_ultron()
     if "--gravar-palavra" in sys.argv:
         return gravar_palavra()
+    if "--testar-chamado" in sys.argv:
+        try:
+            testar_chamado()
+        except KeyboardInterrupt:
+            pass
+        return
     if "--calibrar" in sys.argv:
         try:
             ouvir(calibrar=True)

@@ -32,8 +32,12 @@ Se não houver entrada nova, siga direto com a tarefa.
 - Mudança em `.py` só vale depois de religar o servidor (o `palmas.py` liga com `server.py --sem-abrir`;
   `.estado/servidor.pid` tem o PID). Em `web/`, basta recarregar a tela.
 - Nos testes do controle do PC, simule `pc.executar` (mock): rodar de verdade bloqueia a tela, pausa o vídeo dele etc.
+- Nos testes do `/api/chamar`, simule o `log`: o `palmas.py` lê o log e abriria o microfone.
 - Teste que passa pelo `cerebro` ou pelo `ias.quem_responde()` aponta o `limites.ARQUIVO` pra uma pasta temporária
   (veja `tests/test_limites.py`): senão ele lê e grava o `.estado/limites.json` de verdade.
+- O `palmas.py` roda à parte (pythonw, ligado com o Windows): mudança nele ou em `ultron/voz/chamado.*` só vale
+  depois de fechar e abrir o `palmas.py` de novo. Ele cuida do microfone fora da tela: palmas, o nome "Ultron",
+  o Ctrl+Alt+V e o botão de microfone da barra.
 - A trava (`hooks/trava.py`) e o `.env` o Ultron nunca pode mudar — só o Claude Code.
 - O Miguel pode estar com mais de uma sessão do Claude Code mexendo aqui ao mesmo tempo: leia o trecho de novo
   antes de editar.
