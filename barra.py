@@ -33,6 +33,7 @@ JA_EXISTE = 183
 COM_BARRA_DE_TITULO, SEMPRE_NA_FRENTE = 0x00C00000, 0x8
 TELA_OCUPADA = (2, 3, 4)  # o Windows diz: app em tela cheia, jogo DirectX em tela cheia ou apresentação
 ANIMACAO_S = 0.22         # quanto o painel leva pra abrir ou minimizar
+QUADRO_S = 1 / 120        # um quadro da animação (o timer de 1 ms do main() deixa o sleep chegar perto disso)
 RAIO = 18                 # o arredondado do recorte enquanto ele cresce ou encolhe, em px da página
 SEM_REDESENHAR = 0x8
 
@@ -63,20 +64,29 @@ class Barra:
         self._quer_aparecer = False  # o que a página pediu (o Ultron diz se a tela dele está à vista)
         self._tamanho = FECHADA      # o tamanho de agora, em px da página
         self._trava = threading.Lock()  # uma animação de cada vez
+        self._ordem = 0              # o último pedido de tamanho que valeu (a página numera cada um)
 
-    def expandir(self, largura, altura):
+    def expandir(self, largura, altura, ordem=None):
         """Abre o painel, crescendo do entalhe."""
-        self._mudar(largura, altura)
-        user32.SetForegroundWindow(self._numero)  # o campo de pedido e o Esc precisam do teclado
+        if self._mudar(largura, altura, ordem):
+            user32.SetForegroundWindow(self._numero)  # o campo de pedido e o Esc precisam do teclado
 
-    def recolher(self, largura=FECHADA[0]):
+    def recolher(self, largura=FECHADA[0], ordem=None):
         """Minimiza o painel até o entalhe, ou só muda a largura do entalhe (compacto ou com a música)."""
-        self._mudar(largura, FECHADA[1])
+        self._mudar(largura, FECHADA[1], ordem)
 
-    def _mudar(self, largura, altura):
+    def _mudar(self, largura, altura, ordem=None):
         """Vai do tamanho de agora pro novo sem a página se redesenhar no meio (é isso que travava): a janela fica do
-        maior dos dois tamanhos, recortada no de agora; o recorte cresce ou encolhe até o novo; aí ela fica do novo."""
+        maior dos dois tamanhos, recortada no de agora; o recorte cresce ou encolhe até o novo; aí ela fica do novo.
+
+        O pywebview roda cada chamada da página numa thread: um "abrir" pode chegar depois do "minimizar" que veio
+        depois dele. Pelo número da ordem, pedido atrasado não vale (senão o painel ficava aberto atrás do entalhe).
+        Devolve se mudou."""
         with self._trava:
+            if ordem is not None:
+                if ordem < self._ordem:
+                    return False
+                self._ordem = ordem
             de, para = self._tamanho, (largura, altura)
             maior = (max(de[0], para[0]), max(de[1], para[1]))
             if de != para:
@@ -84,6 +94,7 @@ class Barra:
                     self._colocar(*maior, recorte=de)
                 self._animar_recorte(de, para)
             self._colocar(largura, altura)
+            return True
 
     def aparecer(self, sim):
         self._quer_aparecer = bool(sim)
@@ -109,12 +120,16 @@ class Barra:
         threading.Thread(target=self._vigiar, daemon=True).start()
 
     def _animar_recorte(self, de, para):
-        """O pedaço que aparece vai do tamanho `de` até `para` (px da página), rápido no começo e suave no fim."""
-        passos = max(1, round(ANIMACAO_S * 60))
-        for passo in range(1, passos + 1):
-            t = 1 - (1 - passo / passos) ** 3
+        """O pedaço que aparece vai do tamanho `de` até `para` (px da página), rápido no começo e suave no fim.
+        Cada quadro vê quanto tempo passou: se um atrasar, o próximo compensa e a animação não se arrasta."""
+        inicio = time.perf_counter()
+        while True:
+            passou = min(1.0, (time.perf_counter() - inicio) / ANIMACAO_S)
+            t = 1 - (1 - passou) ** 3
             self._recortar(self._tamanho, (de[0] + (para[0] - de[0]) * t, de[1] + (para[1] - de[1]) * t))
-            time.sleep(ANIMACAO_S / passos)
+            if passou >= 1:
+                return
+            time.sleep(QUADRO_S)
 
     def _recortar(self, janela, parte):
         """Da janela de tamanho `janela`, só aparece (e recebe clique) a `parte`, no meio do topo. Em px da página."""
@@ -143,7 +158,22 @@ class Barra:
     def _vigiar(self):
         while True:
             self._conferir_visibilidade()
+            self._conferir_tamanho()
             time.sleep(0.5)
+
+    def _conferir_tamanho(self):
+        """Fora de uma animação, a janela tem que estar do tamanho combinado e sem recorte. Se não está (um pedido
+        perdido, o Windows mexeu nela), volta pro certo: é isso que deixava o painel cinza aparecendo atrás do entalhe."""
+        if not self._trava.acquire(blocking=False):
+            return
+        try:
+            escala, r = self._escala(), _Retangulo()
+            user32.GetWindowRect(self._numero, ctypes.byref(r))
+            certo = (round(self._tamanho[0] * escala), round((self._tamanho[1] + ESCONDIDO) * escala))
+            if (r.direita - r.esquerda, r.baixo - r.cima) != certo:
+                self._colocar(*self._tamanho)
+        finally:
+            self._trava.release()
 
     def _conferir_visibilidade(self):
         """Aparece quando a página pede, menos com jogo ou vídeo em tela cheia na tela principal.
@@ -224,6 +254,7 @@ def _sou_a_unica():
 def main():
     if not _sou_a_unica():
         return
+    ctypes.WinDLL("winmm").timeBeginPeriod(1)  # sleep de 1 ms em vez de 15: a animação sai sem tranco
     barra = Barra()
     janela = webview.create_window(
         "Barra do Ultron", f"{URL}/barra.html", js_api=barra, width=FECHADA[0], height=FECHADA[1] + ESCONDIDO,

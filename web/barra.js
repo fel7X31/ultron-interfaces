@@ -14,6 +14,7 @@
   const el = (id) => document.getElementById(id);
   const corpo = document.body;
   const secoes = {};
+  let ordemDaJanela = 0;
   let aberta = false, secaoAtual = "inicio", semConexaoDesde = 0, telasAbertas = 0, apagarFala = null;
 
   const Barra = window.Barra = {
@@ -24,6 +25,10 @@
     atual: () => secaoAtual,
     janela(metodo, ...args) {  // termina quando o barra.py termina (a animação de abrir ou minimizar, por exemplo)
       const api = window.pywebview && window.pywebview.api;
+      if (metodo === "expandir" || metodo === "recolher") {  // numerados: o barra.py ignora pedido que chega atrasado
+        ordemDaJanela = Math.max(ordemDaJanela + 1, Date.now());  // pelo relógio: segue crescendo se a página recarregar
+        args.push(ordemDaJanela);
+      }
       return api && api[metodo] ? Promise.resolve(api[metodo](...args)).catch(() => {}) : Promise.resolve();
     },
     async pegar(caminho) {
