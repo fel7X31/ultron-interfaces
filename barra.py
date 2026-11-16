@@ -31,7 +31,7 @@ ESTILO_EXTRA, DE_FERRAMENTA, DE_APP = -20, 0x80, 0x40000
 TELA_PRINCIPAL, MONITOR_MAIS_PERTO = 1, 2
 JA_EXISTE = 183
 COM_BARRA_DE_TITULO, SEMPRE_NA_FRENTE = 0x00C00000, 0x8
-TELA_OCUPADA = (2, 3, 4)  # o Windows diz: app em tela cheia, jogo DirectX em tela cheia ou apresentação
+JOGO_EXCLUSIVO = 3        # o Windows diz: jogo DirectX em tela cheia exclusiva (esse sempre está na frente)
 ANIMACAO_S = 0.2          # quanto o painel leva pra sair ao minimizar (o "sobe" do barra.css)
 
 user32 = ctypes.WinDLL("user32")
@@ -189,16 +189,17 @@ def _manter_jeito_de_entalhe(numero):
 def _tela_cheia_na_frente(barra):
     """Jogo, vídeo ou apresentação em tela cheia, na frente de tudo, na tela principal (onde fica a barra)?
 
-    Primeiro pergunta pro Windows (o mesmo aviso que ele usa pra calar as notificações durante jogos). Depois confere a
-    janela da frente: cobrindo a tela inteira e sem barra de título. Janela maximizada comum (com barra de título) não
-    conta: com a barra de tarefas escondida, ela também cobre a tela inteira. Jogo em tela cheia sem borda conta.
+    Vale a janela da frente: cobrindo a tela inteira e sem barra de título. Janela maximizada comum (com barra de
+    título) não conta: com a barra de tarefas escondida, ela também cobre a tela inteira. Jogo em tela cheia sem borda
+    conta. Do aviso do Windows (o que cala as notificações durante jogos) só vale o de tela cheia exclusiva: o de "app
+    em tela cheia" continua ligado com o jogo aberto atrás de outra janela, e a barra sumia à toa.
     """
-    ocupada = ctypes.c_int(0)
-    if shell32.SHQueryUserNotificationState(ctypes.byref(ocupada)) == 0 and ocupada.value in TELA_OCUPADA:
-        return True
     frente = user32.GetForegroundWindow()
     if not frente or frente == barra or _classe(frente) in janelas.DO_WINDOWS:
         return False
+    aviso = ctypes.c_int(0)
+    if shell32.SHQueryUserNotificationState(ctypes.byref(aviso)) == 0 and aviso.value == JOGO_EXCLUSIVO:
+        return True
     if user32.IsZoomed(frente) and user32.GetWindowLongW(frente, ESTILO) & COM_BARRA_DE_TITULO:
         return False
     monitor = _Monitor(tamanho=ctypes.sizeof(_Monitor))
