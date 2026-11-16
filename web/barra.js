@@ -63,7 +63,11 @@
   };
 
   // ---------------------------------------------------------- abrir, fechar e trocar de seção
+  // Abrir: a janela cresce do entalhe (barra.py anima) e o painel desce. Fechar: o painel some e a janela encolhe.
+  let fechando = null;
   function abrir(secao) {
+    clearTimeout(fechando);
+    corpo.classList.remove("fechando");
     if (!aberta) {
       aberta = true;
       corpo.classList.add("aberta");
@@ -73,10 +77,13 @@
   }
 
   function fechar() {
-    if (!aberta) return;
-    aberta = false;
-    corpo.classList.remove("aberta");
-    Barra.janela("recolher", LARGURA_FECHADA);
+    if (!aberta || corpo.classList.contains("fechando")) return;
+    corpo.classList.add("fechando");
+    fechando = setTimeout(() => {
+      aberta = false;
+      corpo.classList.remove("aberta", "fechando");
+      Barra.janela("recolher", LARGURA_FECHADA);
+    }, 150);
   }
 
   function ir(nome) {

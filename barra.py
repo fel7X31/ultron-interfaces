@@ -32,6 +32,7 @@ TELA_PRINCIPAL, MONITOR_MAIS_PERTO = 1, 2
 JA_EXISTE = 183
 COM_BARRA_DE_TITULO, SEMPRE_NA_FRENTE = 0x00C00000, 0x8
 TELA_OCUPADA = (2, 3, 4)  # o Windows diz: app em tela cheia, jogo DirectX em tela cheia ou apresentação
+ANIMACAO_S = 0.18         # quanto a janela leva pra crescer ou encolher
 
 user32 = ctypes.WinDLL("user32")
 shell32 = ctypes.WinDLL("shell32")
@@ -55,13 +56,15 @@ class Barra:
         self._janela = None
         self._numero = None          # o identificador da janela no Windows
         self._quer_aparecer = False  # o que a página pediu (o Ultron diz se a tela dele está à vista)
+        self._tamanho = FECHADA      # o tamanho de agora, em px da página
+        self._animacao = 0           # cada animação nova tem um número; a velha para quando vê outro
 
     def expandir(self, largura, altura):
-        self._colocar(largura, altura)
+        self._animar(largura, altura)
         user32.SetForegroundWindow(self._numero)  # o campo de pedido e o Esc precisam do teclado
 
     def recolher(self, largura=FECHADA[0]):
-        self._colocar(largura, FECHADA[1])
+        self._animar(largura, FECHADA[1])
 
     def aparecer(self, sim):
         self._quer_aparecer = bool(sim)
@@ -86,8 +89,21 @@ class Barra:
         self.recolher()
         threading.Thread(target=self._vigiar, daemon=True).start()
 
+    def _animar(self, largura, altura):
+        """Cresce ou encolhe a janela aos poucos, do tamanho de agora até o novo (como o entalhe do celular)."""
+        self._animacao += 1
+        minha, (largura_0, altura_0) = self._animacao, self._tamanho
+        passos = max(1, round(ANIMACAO_S * 60))
+        for passo in range(1, passos + 1):
+            if minha != self._animacao:
+                return  # outra animação começou: ela segue do ponto onde esta parou
+            t = 1 - (1 - passo / passos) ** 3  # rápido no começo, suave no fim
+            self._colocar(largura_0 + (largura - largura_0) * t, altura_0 + (altura - altura_0) * t)
+            time.sleep(ANIMACAO_S / passos)
+
     def _colocar(self, largura, altura):
         """No meio do topo da tela principal, com ESCONDIDO px acima dela."""
+        self._tamanho = (largura, altura)
         escala = user32.GetDpiForWindow(self._numero) / 96
         largura, altura = round(largura * escala), round((altura + ESCONDIDO) * escala)
         x = (user32.GetSystemMetrics(0) - largura) // 2
