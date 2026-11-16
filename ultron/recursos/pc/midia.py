@@ -23,10 +23,19 @@ _LIGANDO = threading.Lock()
 
 
 def apertar(botao):
-    """Aperta o botão de mídia (vale pro que estiver tocando: Spotify, YouTube, o player do Ultron...)."""
+    """Aperta o botão de mídia no que está tocando (Spotify, YouTube no navegador...).
+
+    Vai pelo vigia, direto na sessão de mídia do Windows (como os botões do volume do Windows): a tecla de mídia nem
+    sempre chega no app certo. Sem o vigia, aperta a tecla de mídia do teclado.
+    """
     if botao not in BOTOES:
         raise ValueError(f"Botão de mídia desconhecido: {botao}.")
-    teclado.apertar(BOTOES[botao], estendida=True)
+    _ligar_vigia()
+    try:
+        _VIGIA["processo"].stdin.write(botao + "\n")
+        _VIGIA["processo"].stdin.flush()
+    except (AttributeError, OSError, ValueError):
+        teclado.apertar(BOTOES[botao], estendida=True)
 
 
 def tocando():
@@ -62,7 +71,7 @@ def _ligar_vigia():
         ESTADO.mkdir(exist_ok=True)
         cmd = ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(SCRIPT),
                "-Vigiar", "-Dono", str(os.getpid()), "-Capa", str(CAPA)]
-        processo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
+        processo = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.PIPE,
                                     text=True, encoding="utf-8", creationflags=SEM_JANELA)
         _VIGIA["processo"] = processo
         threading.Thread(target=_ouvir, args=(processo,), daemon=True).start()

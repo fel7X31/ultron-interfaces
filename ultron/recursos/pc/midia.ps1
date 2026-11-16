@@ -70,15 +70,44 @@ function Tocando {
     } | ConvertTo-Json -Compress
 }
 
+function Apertar($botao) {
+    # Direto na sessão que está tocando (como os botões do volume do Windows): a tecla de mídia nem sempre chega nela.
+    $sessao = $gerente.GetCurrentSession()
+    if (-not $sessao) { return }
+    $operacao = switch ($botao) {
+        'proxima'      { $sessao.TrySkipNextAsync() }
+        'anterior'     { $sessao.TrySkipPreviousAsync() }
+        'tocar_pausar' { $sessao.TryTogglePlayPauseAsync() }
+    }
+    if ($operacao) { Esperar $operacao ([bool]) | Out-Null }
+}
+
 if (-not $Vigiar) { Tocando; exit }
 
+# Os botões chegam pela entrada, um por linha (proxima, anterior, tocar_pausar). A leitura não trava o laço.
+$entrada = [System.IO.StreamReader]::new([Console]::OpenStandardInput())
+$pedido = $entrada.ReadLineAsync()
 $anterior = ''
-while ($Dono -eq 0 -or (Get-Process -Id $Dono -ErrorAction SilentlyContinue)) {
-    $agora = Tocando
-    if ($agora -ne $anterior) {
-        [Console]::Out.WriteLine($agora)
-        [Console]::Out.Flush()
-        $anterior = $agora
+$volta = 0
+while ($true) {
+    if ($pedido -and $pedido.IsCompleted) {
+        try { $botao = $pedido.Result } catch { $botao = $null }  # entrada fechada: para de ler botões
+        $pedido = $null
+        if ($null -ne $botao) {
+            Apertar $botao.Trim()
+            $volta = 5  # confere o que está tocando logo depois
+            $pedido = $entrada.ReadLineAsync()
+        }
     }
-    Start-Sleep -Milliseconds 1500
+    if ($volta % 8 -eq 0) {  # a cada 1,6 s: o Ultron ainda está no ar? mudou a música?
+        if ($Dono -ne 0 -and -not (Get-Process -Id $Dono -ErrorAction SilentlyContinue)) { break }
+        $agora = Tocando
+        if ($agora -ne $anterior) {
+            [Console]::Out.WriteLine($agora)
+            [Console]::Out.Flush()
+            $anterior = $agora
+        }
+    }
+    $volta++
+    Start-Sleep -Milliseconds 200
 }
