@@ -1,0 +1,29 @@
+/* As cores dos dois temas do Ultron: prata (o claro) e escuro (classe "escuro" no body).
+   A tela (index.html) usa este arquivo. */
+:root {
+  --fundo: #c3c6cb;
+  --texto: #1d1f22;
+  --suave: rgba(30, 32, 36, .58);
+  --fraco: rgba(30, 32, 36, .30);
+  --linha: rgba(30, 32, 36, .20);
+  --vermelho: #d7141e;
+  --degrade: radial-gradient(circle at 50% 42%, #f4f5f7 0%, #cfd2d6 45%, #a3a7ad 100%);
+  --vidro: rgba(255, 255, 255, .38);          /* os painéis de vidro */
+  --vidro-borda: rgba(255, 255, 255, .6);
+  --vidro-sombra: 0 10px 30px rgba(40, 44, 50, .18);
+  --botao: rgba(30, 32, 36, .07);
+}
+
+body.escuro {
+  --fundo: #030405;
+  --texto: #e9ecef;
+  --suave: rgba(233, 236, 239, .6);
+  --fraco: rgba(233, 236, 239, .32);
+  --linha: rgba(233, 236, 239, .18);
+  --degrade: radial-gradient(circle at 50% 42%, #1d2024 0%, #0b0c0e 50%, #000 100%);
+  --vidro: rgba(18, 20, 23, .62);
+  --vidro-borda: rgba(255, 255, 255, .08);
+  --vidro-sombra: 0 10px 30px rgba(0, 0, 0, .5);
+  --botao: rgba(255, 255, 255, .08);
+  color-scheme: dark;
+}

@@ -8,19 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tema.css">
 <style>
-  :root {
-    --fundo: #c3c6cb;
-    --texto: #1d1f22;
-    --suave: rgba(30, 32, 36, .58);
-    --fraco: rgba(30, 32, 36, .30);
-    --linha: rgba(30, 32, 36, .20);
-  }
   html, body {
     margin: 0; height: 100%; background: var(--fundo); color: var(--texto);
     font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
     overflow: hidden; -webkit-font-smoothing: antialiased; user-select: none;
-    background-image: radial-gradient(circle at 50% 42%, #f4f5f7 0%, #cfd2d6 45%, #a3a7ad 100%);
+    background-image: var(--degrade);
   }
   canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: default; touch-action: none; user-select: none; }
 
@@ -544,12 +538,7 @@
   .temas { display: flex; gap: 8px; }
   .temas button.ativo { border-color: #d7141e; color: #d7141e; }
 
-  /* Tema escuro: o prata vira preto */
-  body.escuro {
-    --fundo: #030405; --texto: #e9ecef; --suave: rgba(233, 236, 239, .6); --fraco: rgba(233, 236, 239, .32); --linha: rgba(233, 236, 239, .18);
-    background-image: radial-gradient(circle at 50% 42%, #1d2024 0%, #0b0c0e 50%, #000 100%); color-scheme: dark;
-  }
-  body.escuro .painel { background: rgba(18, 20, 23, .62); border-color: rgba(255, 255, 255, .08); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+  /* Tema escuro: o prata vira preto (as cores ficam no tema.css) */
   body.escuro .linha-painel { border-top-color: rgba(255, 255, 255, .07); }
   body.escuro .painel .minimizar, body.escuro .painel .mais, body.escuro .config-fechar { background: rgba(255, 255, 255, .08); }
   body.escuro .config { background: rgba(0, 0, 0, .6); }
@@ -573,8 +562,8 @@
   .paineis.dir { right: 22px; }
   body.sem-paineis .paineis, body.sem-paineis .painel { display: none; }
   .painel {
-    background: rgba(255, 255, 255, .38); border: 1px solid rgba(255, 255, 255, .6); border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(40, 44, 50, .18); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    background: var(--vidro); border: 1px solid var(--vidro-borda); border-radius: 14px;
+    box-shadow: var(--vidro-sombra); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     animation: entra .35s ease both;
   }
   .painel header { display: flex; align-items: center; gap: 8px; padding: 10px 12px 10px 14px; }
