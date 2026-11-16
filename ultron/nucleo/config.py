@@ -76,6 +76,7 @@ def carregar_config(base):
         "tema": "prata",       # a tela avisa quando muda; a barra do topo acompanha
         "barra": base.get("ULTRON_BARRA", "1") == "1",  # a barra do topo da tela (barra.py)
         "chamado": base.get("ULTRON_CHAMADO", "1") == "1",  # dizer "Ultron" faz ele ouvir o pedido (palmas.py)
+        "confirmar": base.get("ULTRON_CONFIRMAR", "0") == "1",  # pedir "Confirma?" antes de apagar, enviar, publicar...
     }
 
 

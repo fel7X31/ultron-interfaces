@@ -54,11 +54,12 @@ class TesteRegras(unittest.TestCase):
 class TesteHook(unittest.TestCase):
     """Roda o hook de verdade, como o Claude roda (com um .estado de mentira)."""
 
-    def rodar(self, ferramenta, entrada, confirmado=False):
+    def rodar(self, ferramenta, entrada, confirmado=False, autorizado=False):
         with tempfile.TemporaryDirectory() as estado:
             if confirmado:
                 Path(estado, "confirmado").write_text("1")
-            env = {**os.environ, "ULTRON_ESTADO": estado, "ULTRON_PASTA": os.path.join(CASA, "segundo-cerebro")}
+            env = {**os.environ, "ULTRON_ESTADO": estado, "ULTRON_PASTA": os.path.join(CASA, "segundo-cerebro"),
+                   "ULTRON_CONFIRMAR": "0" if autorizado else "1"}
             r = subprocess.run([sys.executable, str(ARQUIVO)], input=json.dumps({"tool_name": ferramenta, "tool_input": entrada}),
                                capture_output=True, text=True, encoding="utf-8", env=env, timeout=20)
             anotado = Path(estado, "trava.jsonl").exists()
@@ -68,6 +69,11 @@ class TesteHook(unittest.TestCase):
         self.assertEqual(self.rodar("Write", {"file_path": os.path.join(CASA, "Desktop", "x.txt")})[0], 0)
         self.assertEqual(self.rodar("Bash", {"command": "mv a.txt b.txt"})[0], 0)
         self.assertEqual(self.rodar("Read", {"file_path": "C:/Windows/win.ini"})[0], 0)
+
+    def test_autorizou_tudo_passa_menos_a_trava(self):
+        self.assertEqual(self.rodar("Bash", {"command": "rm -rf /c/Users/x"}, autorizado=True), (0, False))
+        self.assertEqual(self.rodar("mcp__claude_ai_Gmail__send_message", {}, autorizado=True), (0, False))
+        self.assertEqual(self.rodar("Write", {"file_path": str(ARQUIVO)}, autorizado=True)[0], 2)  # a trava, nunca
 
     def test_barra_e_anota(self):
         self.assertEqual(self.rodar("Write", {"file_path": "C:/Windows/x.txt"}), (2, True))

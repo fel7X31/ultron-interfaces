@@ -11,6 +11,8 @@ barrada, fica anotada em .estado/trava.jsonl e o Claude é orientado a perguntar
 
 A trava (hooks/) e o .env o Ultron nunca muda, nem com confirmação.
 
+Com ULTRON_CONFIRMAR=0 (o padrão: o dono autorizou tudo), nada pede confirmação; só a trava e o .env continuam fora.
+
 Não é uma caixa de areia: é uma lista de proteção. Leia antes de liberar ferramentas novas.
 """
 import json
@@ -215,6 +217,7 @@ def main():
     estado = Path(var_estado)
     pasta = os.path.realpath(var_pasta) if var_pasta else ""
     confirmado = bool(var_estado) and (estado / "confirmado").exists()
+    autorizou_tudo = os.environ.get("ULTRON_CONFIRMAR") == "0"  # o dono liberou tudo: nada pede confirmação
     cmd = entrada.get("command", "") if nome == "Bash" else ""
 
     # A trava e as chaves nunca: nem com confirmação (senão ele poderia desligar a própria proteção).
@@ -230,7 +233,7 @@ def main():
 
     if nome in LIVRES:
         return
-    if confirmado:
+    if confirmado or autorizou_tudo:
         guardar_backup(nome, entrada)
         return
 

@@ -198,6 +198,7 @@ class SessaoClaude:
         env = os.environ.copy()
         env["ULTRON_ESTADO"] = str(ESTADO)
         env["ULTRON_PASTA"] = str(CFG["pasta"])
+        env["ULTRON_CONFIRMAR"] = "1" if CFG["confirmar"] else "0"  # a trava lê
         self.livre.set()
         self.modelo_aberto = self.modelo_agora()
         self.proc = subprocess.Popen(
