@@ -8,6 +8,9 @@ import uuid
 
 from ..nucleo.config import CFG, VOZES, voz_ligada
 from ..nucleo.log import log
+from .transcricao import IDIOMA
+
+ENTREVISTA = {"voz": "cjVigY5qzO86Huf0OWal", "velocidade": 0.9}  # Eric, sotaque americano
 
 # Ditas quando ele vai trabalhar e não escreveu o próprio aviso.
 AVISOS_PRONTOS = ["Um instante, {nome}. Isso é rápido pra mim.", "Já estou nisso, {nome}.",
@@ -18,6 +21,11 @@ AMOSTRA = "{nome}. É assim que eu vou falar daqui pra frente. Acostume-se."
 
 def com_nome(frase):
     return frase.replace("{nome}", CFG["nome"])
+
+
+def voz_do_momento():
+    """No modo entrevista, voz nativa em inglês e mais devagar. Fora dele, a voz escolhida na tela."""
+    return ENTREVISTA if IDIOMA["livre"] else {}
 
 
 class Fala:
@@ -104,7 +112,7 @@ class Fala:
     @classmethod
     def criar(cls, texto):
         id_fala = uuid.uuid4().hex[:12]
-        cls.todas[id_fala] = cls(texto)
+        cls.todas[id_fala] = cls(texto, **voz_do_momento())
         for antigo in list(cls.todas)[:-20]:
             cls.todas.pop(antigo, None)
         return id_fala

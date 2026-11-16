@@ -22,6 +22,7 @@ RE_CAMPO = re.compile(r"\s*\[(dif|prio|prazo)::\s*([^\]]*?)\s*\]\s*$")
 RE_DATA = re.compile(r"\d{4}-\d{2}-\d{2}")
 PRIORIDADES = ("alta", "media", "baixa")
 DETALHES = ESTADO / "tarefas-detalhes.json"
+ENTREGAS = ESTADO / "entregas.json"  # {texto da tarefa: dia em que foi concluída}
 TRAVA = threading.Lock()
 AVALIACAO = {"rodando": False, "proxima": time.time() + 30}  # deixa o Ultron aquecer primeiro
 POR_VEZ = 5  # tarefas por consulta: cada uma ganha um prompt, então a resposta é grande
@@ -81,6 +82,8 @@ def mexer_tarefas(pedido):
             texto = " ".join(str(pedido.get("texto", "")).split())[:200]
             if texto:
                 linhas.append(f"- [ ] {texto}")
+        elif acao == "limpar_feitas":  # tira todas as já marcadas
+            linhas = [l for l in linhas if not ((m := RE_TAREFA.match(l)) and m.group(2) != " ")]
         elif acao in ("marcar", "apagar", "editar", "dificuldade", "prioridade", "prazo", "refazer"):
             alvo, n = int(pedido.get("indice", -1)), -1
             for i, l in enumerate(linhas):
@@ -97,6 +100,7 @@ def mexer_tarefas(pedido):
                     break
                 if acao == "marcar":
                     marca = " " if marca != " " else "x"
+                    _registrar_entrega(texto, marca != " ")
                 elif acao == "editar":  # texto novo: o Ultron escreve outro prompt (os detalhes são pelo texto)
                     novo = separar_campos(" ".join(str(pedido.get("texto", "")).split())[:200])[0]
                     texto = novo or texto
@@ -122,6 +126,34 @@ def mexer_tarefas(pedido):
     atualizar_tarefas()
 
 
+def _registrar_entrega(texto, feita):
+    """Guarda o dia em que a tarefa foi marcada como feita (pra taxa de entrega semanal); desmarcar apaga."""
+    entregas = ler_json(ENTREGAS, {})
+    if not isinstance(entregas, dict):
+        entregas = {}
+    if feita:
+        entregas[texto] = time.strftime("%Y-%m-%d")
+    else:
+        entregas.pop(texto, None)
+    salvar_json(ENTREGAS, entregas, indent=1)
+
+
+def entregas_por_semana(semanas=4):
+    """Tarefas concluídas em cada uma das últimas semanas (segunda a domingo), da mais antiga pra atual."""
+    entregas = ler_json(ENTREGAS, {})
+    datas = [time.strptime(d, "%Y-%m-%d") for d in (entregas.values() if isinstance(entregas, dict) else [])
+             if isinstance(d, str) and RE_DATA.fullmatch(d)]
+    hoje = time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d"))
+    segunda = hoje - time.localtime(hoje).tm_wday * 86400
+    contagem = [0] * semanas
+    for d in datas:
+        dias = round((segunda - time.mktime(d)) / 86400)  # dias antes da segunda desta semana
+        atras = max(0, -(-dias // 7))                      # 0 = esta semana, 1 = a anterior...
+        if atras < semanas:
+            contagem[semanas - 1 - atras] += 1
+    return contagem
+
+
 def falta_avaliar(x):
     return not x["feita"] and (not x["dif"] or not x["prio"] or not x["prompt"])
 
@@ -141,6 +173,10 @@ def atualizar_tarefas():
             d = detalhes.get(texto) or {}
             tarefas.append({"texto": texto, "feita": m.group(2) != " ", **campos,
                             "tempo": d.get("tempo", ""), "resumo": d.get("resumo", ""), "prompt": d.get("prompt", "")})
+    entregas = entregas_por_semana()
+    if entregas != PAINEIS.get("entregas"):
+        PAINEIS["entregas"] = entregas
+        avisar_paineis()
     if tarefas != PAINEIS["tarefas"]:
         mudou_lista = PAINEIS["tarefas"] is not None
         PAINEIS["tarefas"] = tarefas
