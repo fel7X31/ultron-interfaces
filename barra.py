@@ -31,6 +31,7 @@ ESTILO_EXTRA, DE_FERRAMENTA, DE_APP = -20, 0x80, 0x40000
 TELA_PRINCIPAL, MONITOR_MAIS_PERTO = 1, 2
 JA_EXISTE = 183
 COM_BARRA_DE_TITULO, SEMPRE_NA_FRENTE = 0x00C00000, 0x8
+ENCOLHER_S = 0.24          # quanto a janela leva pra encolher até o entalhe ao minimizar
 JOGO_EXCLUSIVO = 3        # o Windows diz: jogo DirectX em tela cheia exclusiva (esse sempre está na frente)
 
 user32 = ctypes.WinDLL("user32")
@@ -69,9 +70,9 @@ class Barra:
         self._mudar(largura, FECHADA[1], ordem)
 
     def _mudar(self, largura, altura, ordem=None):
-        """Muda o tamanho da janela, na hora. Abrindo, a página espera a janela crescer e só então anima o painel;
-        minimizando, ela tira o painel antes (o "abrindo" e o "fechando" do barra.css). Sem animar o tamanho da janela:
-        cada passo fazia o WebView2 redesenhar a página inteira e dava tranco.
+        """Muda o tamanho da janela. Crescendo, muda na hora: a página espera a janela crescer e só então anima o painel
+        (o "abrindo" do barra.css). Encolhendo, a janela vai diminuindo até o entalhe, e o painel fica parado no lugar
+        sumindo (o "fechando"): como ele não muda de tamanho, a página não se reorganiza a cada passo e não trava.
 
         Sem recorte (SetWindowRgn): o WebView2 desenha por cima dele, e com a janela recortada ele para de desenhar o
         resto, que fica cinza. Era o cinza que aparecia ao abrir, ao minimizar e às vezes ficava parado.
@@ -83,8 +84,20 @@ class Barra:
                 if ordem < self._ordem:
                     return False
                 self._ordem = ordem
+            de, para = self._tamanho, (largura, altura)
+            if para[0] <= de[0] and para[1] <= de[1] and para != de:
+                self._encolher(de, para)
             self._colocar(largura, altura)
             return True
+
+    def _encolher(self, de, para):
+        """Vai do tamanho `de` até `para` (px da página), rápido no começo e suave no fim. Cada quadro vê quanto tempo
+        passou: se um atrasar, o próximo compensa e a animação não se arrasta."""
+        inicio = time.perf_counter()
+        while (passou := (time.perf_counter() - inicio) / ENCOLHER_S) < 1:
+            t = 1 - (1 - passou) ** 3
+            self._colocar(round(de[0] + (para[0] - de[0]) * t), round(de[1] + (para[1] - de[1]) * t))
+            time.sleep(1 / 120)
 
     def aparecer(self, sim):
         self._quer_aparecer = bool(sim)
@@ -224,6 +237,7 @@ def _sou_a_unica():
 def main():
     if not _sou_a_unica():
         return
+    ctypes.WinDLL("winmm").timeBeginPeriod(1)  # sleep de 1 ms em vez de 15: o encolher sai sem tranco
     barra = Barra()
     janela = webview.create_window(
         "Barra do Ultron", f"{URL}/barra.html", js_api=barra, width=FECHADA[0], height=FECHADA[1] + ESCONDIDO,

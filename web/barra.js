@@ -296,6 +296,8 @@
   addEventListener("blur", () => setTimeout(() => { if (!document.hasFocus()) fechar(); }, 150));
   addEventListener("pywebviewready", () => carregarEstado().catch(() => {}));
   addEventListener("load", () => {
+    corpo.style.setProperty("--largura-aberta", LARGURA_ABERTA + "px");  // o painel parado enquanto a janela encolhe
+    corpo.style.setProperty("--altura-aberta", ALTURA_ABERTA + "px");
     Object.values(secoes).forEach((s) => s.iniciar && s.iniciar());
     ir("inicio");
     corpo.classList.add("compacta");  // começa compacto (o barra.py abre a janela desse tamanho)
