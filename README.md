@@ -84,6 +84,9 @@ Pra ligar junto com o Windows, crie um atalho de `pythonw palmas.py` na pasta `s
 ligada (`ULTRON_BARRA=1`), o `palmas.py` já sobe o servidor no boot, então a barra aparece ao ligar o PC; as palmas
 só abrem a tela, e "desliga" fecha a tela mas deixa a barra (`py palmas.py --desligar` fecha tudo).
 
+Pra ligar com um comando, `py palmas.py --ligar` faz o mesmo que as palmas (com a tela já aberta, só traz ela pra
+frente). Um `ultron.cmd` com essa linha numa pasta do PATH (ex.: `~/.local/bin`, a mesma do `claude`) vira o comando `ultron`.
+
 ### Barra do topo da tela (opcional)
 
 ```powershell

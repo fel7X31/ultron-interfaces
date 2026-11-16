@@ -12,6 +12,7 @@ O Ctrl+Alt+V (segurar e falar) e o microfone da barra do topo também passam por
 Rodar:           py palmas.py
 Testar o nome:   py palmas.py --testar-chamado   (mostra cada "Ultron" que o Windows ouviu e com que certeza)
 Calibrar:        py palmas.py --calibrar   (mostra o volume de cada som e não liga nada)
+Ligar na mão:    py palmas.py --ligar   (o comando `ultron`: liga com a tela, como as palmas)
 Desligar:        py palmas.py --desligar   (fecha o Ultron que as palmas ligaram, barra junto)
 
 Com a barra do topo ligada (ULTRON_BARRA=1), o servidor sobe assim que o palmas.py liga (com o Windows), pra barra
@@ -91,6 +92,7 @@ BLOCO_S = 0.01
 SEM_AUDIO_S = 3
 PID = ESTADO / "servidor.pid"
 PID_TELA = ESTADO / "tela.pid"
+PID_PALMAS = ESTADO / "palmas.pid"
 LOG = ESTADO / "log.jsonl"
 GRAVANDO = threading.Lock()   # um pedido gravado de cada vez (atalho, nome ou botão)
 VOZ_DO_ULTRON = {"ate": 0.0}  # até quando a resposta dele pode estar tocando (o nome dito por ele não vale)
@@ -200,6 +202,38 @@ def ligar_servidor():
 def ligar_ultron():
     if ligar_servidor():
         abrir_tela()
+
+
+def ligar_pelo_comando():
+    """O comando `ultron` (e o /ultron do Claude Code): liga o Ultron com a tela, como as palmas. Com a tela já aberta,
+    só traz ela pra frente. Sem o palmas.py rodando, liga um (é ele que atende o "Ultron" e o Ctrl+Alt+V)."""
+    if tela_aberta():
+        from ultron.recursos.pc import janelas
+        try:
+            janelas.focar_tela_do_ultron()
+            print("O Ultron já estava aberto. Trouxe a tela pra frente.")
+        except ValueError:
+            ligar_ultron()
+            print("Abri a tela do Ultron.")
+    else:
+        ligar_ultron()
+        print("Ultron ligado." if tela_aberta() or saude() else "O servidor não subiu. Veja .estado/servidor.log.")
+    if not palmas_rodando():
+        pythonw = Path(sys.executable).with_name("pythonw.exe")
+        subprocess.Popen([str(pythonw if pythonw.exists() else sys.executable), str(RAIZ / "palmas.py")], cwd=str(RAIZ),
+                         creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
+        print("Liguei o palmas.py (palmas, o nome \"Ultron\" e o Ctrl+Alt+V).")
+
+
+def palmas_rodando():
+    """Se o palmas.py que ficou no ar (o do PID_PALMAS) ainda está rodando."""
+    try:
+        pid = int(PID_PALMAS.read_text().strip())
+    except (FileNotFoundError, ValueError):
+        return False
+    r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True,
+                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    return "python" in r.stdout.lower()
 
 
 def eventos_novos(pos):
@@ -408,6 +442,7 @@ def ouvir(calibrar=False):
     t = 0.0
     janela_inicio, janela_pico = 0.0, 0.0
 
+    olhar_tela_em = 1.0
     stream, taxa, modo = abrir_microfone(receber)
     with stream:
         print(f"Microfone no modo {modo}. " + ("Ouvindo. Bata duas palmas pra ligar." if not calibrar else
@@ -415,6 +450,10 @@ def ouvir(calibrar=False):
         while True:
             bloco = np.max(np.abs(proximo_bloco(blocos)), axis=1)
             t += len(bloco) / taxa
+            if not calibrar and t >= olhar_tela_em:  # a tela abriu por fora (o comando ultron): para de esperar palmas
+                olhar_tela_em = t + 1
+                if tela_aberta():
+                    return None
             pico = float(np.max(bloco))
             rms = float(np.sqrt(np.mean(bloco ** 2)))
             if calibrar:
@@ -551,6 +590,8 @@ def atalho_global():
 def main():
     if "--desligar" in sys.argv:
         return desligar_ultron(tudo=True)
+    if "--ligar" in sys.argv:
+        return ligar_pelo_comando()
     if "--testar-chamado" in sys.argv:
         try:
             testar_chamado()
@@ -563,6 +604,7 @@ def main():
         except KeyboardInterrupt:
             pass
         return
+    PID_PALMAS.write_text(str(os.getpid()))
     if ATALHO_GLOBAL and os.name == "nt":
         threading.Thread(target=atalho_global, daemon=True).start()
     while True:
@@ -572,11 +614,15 @@ def main():
             acompanhar()
             continue
         try:
-            print(ouvir())
+            ouviu = ouvir()
         except Exception as erro:
             print(f"Microfone indisponível ({erro}). Tentando de novo em 5 s.")
             time.sleep(5)
             continue
+        if ouviu is None:
+            print("A tela abriu sem as palmas.")
+            continue
+        print(ouviu)
         ligar_ultron()
         acompanhar()
         print("O Ultron foi desligado. Voltando a ouvir.")
