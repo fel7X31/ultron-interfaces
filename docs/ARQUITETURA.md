@@ -53,6 +53,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │   ├── limites.py           até quando cada IA está sem limite do plano (ias.quem_responde passa pra próxima)
 │   │   ├── memoria.py           o que ele pede pra guardar (memoria.md na pasta dele) e o grafo disso
 │   │   ├── lembretes.py         lembretes (lembretes.md), timers e o tempo falado ("às 15h", "daqui a 10 minutos")
+│   │   ├── copiados.py          os últimos textos copiados (só na memória), pra copiar de novo
 │   │   └── pc/                  controle do PC (Windows): executar(ação, alvo) e estado()
 │   │       ├── acoes.py           cada ação com a frase do que fez (a porta de entrada)
 │   │       ├── uso.py             processador, memória, disco, placa de vídeo e bateria

@@ -33,6 +33,7 @@ Se não houver entrada nova, siga direto com a tarefa.
   `.estado/servidor.pid` tem o PID). Em `web/`, basta recarregar a tela.
 - Nos testes do controle do PC, simule `pc.executar` (mock): rodar de verdade bloqueia a tela, pausa o vídeo dele etc.
 - Nos testes do `/api/chamar`, simule o `log`: o `palmas.py` lê o log e abriria o microfone.
+- Nos testes dos Copiados, simule a área de transferência.
 - Teste que passa pelo `cerebro` ou pelo `ias.quem_responde()` aponta o `limites.ARQUIVO` pra uma pasta temporária
   (veja `tests/test_limites.py`): senão ele lê e grava o `.estado/limites.json` de verdade.
 - O `palmas.py` roda à parte (pythonw, ligado com o Windows): mudança nele ou em `ultron/voz/chamado.*` só vale

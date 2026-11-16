@@ -13,7 +13,7 @@ from .assistente.turno import aquecer
 from .http.servidor import criar_servidor
 from .nucleo.config import CFG, ESTADO, WEB
 from .nucleo.log import log, log_erro
-from .recursos import curriculo, lembretes
+from .recursos import copiados, curriculo, lembretes
 from .recursos.google import atualizar_google
 from .recursos.historico import manutencao
 from .recursos.mercado import atualizar_mercado
@@ -94,6 +94,7 @@ def main():
     curriculo.iniciar(CFG["pasta"], ESTADO, CFG["nome"], log, WEB)
     _em_segundo_plano(aquecer)
     _em_segundo_plano(rotinas)
+    _em_segundo_plano(copiados.vigiar)
     if "--sem-abrir" not in sys.argv:
         webbrowser.open(url)
     try:
