@@ -92,12 +92,9 @@ body.fechando .painel { animation: sobe .2s ease both; }
 .quem-sou b { display: block; font-size: 14px; letter-spacing: .02em; }
 .quem-sou small { display: flex; align-items: center; gap: 6px; margin-top: 3px; color: var(--suave); font-size: 11px; text-transform: lowercase; }
 .quem-sou .ponto { width: 6px; height: 6px; }
-.orbe {
-  width: 34px; height: 34px; flex: none; border-radius: 50%;
-  background: radial-gradient(circle at 50% 50%, #ff4a4f 0%, #d7141e 22%, #5a070b 48%, rgba(20, 20, 22, .9) 70%);
-  box-shadow: 0 0 0 1px var(--linha), 0 0 16px rgba(215, 20, 30, .45);
-}
-body[data-estado="ouvindo"] .orbe, body[data-estado="falando"] .orbe { box-shadow: 0 0 0 1px var(--linha), 0 0 24px rgba(215, 20, 30, .85); }
+.orbe { width: 42px; height: 42px; flex: none; }  /* a esfera do Ultron (esfera-mini.js) */
+.entalhe .esfera-mini { width: 22px; height: 22px; flex: none; }
+body[data-estado="parado"] .entalhe .status { display: none; }  /* parado, a esfera já diz que ele está ali */
 .modelo {
   margin: 0 4px 10px; padding: 6px 10px; border: 1px solid var(--linha); border-radius: 999px; background: var(--botao);
   font-size: 11px; letter-spacing: .04em; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

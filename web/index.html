@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/tema.css">
+<script src="/esfera-mini.js" defer></script>
 <style>
   html, body {
     margin: 0; height: 100%; background: var(--fundo); color: var(--texto);
@@ -21,17 +22,22 @@
   /* O selo do topo (● ULTRON PRONTO) abre o menu. Botão novo da tela entra no menu como .item-menu, nunca solto. */
   .topo { position: fixed; top: 16px; left: 18px; z-index: 7; }
   .selo {
-    display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px 0 14px; border: 1px solid var(--linha);
-    border-radius: 999px; background: var(--vidro); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-    color: var(--suave); font: inherit; font-size: 11px; letter-spacing: .28em; text-transform: uppercase; cursor: pointer;
-    transition: border-color .25s, box-shadow .25s;
+    display: grid; place-items: center; width: 46px; height: 46px; padding: 0; border: 1px solid var(--linha);
+    border-radius: 50%; background: var(--vidro); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    cursor: pointer; transition: border-color .25s, box-shadow .25s, transform .25s;
   }
-  .selo:hover, .selo[aria-expanded="true"] { border-color: rgba(215, 20, 30, .45); box-shadow: 0 0 0 4px rgba(215, 20, 30, .08); }
-  .selo .marca { color: var(--texto); font-weight: 600; }
-  .selo .seta { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; transition: transform .3s; }
-  .selo[aria-expanded="true"] .seta { transform: rotate(180deg); }
+  .selo:hover { transform: scale(1.06); }
+  .selo:hover, .selo[aria-expanded="true"] {
+    border-color: rgba(215, 20, 30, .45); box-shadow: 0 0 0 4px rgba(215, 20, 30, .08), 0 0 22px rgba(215, 20, 30, .25);
+  }
+  .selo .esfera-mini { width: 34px; height: 34px; }
+  .menu-cabeca {
+    display: flex; justify-content: space-between; align-items: baseline; padding: 8px 12px 10px; margin-bottom: 4px;
+    border-bottom: 1px solid var(--linha); font-size: 10px; letter-spacing: .26em; text-transform: uppercase; color: var(--suave);
+  }
+  .menu-cabeca .marca { color: var(--texto); font-weight: 600; }
   .menu-ultron {
-    position: absolute; top: 44px; left: 0; width: 240px; padding: 6px; box-sizing: border-box; border-radius: 18px;
+    position: absolute; top: 56px; left: 0; width: 240px; padding: 6px; box-sizing: border-box; border-radius: 18px;
     background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--vidro-sombra);
     -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); transform-origin: 30px 0;
     animation: abreMenu .26s cubic-bezier(.2, .9, .3, 1.15) both;
@@ -51,15 +57,6 @@
   .item-menu.ativo .dica::after { content: "ligado"; }
   .item-menu .avatar, .item-menu .avatar-vazio { width: 20px; height: 20px; font-size: 10px; flex: none; }
   @keyframes abreMenu { from { opacity: 0; transform: translateY(-8px) scale(.92); } to { opacity: 1; transform: none; } }
-  .ponto {
-    width: 7px; height: 7px; border-radius: 50%; background: #d7141e; opacity: .7; box-shadow: 0 0 8px rgba(215, 20, 30, .55);
-    transition: opacity .3s, box-shadow .3s;
-  }
-  body[data-estado="ouvindo"] .ponto,
-  body[data-estado="falando"] .ponto { opacity: 1; box-shadow: 0 0 14px #d7141e; background: #d7141e; }
-  body[data-estado="pensando"] .ponto,
-  body[data-estado="transcrevendo"] .ponto,
-  body[data-estado="aquecendo"] .ponto { animation: pisca 1s ease-in-out infinite; }
 
   .legenda .voce, .legenda .resposta, .legenda .tempo, .legenda .ferramentas { transition: opacity .7s ease; }
   .legenda.sumindo .voce, .legenda.sumindo .resposta, .legenda.sumindo .tempo, .legenda.sumindo .ferramentas { opacity: 0; }
@@ -651,10 +648,10 @@
 
 <div class="topo">
   <button id="menuTopo" class="selo" type="button" aria-haspopup="true" aria-expanded="false" title="Menu do Ultron">
-    <span class="ponto"></span><span class="marca">Ultron</span><span id="estadoTexto">iniciando</span>
-    <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    <canvas class="esfera-mini" aria-hidden="true"></canvas>
   </button>
   <nav id="menuUltron" class="menu-ultron" hidden aria-label="Menu do Ultron">
+    <div class="menu-cabeca"><span class="marca">Ultron</span><span id="estadoTexto">iniciando</span></div>
     <button id="botaoChat" class="item-menu" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Conversa por texto</span></button>
     <button id="botaoProvas" class="item-menu" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2h6V3"/><path d="m9 12 2 2 4-4"/><path d="M9 17h6"/></svg><span>Provas</span><span class="dica"></span></button>
     <button id="botaoCurriculo" class="item-menu" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg><span>Currículo</span></button>
