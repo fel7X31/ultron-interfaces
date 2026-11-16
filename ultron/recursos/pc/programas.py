@@ -1,13 +1,11 @@
-"""Abrir e fechar programas pelo nome falado (spotify, chrome, calculadora...)."""
+"""Abrir e fechar programas pelo nome falado (spotify, chrome, calculadora, rocket league...)."""
 import os
 import shutil
 import subprocess
-import sys
 
 from ...nucleo.texto import normalizar
-from . import janelas
+from . import apps, janelas
 
-SEM_JANELA = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 SOLTO = getattr(subprocess, "DETACHED_PROCESS", 0)
 
 # Nome falado (sem acento) -> como o Windows abre (programas fora do PATH, apps da loja, links de app)
@@ -30,26 +28,32 @@ PROCESSOS = {
 
 
 def conhecido(nome):
-    """O nome falado é de um programa da lista? (os comandos de voz só abrem e fecham esses, na hora)"""
+    """O nome falado é de um programa da lista ou instalado no PC? (os comandos de voz abrem e fecham esses na hora)"""
     chave = " ".join(normalizar(nome))
-    return chave in COMO_ABRIR or chave in PROCESSOS
+    return chave in COMO_ABRIR or chave in PROCESSOS or apps.achar(nome, apps.guardado()) is not None
 
 
 def abrir(nome):
-    """Abre site, arquivo, pasta ou programa. Devolve o que mandou abrir."""
+    """Abre site, arquivo, pasta ou programa e devolve o nome do que abriu.
+
+    Programa vai pelo nome mais parecido entre os instalados (apps.py): "abre o rocket league" acha o jogo, sem
+    precisar do nome do .exe. Sem achar, ValueError com a explicação (nada de janela de erro do Windows).
+    """
     alvo = nome.strip().strip('"')
     alvo = COMO_ABRIR.get(" ".join(normalizar(alvo)), alvo)
     if not alvo:
         raise ValueError("Falta dizer o que abrir.")
-    if sys.platform == "darwin":
-        subprocess.Popen(["open", alvo] if os.path.exists(alvo) or ":" in alvo else ["open", "-a", alvo])
-    elif os.path.exists(alvo) or "://" in alvo or alvo.endswith(":"):
+    if os.path.exists(alvo) or "://" in alvo or alvo.endswith(":"):
         os.startfile(alvo)
-    elif shutil.which(alvo):
+        return alvo
+    if shutil.which(alvo):
         subprocess.Popen([shutil.which(alvo)], creationflags=SOLTO)
-    else:  # deixa o Windows achar (apps da loja, atalhos do menu iniciar)
-        subprocess.Popen(["cmd", "/c", "start", "", alvo], creationflags=SEM_JANELA)
-    return alvo
+        return alvo
+    app = apps.achar(alvo) or apps.achar(alvo, apps.catalogo(de_novo=True))  # instalou agora? procura de novo
+    if not app:
+        raise ValueError(f"Não achei nenhum programa chamado {nome} no PC.")
+    apps.abrir(app)
+    return app["nome"]
 
 
 def fechar(nome):

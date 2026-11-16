@@ -16,6 +16,7 @@ from .http.servidor import criar_servidor
 from .nucleo.config import CFG, ESTADO, RAIZ, WEB
 from .nucleo.log import log, log_erro
 from .recursos import copiados, curriculo, lembretes
+from .recursos.pc import apps
 from .recursos.google import atualizar_google
 from .recursos.historico import manutencao
 from .recursos.mercado import atualizar_mercado
@@ -109,6 +110,7 @@ def main():
     _em_segundo_plano(aquecer)
     _em_segundo_plano(rotinas)
     _em_segundo_plano(copiados.vigiar)
+    _em_segundo_plano(apps.catalogo)  # a lista de programas, pro primeiro "abre o jogo" sair na hora
     ligar_barra()
     if "--sem-abrir" not in sys.argv:
         webbrowser.open(url)

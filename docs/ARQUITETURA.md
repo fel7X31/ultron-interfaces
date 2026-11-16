@@ -62,6 +62,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │       ├── midia.py           o que está tocando e a capa (o midia.ps1 vigia e avisa) e as teclas de tocar/pular
 │   │       ├── janelas.py         listar, trazer pra frente, minimizar, maximizar e fechar janelas
 │   │       ├── programas.py       abrir e fechar programas pelo nome falado
+│   │       ├── apps.py            os programas instalados (menu Iniciar, área de trabalho, jogos da Steam e da Epic)
 │   │       └── sistema.py         bloquear, brilho (brilho.ps1), recorte de tela e Configurações
 │   ├── assistente/
 │   │   ├── sessao.py            o processo do Claude Code que fica aberto (SESSAO)

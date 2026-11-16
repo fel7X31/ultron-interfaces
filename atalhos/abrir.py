@@ -15,7 +15,10 @@ from ultron.recursos.pc.programas import abrir  # noqa: E402
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
-    print("Aberto:", abrir(" ".join(sys.argv[1:])))
+    try:
+        print("Aberto:", abrir(" ".join(sys.argv[1:])))
+    except ValueError as erro:
+        print(erro)
 
 
 if __name__ == "__main__":
