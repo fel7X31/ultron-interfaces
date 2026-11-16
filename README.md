@@ -80,7 +80,9 @@ quando você fica um segundo quieto). Quem reconhece o nome é o próprio Window
 internet. Se ele ouvir sozinho, tire `"Medium"` de `CHAMADO_ACEITA` no `palmas.py`; pra desligar, use a chave em
 Configurações, na barra (ou `ULTRON_CHAMADO=0` no `.env`). O Ctrl+Alt+V (segurar e falar) continua valendo.
 
-Pra ligar junto com o Windows, crie um atalho de `pythonw palmas.py` na pasta `shell:startup`.
+Pra ligar junto com o Windows, crie um atalho de `pythonw palmas.py` na pasta `shell:startup`. Com a barra do topo
+ligada (`ULTRON_BARRA=1`), o `palmas.py` já sobe o servidor no boot, então a barra aparece ao ligar o PC; as palmas
+só abrem a tela, e "desliga" fecha a tela mas deixa a barra (`py palmas.py --desligar` fecha tudo).
 
 ### Barra do topo da tela (opcional)
 

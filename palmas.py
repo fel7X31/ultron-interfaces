@@ -12,7 +12,10 @@ O Ctrl+Alt+V (segurar e falar) e o microfone da barra do topo também passam por
 Rodar:           py palmas.py
 Testar o nome:   py palmas.py --testar-chamado   (mostra cada "Ultron" que o Windows ouviu e com que certeza)
 Calibrar:        py palmas.py --calibrar   (mostra o volume de cada som e não liga nada)
-Desligar:        py palmas.py --desligar   (fecha o Ultron que as palmas ligaram)
+Desligar:        py palmas.py --desligar   (fecha o Ultron que as palmas ligaram, barra junto)
+
+Com a barra do topo ligada (ULTRON_BARRA=1), o servidor sobe assim que o palmas.py liga (com o Windows), pra barra
+aparecer; as palmas só abrem a tela, e desligar por voz fecha a tela e deixa a barra.
 Precisa de:      py -m pip install sounddevice numpy
 """
 import functools
@@ -43,18 +46,20 @@ import sounddevice as sd
 from ultron.voz.chamado import Chamado, FimDaFala
 
 
-def porta_do_env():
-    """A porta do servidor (ULTRON_PORTA no .env), ou 8790."""
+def do_env(*nomes, padrao):
+    """O valor do primeiro nome que aparece no .env, ou o padrão."""
     try:
         for linha in (RAIZ / ".env").read_text(encoding="utf-8").splitlines():
-            if linha.strip().startswith(("ULTRON_PORTA=", "JARVIS_PORTA=")):
-                return int(linha.split("=", 1)[1].strip().strip("\"'"))
-    except (FileNotFoundError, ValueError):
+            nome, _, valor = linha.strip().partition("=")
+            if nome in nomes:
+                return valor.strip().strip("\"'")
+    except FileNotFoundError:
         pass
-    return 8790
+    return padrao
 
 
-URL = f"http://localhost:{porta_do_env()}"
+URL = f"http://localhost:{do_env('ULTRON_PORTA', 'JARVIS_PORTA', padrao='8790')}"
+BARRA = do_env("ULTRON_BARRA", padrao="1") == "1"  # com a barra, o servidor liga com o Windows e fica no ar
 LIMIAR = 0.08
 PALMA_FORTE = 0.22
 RAZAO_FUNDO = 6.0
@@ -108,10 +113,18 @@ def matar(arquivo_pid):
         return False
 
 
-def desligar_ultron():
-    """Fecha o servidor e a janela que o palmas.py abriu."""
+def desligar_ultron(tudo=False):
+    """Fecha a janela que o palmas.py abriu. O servidor fecha junto, menos quando ele segura a barra do topo."""
     matar(PID_TELA)
+    if BARRA and not tudo:
+        print("Tela fechada. O servidor fica no ar por causa da barra do topo.")
+        return
     print("Ultron desligado." if matar(PID) else "Não achei um Ultron ligado pelas palmas.")
+
+
+def tela_aberta():
+    s = saude()
+    return bool(s and s.get("telas"))
 
 
 def saude():
@@ -162,26 +175,31 @@ def abrir_tela():
     PID_TELA.write_text(str(proc.pid))
 
 
-def ligar_ultron():
+def ligar_servidor():
+    """Liga o server.py sem janela (ele abre a barra do topo). Devolve False se ele não subiu em 30 s."""
     if saude():
-        print("O Ultron já está no ar. Só vou abrir a tela.")
-    else:
-        print("Ligando o Ultron...")
-        log = open(ESTADO / "servidor.log", "a", encoding="utf-8")
-        extra = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
-        py = Path(sys.executable)
-        if py.name.lower() == "pythonw.exe" and (py.parent / "python.exe").exists():
-            py = py.parent / "python.exe"
-        proc = subprocess.Popen([str(py), "-u", str(RAIZ / "server.py"), "--sem-abrir"], cwd=str(RAIZ),
-                                stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, **extra)
-        PID.write_text(str(proc.pid))
-        limite = time.time() + 30
-        while not saude():
-            if time.time() > limite:
-                print("O servidor não respondeu em 30 segundos. Veja .estado/servidor.log.")
-                return
-            time.sleep(0.3)
-    abrir_tela()
+        return True
+    print("Ligando o servidor do Ultron...")
+    log = open(ESTADO / "servidor.log", "a", encoding="utf-8")
+    extra = {"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt" else {}
+    py = Path(sys.executable)
+    if py.name.lower() == "pythonw.exe" and (py.parent / "python.exe").exists():
+        py = py.parent / "python.exe"
+    proc = subprocess.Popen([str(py), "-u", str(RAIZ / "server.py"), "--sem-abrir"], cwd=str(RAIZ),
+                            stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, **extra)
+    PID.write_text(str(proc.pid))
+    limite = time.time() + 30
+    while not saude():
+        if time.time() > limite:
+            print("O servidor não respondeu em 30 segundos. Veja .estado/servidor.log.")
+            return False
+        time.sleep(0.3)
+    return True
+
+
+def ligar_ultron():
+    if ligar_servidor():
+        abrir_tela()
 
 
 def eventos_novos(pos):
@@ -532,7 +550,7 @@ def atalho_global():
 
 def main():
     if "--desligar" in sys.argv:
-        return desligar_ultron()
+        return desligar_ultron(tudo=True)
     if "--testar-chamado" in sys.argv:
         try:
             testar_chamado()
@@ -548,7 +566,9 @@ def main():
     if ATALHO_GLOBAL and os.name == "nt":
         threading.Thread(target=atalho_global, daemon=True).start()
     while True:
-        if saude():
+        if BARRA:
+            ligar_servidor()  # a barra do topo aparece com o Windows e volta se o servidor cair
+        if tela_aberta() or (saude() and not BARRA):
             acompanhar()
             continue
         try:
