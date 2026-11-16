@@ -19,6 +19,8 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
 - **Controle do PC:** volume, música, janelas, programas, brilho, Configurações do Windows e uso do PC (Windows).
 - **Chamar pelo nome:** com o Ultron no ar, diga "Ultron", espere o bipe e peça. Usa o reconhecimento de fala do
   próprio Windows, sem internet (dá pra desligar em Configurações, na barra).
+- **Memória:** "lembra que minha namorada se chama Ana" guarda no `memoria.md` da sua pasta, e a barra mostra tudo
+  num grafo, como o do Obsidian. O Claude recebe a memória toda ao abrir.
 - **Trava:** o que apaga, envia mensagem, publica ou desliga o PC só acontece depois que você diz "confirma".
 - **Extras:** modo prova, tela de currículo (analisar e adaptar, exporta Word e PDF), histórico diário das conversas.
 

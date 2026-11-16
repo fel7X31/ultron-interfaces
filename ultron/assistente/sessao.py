@@ -19,7 +19,7 @@ from ..nucleo.claude_cli import claude_bin
 from ..nucleo.config import CFG, ESTADO, RAIZ, persona
 from ..nucleo.eventos import EVENTOS
 from ..nucleo.log import log
-from ..recursos import ias
+from ..recursos import ias, memoria
 from ..recursos.provas import lembrete_prova
 
 ESPERA_AVISO = 0.3  # só fala "um instante" se o trabalho com ferramenta passar disso
@@ -183,7 +183,8 @@ class SessaoClaude:
 
     def nota_pasta(self):
         return (f"\n\n## Pasta de trabalho\nA pasta de trabalho dele é `{CFG['pasta']}`. Caminhos relativos citados "
-                "acima ficam dentro dela. Antes de criar ou mudar algo lá, leia o CLAUDE.md dela (só a parte que interessa).")
+                "acima ficam dentro dela. Antes de criar ou mudar algo lá, leia o CLAUDE.md dela (só a parte que interessa)."
+                + memoria.para_o_prompt())
 
     def pasta_de_abertura(self):
         if CFG["contexto"] == "leve":

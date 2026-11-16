@@ -51,6 +51,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │   ├── ias.py               outras IAs (ChatGPT, Gemini, Grok), pela API de cada uma
 │   │   ├── contas_ia.py         as mesmas IAs pela sua conta, sem chave (Gemini CLI com o Google, Codex com o ChatGPT)
 │   │   ├── limites.py           até quando cada IA está sem limite do plano (ias.quem_responde passa pra próxima)
+│   │   ├── memoria.py           o que ele pede pra guardar (memoria.md na pasta dele) e o grafo disso
 │   │   └── pc/                  controle do PC (Windows): executar(ação, alvo) e estado()
 │   │       ├── acoes.py           cada ação com a frase do que fez (a porta de entrada)
 │   │       ├── uso.py             processador, memória, disco, placa de vídeo e bateria
@@ -64,6 +65,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │   ├── comandos.py          comandos de voz que respondem sem o Claude
 │   │   ├── comandos_pc.py       comandos de voz do PC ("volume 30", "pausa o Spotify", "fecha o Discord")
 │   │   ├── comandos_ia.py       "usa o Gemini", "volta pro Claude", "usa o Opus"
+│   │   ├── comandos_memoria.py  "lembra que...", "esquece que..."
 │   │   ├── cerebro.py           quem responde: o Claude ou outra IA (e a conversa com ela)
 │   │   ├── confirmacao.py       quando a trava abre ("Confirma?" → "sim")
 │   │   ├── prebusca.py          gatilhos.json: dado buscado antes de perguntar

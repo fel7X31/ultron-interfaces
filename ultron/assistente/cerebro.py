@@ -9,7 +9,7 @@ from collections import deque
 from ..nucleo.config import CFG, persona, salvar_preferencias
 from ..nucleo.eventos import EVENTOS
 from ..nucleo.log import log, log_erro
-from ..recursos import ias, limites
+from ..recursos import ias, limites, memoria
 from .sessao import SESSAO, lembrete
 
 CONVERSA = deque(maxlen=12)  # as últimas falas com a outra IA, pra ela lembrar do assunto
@@ -98,7 +98,7 @@ def _instrucoes(ia):
     volta = limites.libera_em("claude")
     pedir_o_claude = (f", que chegou no limite de uso e volta {limites.quando(volta)}" if volta
                       else " e que é só dizer \"volta pro Claude\"")
-    return persona() + (
+    return persona() + memoria.para_o_prompt() + (
         f"\n\n## Agora\nNesta conversa você roda no {nome}, sem ferramentas: não abre arquivo, não usa terminal "
         "nem internet. Ignore as instruções de ferramentas e atalhos acima. Se o pedido precisar disso, diga em uma "
         f"frase que isso pede o Claude{pedir_o_claude}. Se perguntarem qual inteligência roda "
