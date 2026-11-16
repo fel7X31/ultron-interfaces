@@ -13,7 +13,7 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
 - **Boca:** ElevenLabs ou Fish Audio.
 - **Rosto:** uma esfera na tela, com painéis de e-mail, agenda, tarefas, mercado e música.
 - **Comandos na hora:** "próxima música", "abre o currículo", "ativa o modo prova" respondem sem passar pelo Claude.
-- **Trava:** o que publica, envia mensagem ou apaga só acontece depois que você diz "confirma".
+- **Trava:** o que apaga, envia mensagem, publica ou desliga o PC só acontece depois que você diz "confirma".
 - **Extras:** modo prova, tela de currículo (analisar e adaptar, exporta Word e PDF), histórico diário das conversas.
 
 > Baseado no [JARVIS com Claude Code](https://github.com/matheustillimt-tech/jarvis), de Matheus Tilli (licença MIT).
@@ -90,12 +90,16 @@ Fica salvo em `.estado/preferencias.json`, que vale mais que o `.env`.
 
 Antes de cada ação, o `hooks/trava.py` decide:
 
-- **Passa direto:** ler arquivos, buscar, pesquisar, consultar conectores.
+- **Passa direto:** ler, buscar, pesquisar, consultar conectores, controlar o PC e criar ou editar arquivos em
+  qualquer lugar da sua pasta de usuário (inclusive o código do próprio Ultron).
 - **Precisa de confirmação:** ação de conector que cria, envia, salva, apaga ou publica; escrever fora da pasta de
-  trabalho; comandos de terminal que apagam, movem, publicam ou mandam dados pra fora.
+  usuário ou nas pastas de configuração (AppData e as que começam com ponto); comandos de terminal que apagam, fecham
+  programa à força, desligam o PC, publicam ou mandam dados pra fora.
 - **Nunca:** mudar a própria trava (`hooks/`) ou o `.env`.
 
-O Ultron pode editar o próprio código quando você pede e confirma. Cada mudança fica registrada em
+Cada ação barrada fica anotada em `.estado/trava.jsonl`, pra você ver o que a trava segurou.
+
+O Ultron edita o próprio código quando você pede, sem pedir confirmação. Cada mudança fica registrada em
 `MUDANCAS-ULTRON.md` (pedido, antes, depois e backup), pelo `hooks/registro.py`.
 
 É uma lista de proteção, não uma caixa de areia. Leia o `hooks/trava.py` antes de liberar ferramentas novas.

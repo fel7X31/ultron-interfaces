@@ -12,7 +12,7 @@ rotas em `ultron/http/rotas/<assunto>.py` com `@rota`, comando de voz em `ultron
 
 ## Antes de mexer em qualquer coisa: revise o que o Ultron mudou
 
-O próprio Ultron pode editar o código dele (com confirmação do Miguel). Toda mudança fica em `MUDANCAS-ULTRON.md`,
+O próprio Ultron edita o código dele quando o Miguel pede (sem pedir confirmação). Toda mudança fica em `MUDANCAS-ULTRON.md`,
 escrita automaticamente pelo `hooks/registro.py`: pedido do Miguel, arquivo, trecho antes/depois, backup em
 `.estado/backups/` e, em seguida, o resumo do Ultron.
 
