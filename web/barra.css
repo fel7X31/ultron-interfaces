@@ -92,7 +92,15 @@ body.tocando .icone-pausar, body.mudo .icone-mudo { display: block; }
 /* ------------------------------------------------------------------ aberta: o painel */
 .painel { display: none; height: calc(100% - 2px); }
 body.aberta .painel { display: flex; animation: desce .22s cubic-bezier(.2, .9, .3, 1) both; }
-body.abrindo .painel, body.fechando .painel { visibility: hidden; animation: none; }
+body.abrindo .painel { visibility: hidden; animation: none; }
+/* Minimizando: a janela encolhe até o entalhe (barra.py) e o painel fica parado, do tamanho aberto e preso no meio do
+   topo, sumindo. Assim ele só vai sendo cortado pelas bordas, sem se reorganizar a cada passo. */
+body.fechando .painel {
+  position: fixed; top: var(--escondido); left: 50%; width: var(--largura-aberta); height: calc(var(--altura-aberta) - 2px);
+  transform: translateX(-50%); animation: sumir .2s ease both;
+}
+body.fechando .entalhe { animation: aparece .16s ease .06s both; }
+@keyframes sumir { to { opacity: 0; } }
 
 .lado { width: 196px; flex: none; display: flex; flex-direction: column; padding: 12px 10px 12px 12px; border-right: 1px solid var(--linha); }
 .quem-sou { display: flex; align-items: center; gap: 10px; padding: 2px 6px 10px; }
