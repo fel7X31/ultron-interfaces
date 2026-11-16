@@ -31,7 +31,13 @@ body[data-estado="aquecendo"] .ponto, body[data-estado="iniciando"] .ponto { ani
 }
 .entalhe:hover .ponto { opacity: 1; box-shadow: 0 0 14px var(--vermelho); }
 body.aberta .entalhe { display: none; }
-body:not(.aberta) .entalhe { animation: aparece .3s ease both; }
+/* Abrindo e minimizando: o entalhe fica por cima, no meio do topo, enquanto o recorte da janela cresce ou encolhe */
+body.abrindo .entalhe, body.fechando .entalhe {
+  display: flex; position: fixed; top: var(--escondido); left: 50%; width: 600px; transform: translateX(-50%); z-index: 9;
+  background: var(--fundo); background-image: var(--degrade);
+}
+body.abrindo .entalhe { animation: some .18s ease forwards; }
+body.fechando .entalhe { animation: aparece .16s ease .06s both; }
 .divisor { width: 1px; height: 14px; flex: none; background: var(--linha); }
 
 /* O meio: o relógio, ou a última coisa dita (por uns segundos), ou o volume da sua voz enquanto ele ouve */
@@ -78,8 +84,8 @@ body.tocando .icone-pausar, body.mudo .icone-mudo { display: block; }
 
 /* ------------------------------------------------------------------ aberta: o painel */
 .painel { display: none; height: calc(100% - 2px); }
-body.aberta .painel { display: flex; animation: desce .26s cubic-bezier(.2, .9, .3, 1) both; }
-body.fechando .painel { animation: sobe .15s ease both; }
+body.aberta .painel { display: flex; animation: desce .3s cubic-bezier(.2, .9, .3, 1) both; }
+body.fechando .painel { animation: sobe .2s ease both; }
 
 .lado { width: 196px; flex: none; display: flex; flex-direction: column; padding: 12px 10px 12px 12px; border-right: 1px solid var(--linha); }
 .quem-sou { display: flex; align-items: center; gap: 10px; padding: 2px 6px 10px; }
@@ -164,6 +170,6 @@ body[data-estado="ouvindo"] .mic { background: var(--vermelho); color: #fff; ani
 @keyframes desce { from { opacity: 0; transform: translateY(-10px) scale(.98); } to { opacity: 1; transform: none; } }
 @keyframes sobe { to { opacity: 0; transform: translateY(-8px) scale(.98); } }
 @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
-@keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
+@keyframes some { to { opacity: 0; } }
 @keyframes equalizar { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
 @keyframes pulsa { 0%, 100% { box-shadow: 0 0 0 0 rgba(215, 20, 30, .5); } 50% { box-shadow: 0 0 0 6px rgba(215, 20, 30, 0); } }

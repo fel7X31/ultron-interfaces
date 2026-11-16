@@ -21,9 +21,9 @@
     secao(nome, definicao) { secoes[nome] = definicao; },
     aberta: () => aberta,
     atual: () => secaoAtual,
-    janela(metodo, ...args) {
+    janela(metodo, ...args) {  // termina quando o barra.py termina (a animação de abrir ou minimizar, por exemplo)
       const api = window.pywebview && window.pywebview.api;
-      if (api && api[metodo]) api[metodo](...args);
+      return api && api[metodo] ? Promise.resolve(api[metodo](...args)).catch(() => {}) : Promise.resolve();
     },
     async pegar(caminho) {
       const r = await fetch(caminho);
@@ -63,15 +63,12 @@
   };
 
   // ---------------------------------------------------------- abrir, fechar e trocar de seção
-  // Abrir: a janela cresce do entalhe (barra.py anima) e o painel desce. Fechar: o painel some e a janela encolhe.
-  let fechando = null;
+  // Abrir: o painel aparece crescendo do entalhe (o barra.py recorta a janela). Minimizar: encolhe de volta pra ele.
   function abrir(secao) {
-    clearTimeout(fechando);
-    corpo.classList.remove("fechando");
     if (!aberta) {
       aberta = true;
-      corpo.classList.add("aberta");
-      Barra.janela("expandir", LARGURA_ABERTA, ALTURA_ABERTA);
+      corpo.classList.add("aberta", "abrindo");
+      Barra.janela("expandir", LARGURA_ABERTA, ALTURA_ABERTA).then(() => corpo.classList.remove("abrindo"));
     }
     ir(secao || secaoAtual);
   }
@@ -79,11 +76,10 @@
   function fechar() {
     if (!aberta || corpo.classList.contains("fechando")) return;
     corpo.classList.add("fechando");
-    fechando = setTimeout(() => {
+    Barra.janela("recolher", LARGURA_FECHADA).then(() => {
       aberta = false;
       corpo.classList.remove("aberta", "fechando");
-      Barra.janela("recolher", LARGURA_FECHADA);
-    }, 150);
+    });
   }
 
   function ir(nome) {

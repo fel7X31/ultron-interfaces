@@ -21,7 +21,7 @@ from ultron.recursos.pc import janelas
 
 URL = f"http://127.0.0.1:{CFG['porta']}"
 ESCONDIDO = 12              # px da janela acima da tela: os cantos de cima somem e sobra o entalhe (igual ao barra.css)
-FECHADA = (240, 34)         # largura e altura do entalhe, em px da página
+FECHADA = (600, 34)         # largura e altura do entalhe, em px da página (a mesma LARGURA_FECHADA do barra.js)
 FUNDO = {"prata": "#cfd2d6", "escuro": "#0b0c0e"}  # a cor antes da página carregar (evita um clarão)
 NA_FRENTE, SEM_ATIVAR, SO_FICAR_NA_FRENTE = -1, 0x10, 0x13
 MOSTRAR_SEM_ATIVAR, ESCONDER = 4, 0
@@ -32,10 +32,15 @@ TELA_PRINCIPAL, MONITOR_MAIS_PERTO = 1, 2
 JA_EXISTE = 183
 COM_BARRA_DE_TITULO, SEMPRE_NA_FRENTE = 0x00C00000, 0x8
 TELA_OCUPADA = (2, 3, 4)  # o Windows diz: app em tela cheia, jogo DirectX em tela cheia ou apresentação
-ANIMACAO_S = 0.18         # quanto a janela leva pra crescer ou encolher
+ANIMACAO_S = 0.22         # quanto o painel leva pra abrir ou minimizar
+RAIO = 18                 # o arredondado do recorte enquanto ele cresce ou encolhe, em px da página
+SEM_REDESENHAR = 0x8
 
 user32 = ctypes.WinDLL("user32")
 shell32 = ctypes.WinDLL("shell32")
+gdi32 = ctypes.WinDLL("gdi32")
+gdi32.CreateRoundRectRgn.restype = wintypes.HRGN
+user32.SetWindowRgn.argtypes = [wintypes.HWND, wintypes.HRGN, wintypes.BOOL]
 user32.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND] + [ctypes.c_int] * 4 + [ctypes.c_uint]
 user32.MonitorFromWindow.restype = wintypes.HMONITOR
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -57,14 +62,24 @@ class Barra:
         self._numero = None          # o identificador da janela no Windows
         self._quer_aparecer = False  # o que a página pediu (o Ultron diz se a tela dele está à vista)
         self._tamanho = FECHADA      # o tamanho de agora, em px da página
-        self._animacao = 0           # cada animação nova tem um número; a velha para quando vê outro
+        self._trava = threading.Lock()  # uma animação de cada vez
 
     def expandir(self, largura, altura):
-        self._animar(largura, altura)
+        """Abre o painel. A janela já fica do tamanho dele, mas recortada no tamanho do entalhe, e o recorte cresce até
+        mostrar tudo: a janela não muda de tamanho no meio, então a página não se redesenha e a animação não trava."""
+        with self._trava:
+            entalhe = self._tamanho
+            self._colocar(largura, altura, recorte=entalhe)
+            self._animar_recorte(entalhe, (largura, altura))
+            user32.SetWindowRgn(self._numero, None, True)  # aberta: a janela inteira, com os cantos do Windows
         user32.SetForegroundWindow(self._numero)  # o campo de pedido e o Esc precisam do teclado
 
     def recolher(self, largura=FECHADA[0]):
-        self._animar(largura, FECHADA[1])
+        """Minimiza: o recorte encolhe até o tamanho do entalhe e aí a janela fica desse tamanho."""
+        with self._trava:
+            if self._tamanho[1] > FECHADA[1]:
+                self._animar_recorte(self._tamanho, (largura, FECHADA[1]))
+            self._colocar(largura, FECHADA[1])
 
     def aparecer(self, sim):
         self._quer_aparecer = bool(sim)
@@ -89,25 +104,37 @@ class Barra:
         self.recolher()
         threading.Thread(target=self._vigiar, daemon=True).start()
 
-    def _animar(self, largura, altura):
-        """Cresce ou encolhe a janela aos poucos, do tamanho de agora até o novo (como o entalhe do celular)."""
-        self._animacao += 1
-        minha, (largura_0, altura_0) = self._animacao, self._tamanho
+    def _animar_recorte(self, de, para):
+        """O pedaço que aparece vai do tamanho `de` até `para` (px da página), rápido no começo e suave no fim."""
         passos = max(1, round(ANIMACAO_S * 60))
         for passo in range(1, passos + 1):
-            if minha != self._animacao:
-                return  # outra animação começou: ela segue do ponto onde esta parou
-            t = 1 - (1 - passo / passos) ** 3  # rápido no começo, suave no fim
-            self._colocar(largura_0 + (largura - largura_0) * t, altura_0 + (altura - altura_0) * t)
+            t = 1 - (1 - passo / passos) ** 3
+            self._recortar(self._tamanho, (de[0] + (para[0] - de[0]) * t, de[1] + (para[1] - de[1]) * t))
             time.sleep(ANIMACAO_S / passos)
 
-    def _colocar(self, largura, altura):
-        """No meio do topo da tela principal, com ESCONDIDO px acima dela."""
+    def _recortar(self, janela, parte):
+        """Da janela de tamanho `janela`, só aparece (e recebe clique) a `parte`, no meio do topo. Em px da página."""
+        escala = self._escala()
+        largura, altura = round(parte[0] * escala), round((parte[1] + ESCONDIDO) * escala)
+        x, raio = (round(janela[0] * escala) - largura) // 2, round(RAIO * escala)
+        user32.SetWindowRgn(self._numero, gdi32.CreateRoundRectRgn(x, 0, x + largura + 1, altura + 1, raio, raio), True)
+
+    def _colocar(self, largura, altura, recorte=None):
+        """No meio do topo da tela principal, com ESCONDIDO px acima dela. Com `recorte`, só esse pedaço aparece (ele
+        entra antes de mudar o tamanho, pra janela inteira não piscar); sem, a janela inteira."""
+        if recorte:
+            self._recortar((largura, altura), recorte)
         self._tamanho = (largura, altura)
-        escala = user32.GetDpiForWindow(self._numero) / 96
-        largura, altura = round(largura * escala), round((altura + ESCONDIDO) * escala)
-        x = (user32.GetSystemMetrics(0) - largura) // 2
-        user32.SetWindowPos(self._numero, NA_FRENTE, x, -round(ESCONDIDO * escala), largura, altura, SEM_ATIVAR)
+        escala = self._escala()
+        l, a = round(largura * escala), round((altura + ESCONDIDO) * escala)
+        x = (user32.GetSystemMetrics(0) - l) // 2
+        user32.SetWindowPos(self._numero, NA_FRENTE, x, -round(ESCONDIDO * escala), l, a,
+                            SEM_ATIVAR | (0 if recorte else SEM_REDESENHAR))
+        if not recorte:
+            user32.SetWindowRgn(self._numero, None, True)
+
+    def _escala(self):
+        return user32.GetDpiForWindow(self._numero) / 96
 
     def _vigiar(self):
         while True:
