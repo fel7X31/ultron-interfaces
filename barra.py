@@ -32,7 +32,6 @@ TELA_PRINCIPAL, MONITOR_MAIS_PERTO = 1, 2
 JA_EXISTE = 183
 COM_BARRA_DE_TITULO, SEMPRE_NA_FRENTE = 0x00C00000, 0x8
 JOGO_EXCLUSIVO = 3        # o Windows diz: jogo DirectX em tela cheia exclusiva (esse sempre está na frente)
-ANIMACAO_S = 0.2          # quanto o painel leva pra sair ao minimizar (o "sobe" do barra.css)
 
 user32 = ctypes.WinDLL("user32")
 shell32 = ctypes.WinDLL("shell32")
@@ -70,8 +69,9 @@ class Barra:
         self._mudar(largura, FECHADA[1], ordem)
 
     def _mudar(self, largura, altura, ordem=None):
-        """Muda o tamanho da janela. Crescendo, muda na hora e a página anima o painel entrando; encolhendo, espera a
-        página animar o painel saindo (o "fechando" do barra.css) e aí encolhe.
+        """Muda o tamanho da janela, na hora. Abrindo, a página espera a janela crescer e só então anima o painel;
+        minimizando, ela tira o painel antes (o "abrindo" e o "fechando" do barra.css). Sem animar o tamanho da janela:
+        cada passo fazia o WebView2 redesenhar a página inteira e dava tranco.
 
         Sem recorte (SetWindowRgn): o WebView2 desenha por cima dele, e com a janela recortada ele para de desenhar o
         resto, que fica cinza. Era o cinza que aparecia ao abrir, ao minimizar e às vezes ficava parado.
@@ -83,10 +83,7 @@ class Barra:
                 if ordem < self._ordem:
                     return False
                 self._ordem = ordem
-            para = (largura, altura)
-            if para[0] < self._tamanho[0] or para[1] < self._tamanho[1]:
-                time.sleep(ANIMACAO_S)
-            self._colocar(*para)
+            self._colocar(largura, altura)
             return True
 
     def aparecer(self, sim):
