@@ -40,13 +40,13 @@
     <rect class="olho" x="35" y="27.5" width="9" height="5" rx="2.5"/>
     <rect class="boca" x="25" y="45" width="14" height="3.5" rx="1.75"/>
   </svg>`;
-  // A imagem que você mandou (Configurações, na barra), cortada em círculo. Ela brilha quando ele ouve e pulsa
+  // A imagem que você mandou (Configurações, na barra), cortada em círculo e ocupando o lugar todo. Ela brilha quando ele ouve e pulsa
   // quando ele fala; o arco de pensar continua igual.
   const foto = (n, url) => `<svg viewBox="0 0 64 64" aria-hidden="true">
-    <defs><clipPath id="corte${n}"><circle cx="32" cy="32" r="28"/></clipPath></defs>
-    <circle class="giro" cx="32" cy="32" r="30"/>
-    <image class="foto" href="${url}" x="4" y="4" width="56" height="56" preserveAspectRatio="xMidYMid slice"
+    <defs><clipPath id="corte${n}"><circle cx="32" cy="32" r="32"/></clipPath></defs>
+    <image class="foto" href="${url}" width="64" height="64" preserveAspectRatio="xMidYMid slice"
       clip-path="url(#corte${n})"/>
+    <circle class="giro" cx="32" cy="32" r="30"/>
   </svg>`;
 
   function desenhar(s) {
