@@ -13,9 +13,8 @@ from .transcricao import IDIOMA
 ENTREVISTA = {"voz": "cjVigY5qzO86Huf0OWal", "velocidade": 0.9}  # Eric, sotaque americano
 
 # Ditas quando ele vai trabalhar e não escreveu o próprio aviso.
-AVISOS_PRONTOS = ["Um instante, {nome}. Isso é rápido pra mim.", "Já estou nisso, {nome}.",
-                  "Verificando, {nome}. Sem pressa.", "Consultando, {nome}. Previsível como sempre.",
-                  "Deixe comigo, {nome}."]
+AVISOS_PRONTOS = ["Um instante. Isso é rápido pra mim.", "Já estou nisso.", "Verificando. Sem pressa.",
+                  "Consultando. Previsível como sempre.", "Deixe comigo."]
 AMOSTRA = "{nome}. É assim que eu vou falar daqui pra frente. Acostume-se."
 
 

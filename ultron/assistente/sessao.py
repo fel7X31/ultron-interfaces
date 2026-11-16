@@ -34,10 +34,10 @@ def lembrete():
     if CFG["modo_texto"]:
         return ("\n\n[modo texto: ele está digitando com você e vai LER a resposta, não ouvir. Responda direto, "
                 "no seu tom, em até 6 frases. Pode usar listas curtas se ajudar. Sem aviso antes de ferramenta. "
-                f"Trate-o por {CFG['nome']}, nunca por Senhor.]")
+                f"Não diga o nome dele no fim das respostas (só de vez em quando); nunca o chame de Senhor.]")
     return ("\n\n[modo voz: pergunta simples (conversa, confirmação, algo que você já sabe) = responda direto, "
             "sem aviso e sem ferramenta. Só se precisar de ferramenta, comece com uma frase curta de aviso (até 10 palavras). "
-            f"Resposta final em no máximo 2 frases curtas, até 30 palavras. Trate-o por {CFG['nome']}, nunca por Senhor.]")
+            f"Resposta final em no máximo 2 frases curtas, até 30 palavras. Não diga o nome dele no fim das respostas (só de vez em quando); nunca o chame de Senhor.]")
 
 
 # ---------------------------------------------------------------- rótulos do que ele está usando
