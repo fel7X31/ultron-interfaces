@@ -74,13 +74,27 @@
     if (!aberta) {
       aberta = true;
       corpo.classList.add("aberta", "abrindo");
-      Barra.janela("expandir", LARGURA_ABERTA, ALTURA_ABERTA).then(() => corpo.classList.remove("abrindo"));
+      Barra.janela("expandir", LARGURA_ABERTA, ALTURA_ABERTA).then(() => quandoCrescer(() => {
+        if (!corpo.classList.contains("abrindo")) return;
+        corpo.classList.replace("abrindo", "revelando");  // a página já no tamanho novo: agora o painel desce
+        setTimeout(() => corpo.classList.remove("revelando"), 250);
+      }));
     }
     ir(secao || secaoAtual);
   }
 
+  // Espera a página ficar do tamanho do painel (o WebView2 ajusta um pouco depois da janela) pra animar sem pulo.
+  function quandoCrescer(feito) {
+    const inicio = performance.now();
+    (function olhar() {
+      if (innerWidth >= LARGURA_ABERTA - 2 || performance.now() - inicio > 250) requestAnimationFrame(feito);
+      else requestAnimationFrame(olhar);
+    })();
+  }
+
   function fechar() {
     if (!aberta || corpo.classList.contains("fechando")) return;
+    corpo.classList.remove("abrindo", "revelando");
     corpo.classList.add("fechando");
     larguraDoEntalhe = larguraCerta();
     corpo.classList.toggle("compacta", larguraDoEntalhe === LARGURA_COMPACTA);
