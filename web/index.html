@@ -537,6 +537,35 @@
   .form-status { font-size: 13px; color: var(--suave); min-height: 18px; margin-top: 12px; }
   .temas { display: flex; gap: 8px; }
   .temas button.ativo { border-color: #d7141e; color: #d7141e; }
+  /* Quem responde: o chip no meio do topo abre a lista de IAs */
+  .ia-topo { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 6; }
+  .ia-chip {
+    display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border: 1px solid var(--linha); border-radius: 999px;
+    background: var(--vidro); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: var(--texto); font: inherit;
+    font-size: 11px; letter-spacing: .2em; text-transform: uppercase; cursor: pointer; opacity: .8; transition: opacity .3s, border-color .2s;
+  }
+  .ia-chip:hover, .ia-chip[aria-expanded="true"] { opacity: 1; border-color: rgba(215, 20, 30, .45); }
+  .ia-chip .ponto-ia { width: 6px; height: 6px; border-radius: 50%; background: #d7141e; box-shadow: 0 0 8px rgba(215, 20, 30, .6); }
+  .ia-chip svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .ia-menu {
+    position: absolute; top: 40px; left: calc(50% - 145px); width: 290px; padding: 6px; box-sizing: border-box;  /* sem transform: a animação "entra" mexe nele */
+    background: var(--vidro); border: 1px solid var(--vidro-borda); border-radius: 14px; box-shadow: var(--vidro-sombra);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); animation: entra .2s ease both;
+  }
+  .ia-menu[hidden] { display: none; }
+  .ia-grupo { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--fraco); padding: 8px 10px 4px; }
+  .ia-opcao { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; font-size: 13px; cursor: pointer; }
+  .ia-opcao:hover:not(.desligada) { background: rgba(215, 20, 30, .10); }
+  .ia-opcao.desligada { cursor: default; color: var(--suave); }
+  .ia-opcao .marca-ia { width: 12px; height: 12px; flex: none; border-radius: 50%; border: 1.5px solid var(--suave); box-sizing: border-box; }
+  .ia-opcao.ativa .marca-ia { background: #d7141e; border-color: #d7141e; box-shadow: 0 0 8px rgba(215, 20, 30, .5); }
+  .ia-opcao .nota { margin-left: auto; font-size: 11px; color: var(--fraco); }
+  .ia-opcao .entrar {
+    margin-left: auto; font: inherit; font-size: 11px; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(215, 20, 30, .5); background: transparent; color: #d7141e;
+  }
+  .ia-opcao .entrar:hover { background: rgba(215, 20, 30, .12); }
+  .ia-aviso { font-size: 11px; line-height: 1.4; color: var(--suave); padding: 6px 10px 4px; }
 
   /* Tema escuro: o prata vira preto (as cores ficam no tema.css) */
   body.escuro .linha-painel { border-top-color: rgba(255, 255, 255, .07); }
@@ -659,6 +688,16 @@
 <button id="botaoCurriculo" class="engrenagem" aria-label="Currículo" title="Abrir o currículo">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
 </button>
+<div id="ia" class="ia-topo">
+  <button id="botaoIa" class="ia-chip" type="button" aria-expanded="false" title="Quem responde: o Claude ou outra IA">
+    <span class="ponto-ia"></span><span id="iaNome">Claude</span>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <div id="menuIas" class="ia-menu" hidden>
+    <div id="listaIas"></div>
+    <div id="iaAviso" class="ia-aviso" hidden></div>
+  </div>
+</div>
 <div id="curriculoTela" class="curriculo-tela" hidden></div>
 <div id="provas" class="config" hidden>
   <div class="config-caixa provas-caixa" role="dialog" aria-modal="true" aria-label="Provas">
@@ -1896,6 +1935,8 @@
         if (e.abrir) abrirQuadro(); else fecharQuadro();
       } else if (e.tipo === "curriculo") {
         if (e.abrir) abrirCurriculo(e.modo); else fecharCurriculo();
+      } else if (e.tipo === "ia") {  // trocou quem responde ("usa o Gemini")
+        el("iaNome").textContent = e.nome;
       } else if (e.tipo === "visor") {  // "mostra essa foto / abre esse arquivo" na tela
         abrirVisor(e.item);
       } else if (e.tipo === "limpeza") {
@@ -2025,6 +2066,88 @@
     desenharVozes();
     painel.hidden = false;
   }
+
+  // ---------------------------------------------------------- quem responde: o chip no meio do topo
+  // Os modelos do Claude (com ferramentas) e as outras IAs (só conversa). As que não estão prontas mostram como
+  // entrar com a conta (Google, ChatGPT) ou pedem a chave no .env.
+  const menuIas = el("menuIas");
+
+  async function carregarIas() {
+    const ias = await (await fetch("/api/ias")).json();
+    el("iaNome").textContent = ias.nome;
+    const ativa = (o) => o.ia === ias.ia && (o.ia !== "claude" || o.modelo === ias.modelo);
+    el("listaIas").replaceChildren(
+      grupoDeIas("Claude · com ferramentas"), ...ias.opcoes.filter((o) => o.ia === "claude").map((o) => opcaoDeIa(o, ativa(o))),
+      grupoDeIas("Outras IAs · só conversa"), ...ias.opcoes.filter((o) => o.ia !== "claude").map((o) => opcaoDeIa(o, ativa(o))),
+    );
+  }
+
+  function grupoDeIas(texto) {
+    const grupo = document.createElement("div");
+    grupo.className = "ia-grupo";
+    grupo.textContent = texto;
+    return grupo;
+  }
+
+  function opcaoDeIa(o, ativa) {
+    const linha = document.createElement("div");
+    linha.className = "ia-opcao" + (ativa ? " ativa" : "") + (o.ligada ? "" : " desligada");
+    linha.innerHTML = '<span class="marca-ia"></span><span class="nome"></span>';
+    linha.querySelector(".nome").textContent = o.nome;
+    if (o.ligada) linha.addEventListener("click", () => escolherIa(o));
+    else linha.appendChild(o.entrar ? botaoDeEntrar(o) : notaDeIa("chave no .env"));
+    return linha;
+  }
+
+  function botaoDeEntrar(o) {
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "entrar";
+    botao.textContent = "Entrar com " + o.entrar;
+    botao.addEventListener("click", () => entrarNaIa(o));
+    return botao;
+  }
+
+  function notaDeIa(texto) {
+    const nota = document.createElement("span");
+    nota.className = "nota";
+    nota.textContent = texto;
+    return nota;
+  }
+
+  async function escolherIa(o) {
+    const r = await fetch("/api/ias", { method: "POST", body: JSON.stringify({ ia: o.ia, modelo: o.ia === "claude" ? o.modelo : "" }) });
+    const dados = await r.json();
+    if (!r.ok) return avisarNasIas(dados.erro);
+    el("iaNome").textContent = dados.nome;
+    fecharMenuDeIas();
+  }
+
+  async function entrarNaIa(o) {
+    const r = await fetch("/api/ias/entrar", { method: "POST", body: JSON.stringify({ ia: o.ia }) });
+    avisarNasIas(r.ok ? "Abri o login numa janela do terminal. Depois de entrar, abra esta lista de novo." : (await r.json()).erro);
+  }
+
+  function avisarNasIas(texto) {
+    el("iaAviso").textContent = texto;
+    el("iaAviso").hidden = !texto;
+  }
+
+  function abrirMenuDeIas() {
+    carregarIas().catch(() => {});
+    menuIas.hidden = false;
+    el("botaoIa").setAttribute("aria-expanded", "true");
+  }
+
+  function fecharMenuDeIas() {
+    menuIas.hidden = true;
+    el("botaoIa").setAttribute("aria-expanded", "false");
+    avisarNasIas("");
+  }
+
+  el("botaoIa").addEventListener("click", () => { if (menuIas.hidden) abrirMenuDeIas(); else fecharMenuDeIas(); el("botaoIa").blur(); });
+  document.addEventListener("click", (ev) => { if (!menuIas.hidden && !ev.target.closest("#ia")) fecharMenuDeIas(); });
+  carregarIas().catch(() => {});
 
   function fecharConfig() { painel.hidden = true; }
 

@@ -6,3 +6,4 @@ A rota só lê o pedido e chama o recurso: a regra fica em ultron/recursos/.
 from . import curriculo  # noqa: F401
 from . import conversa, paineis, provas, sistema  # noqa: F401
 from . import musica, visor  # noqa: F401
+from . import ias  # noqa: F401

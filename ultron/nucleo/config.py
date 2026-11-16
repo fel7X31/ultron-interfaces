@@ -13,6 +13,7 @@ WEB = RAIZ / "web"                            # a tela (HTML/CSS/JS)
 ESTADO = RAIZ / ".estado"                     # tudo que é gerado rodando: logs, caches, backups (fora do git)
 ATALHOS = RAIZ / "atalhos"                    # scripts que o Ultron roda (mercado, tela, abrir...)
 PREFS = ESTADO / "preferencias.json"
+PREFIXOS = ("ULTRON_", "JARVIS_", "ELEVENLABS_", "WHISPER_", "FISH_", "OPENAI_", "GEMINI_", "XAI_")
 
 
 def ler_env(caminho):
@@ -29,13 +30,22 @@ def ler_env(caminho):
     return valores
 
 
-def carregar_config():
+def ler_ambiente():
+    """As variáveis do Ultron: as do .env, com as do sistema (que tenham um dos PREFIXOS) por cima."""
     base = ler_env("~/.config/vortex-marketing/.env")
     base.update(ler_env(RAIZ / ".env"))
-    base.update({k: v for k, v in os.environ.items()
-                 if k.startswith(("ULTRON_", "JARVIS_", "ELEVENLABS_", "WHISPER_", "FISH_"))})
+    base.update({k: v for k, v in os.environ.items() if k.startswith(PREFIXOS)})
     for k in [k for k in base if k.startswith("JARVIS_")]:  # nome antigo das variáveis: ainda vale
         base.setdefault("ULTRON_" + k[7:], base[k])
+    return base
+
+
+def variavel(nome, padrao=""):
+    """Uma variável do .env ou do sistema (ex.: a chave de outra IA), ou o padrão."""
+    return AMBIENTE.get(nome) or padrao
+
+
+def carregar_config(base):
     return {
         "pasta": Path(base.get("ULTRON_PASTA") or Path.home()).expanduser(),
         "porta": int(base.get("ULTRON_PORTA", "8790")),
@@ -61,6 +71,7 @@ def carregar_config():
         "nome": base.get("ULTRON_NOME", "Chefe"),  # como ele te chama (muda no perfil da tela)
         "modo_texto": False,   # responde só escrito, sem voz
         "modo_prova": False,   # revisão dupla, correções guardadas, silêncio com "ok"
+        "ia": "claude",        # quem responde: o Claude (com ferramentas) ou outra IA (veja recursos/ias.py)
     }
 
 
@@ -74,11 +85,15 @@ def carregar_preferencias():
         CFG["nome"] = p["nome"]
     CFG["modo_texto"] = bool(p.get("modo_texto"))
     CFG["modo_prova"] = bool(p.get("modo_prova"))
+    for chave in ("ia", "modelo"):
+        if p.get(chave):
+            CFG[chave] = p[chave]
 
 
 def salvar_preferencias():
     salvar_json(PREFS, {"voz": CFG["voz"], "velocidade": CFG["velocidade_voz"], "nome": CFG["nome"],
-                        "modo_texto": CFG["modo_texto"], "modo_prova": CFG["modo_prova"]})
+                        "modo_texto": CFG["modo_texto"], "modo_prova": CFG["modo_prova"],
+                        "ia": CFG["ia"], "modelo": CFG["modelo"]})
 
 
 def persona():
@@ -93,7 +108,8 @@ def persona():
 def config_publica():
     """O que a tela pode ver e mudar (sem chaves)."""
     return {"voz": CFG["voz"], "velocidade": CFG["velocidade_voz"], "vozes": VOZES,
-            "nome": CFG["nome"], "modo_texto": CFG["modo_texto"], "modo_prova": CFG["modo_prova"]}
+            "nome": CFG["nome"], "modo_texto": CFG["modo_texto"], "modo_prova": CFG["modo_prova"],
+            "ia": CFG["ia"], "modelo": CFG["modelo"]}
 
 
 def voz_ligada():
@@ -101,6 +117,7 @@ def voz_ligada():
     return bool(CFG["eleven_key"]) and not CFG["modo_texto"]
 
 
-CFG = carregar_config()
+AMBIENTE = ler_ambiente()
+CFG = carregar_config(AMBIENTE)
 VOZES = ler_json(RAIZ / "vozes.json", []) or []
 carregar_preferencias()

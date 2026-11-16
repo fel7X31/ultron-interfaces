@@ -203,3 +203,6 @@ def concordar_no_modo_prova(fala):
             and all(p in SO_CONCORDANDO for p in fala.palavras):
         fala.registro["silencio"] = True
         return SILENCIO
+
+
+from . import comandos_ia  # noqa: E402,F401  (registram os comandos deles depois dos daqui)

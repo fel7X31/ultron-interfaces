@@ -45,10 +45,14 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │   ├── provas.py            modo prova
 │   │   ├── historico.py         histórico diário das conversas e limpeza semanal
 │   │   ├── musica.py            playlists e busca no YouTube
-│   │   └── curriculo.py         tela do currículo (analisar e adaptar)
+│   │   ├── curriculo.py         tela do currículo (analisar e adaptar)
+│   │   ├── ias.py               outras IAs (ChatGPT, Gemini, Grok), pela API de cada uma
+│   │   └── contas_ia.py         as mesmas IAs pela sua conta, sem chave (Gemini CLI com o Google, Codex com o ChatGPT)
 │   ├── assistente/
 │   │   ├── sessao.py            o processo do Claude Code que fica aberto (SESSAO)
 │   │   ├── comandos.py          comandos de voz que respondem sem o Claude
+│   │   ├── comandos_ia.py       "usa o Gemini", "volta pro Claude", "usa o Opus"
+│   │   ├── cerebro.py           quem responde: o Claude ou outra IA (e a conversa com ela)
 │   │   ├── confirmacao.py       quando a trava abre ("Confirma?" → "sim")
 │   │   ├── prebusca.py          gatilhos.json: dado buscado antes de perguntar
 │   │   └── turno.py             processar(): ouvir → comando ou Claude → responder

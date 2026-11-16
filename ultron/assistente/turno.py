@@ -20,7 +20,7 @@ from ..recursos.google import atualizar_google
 from ..recursos.provas import registrar_prova
 from ..voz.fala import AVISOS_PRONTOS, com_nome, gravar_avisos_prontos, url_fala
 from ..voz.transcricao import transcrever
-from . import comandos
+from . import cerebro, comandos
 from .confirmacao import autorizou_no_pedido, eh_confirmacao, pediu_confirmacao
 from .prebusca import prebusca
 from .sessao import SESSAO
@@ -124,6 +124,17 @@ def _perguntar_ao_claude(texto, registro, inicio):
     return r
 
 
+def _perguntar_a_outra_ia(texto, registro):
+    """ChatGPT, Gemini...: só conversa, sem ferramenta (os dados da pré-busca vão junto)."""
+    EVENTOS.estado("pensando")
+    t_ia = time.time()
+    SESSAO.ferramentas_turno = []
+    r = cerebro.perguntar_a_outra_ia(texto + prebusca(texto))
+    registro["ia"] = cerebro.nome_atual()
+    registro["ia_s"] = round(time.time() - t_ia, 2)
+    return r
+
+
 def _responder(texto, r, registro, inicio):
     registro["ferramentas"] = SESSAO.ferramentas_turno
     if any("Google_Calendar" in f or "Gmail" in f for f in (SESSAO.ferramentas_turno or [])):
@@ -184,8 +195,11 @@ def processar(audio=None, mime="audio/webm", texto=None):
                 EVENTOS.estado("parado")
             return
 
-        _abrir_trava(texto, registro)
-        r = _perguntar_ao_claude(texto, registro, inicio)
+        if cerebro.usando_claude():
+            _abrir_trava(texto, registro)
+            r = _perguntar_ao_claude(texto, registro, inicio)
+        else:
+            r = _perguntar_a_outra_ia(texto, registro)
         if Estado.interrompido or r.get("interrompido"):
             registro["interrompido"] = True
             return

@@ -9,7 +9,9 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
 ```
 
 - **Ouvido:** whisper rodando no seu computador (grátis) ou ElevenLabs Scribe.
-- **Cérebro:** uma sessão do Claude Code que fica aberta e lembra da conversa.
+- **Cérebro:** uma sessão do Claude Code que fica aberta e lembra da conversa. Dá pra trocar o modelo (Sonnet, Opus,
+  Haiku) ou pôr outra IA pra responder (ChatGPT, Gemini, Grok), no chip do meio do topo da tela ou por voz
+  ("usa o Gemini").
 - **Boca:** ElevenLabs ou Fish Audio.
 - **Rosto:** uma esfera na tela, com painéis de e-mail, agenda, tarefas, mercado e música.
 - **Comandos na hora:** "próxima música", "abre o currículo", "ativa o modo prova" respondem sem passar pelo Claude.
@@ -25,6 +27,8 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
 - Uma chave do [ElevenLabs](https://elevenlabs.io) (o plano grátis serve pra testar). Sem ela, ele responde só escrito.
 - Opcional: `ffmpeg` e o whisper local, pra transcrição grátis.
 - Opcional: `sounddevice` e `numpy`, só pra ligar com palmas (`palmas.py`).
+- Opcional, pra usar outra IA além do Claude: entrar com a sua conta (Gemini com o Google, ChatGPT com a conta do
+  ChatGPT, pelos programas deles) ou a chave da API (`OPENAI_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`).
 
 ## Rodar no Windows
 
@@ -60,6 +64,21 @@ py palmas.py              # fica ouvindo; duas palmas ligam o Ultron em tela che
 
 Pra ligar junto com o Windows, crie um atalho de `pythonw palmas.py` na pasta `shell:startup`.
 
+### Outras IAs (opcional)
+
+Dois jeitos, e dá pra misturar:
+
+- **Com a sua conta, sem chave:** instale os programas deles (`npm install -g @google/gemini-cli @openai/codex`) e,
+  no chip do meio do topo da tela, clique em **Entrar com Google** (Gemini) ou **Entrar com ChatGPT**. Abre um
+  terminal com o login, e o navegador abre pra você entrar. É como o Claude Code: usa o plano da sua conta.
+- **Com a chave da API:** coloque no `.env` a `OPENAI_API_KEY` (ChatGPT), a `GEMINI_API_KEY` (Gemini, tem plano grátis
+  no [Google AI Studio](https://aistudio.google.com/apikey)) ou a `XAI_API_KEY` (Grok, só por chave). A chave vale
+  mais que a conta.
+
+Depois escolha no chip ou diga "usa o Gemini" / "volta pro Claude". Com outra IA ele só conversa (sem ferramentas); os
+comandos na hora continuam valendo. O modelo de cada uma muda no `.env` (`ULTRON_MODELO_CHATGPT`,
+`ULTRON_MODELO_GEMINI`, `ULTRON_MODELO_GROK`).
+
 ### Whisper local (opcional)
 
 Sem ele, o Ultron usa o ElevenLabs Scribe sozinho (`ULTRON_TRANSCRICAO=auto`). Pra transcrever de graça:
@@ -83,7 +102,8 @@ Igual, trocando `copy` por `cp` e `py` por `python3`. No Mac, `brew install whis
 | **N** | Começa uma conversa nova |
 | **H** | Mostra ou esconde os detalhes |
 
-Na engrenagem você escolhe a voz (lista em `vozes.json`), a velocidade, o seu nome, o modo texto e o modo prova.
+No chip do meio do topo você escolhe quem responde (Claude ou outra IA). Na engrenagem, a voz (lista em
+`vozes.json`), a velocidade, o seu nome, o modo texto e o modo prova.
 Fica salvo em `.estado/preferencias.json`, que vale mais que o `.env`.
 
 ## A trava
