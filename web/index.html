@@ -1937,6 +1937,8 @@
         if (e.abrir) abrirCurriculo(e.modo); else fecharCurriculo();
       } else if (e.tipo === "ia") {  // trocou quem responde ("usa o Gemini")
         el("iaNome").textContent = e.nome;
+      } else if (e.tipo === "tema") {  // trocou o tema pela barra do topo
+        if (e.tema !== (localStorage.getItem("tema") || "prata")) aplicarTema(e.tema);
       } else if (e.tipo === "visor") {  // "mostra essa foto / abre esse arquivo" na tela
         abrirVisor(e.item);
       } else if (e.tipo === "limpeza") {
@@ -3358,8 +3360,17 @@
     corpo.classList.toggle("escuro", tema === "escuro");
     localStorage.setItem("tema", tema);
     document.querySelectorAll(".temas button[data-tema]").forEach((b) => b.classList.toggle("ativo", b.dataset.tema === tema));
+    fetch("/api/tema", { method: "POST", body: JSON.stringify({ tema }) }).catch(() => {});  // a barra do topo acompanha
   }
   aplicarTema(localStorage.getItem("tema") || "prata");
+
+  // A barra do topo da tela aparece quando esta tela está minimizada ou escondida atrás de outra janela.
+  function avisarSeEstaVisivel() {
+    navigator.sendBeacon("/api/barra/tela", JSON.stringify({ visivel: !document.hidden }));
+  }
+  document.addEventListener("visibilitychange", avisarSeEstaVisivel);
+  addEventListener("pagehide", () => navigator.sendBeacon("/api/barra/tela", JSON.stringify({ visivel: false })));
+  avisarSeEstaVisivel();
   document.querySelectorAll(".temas button[data-tema]").forEach((b) => b.addEventListener("click", () => { aplicarTema(b.dataset.tema); b.blur(); }));
   // Estilo da esfera: Rede (pontos ligados), Fluxo (linhas de corrente) ou Órbitas (átomo com anéis). Fica guardado neste navegador.
   function marcarEstiloEsfera() { document.querySelectorAll(".estilos-esfera button").forEach((b) => b.classList.toggle("ativo", b.dataset.esfera === estiloEsfera)); }

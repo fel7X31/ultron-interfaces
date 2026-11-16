@@ -1,7 +1,9 @@
 """Liga o Ultron: confere o ambiente, sobe o servidor web, aquece o Claude e roda as rotinas dos painéis."""
+import importlib.util
 import os
 import shutil
 import signal
+import subprocess
 import sys
 import threading
 import time
@@ -11,7 +13,7 @@ from .assistente import cerebro
 from .assistente.sessao import SESSAO
 from .assistente.turno import aquecer
 from .http.servidor import criar_servidor
-from .nucleo.config import CFG, ESTADO, WEB
+from .nucleo.config import CFG, ESTADO, RAIZ, WEB
 from .nucleo.log import log, log_erro
 from .recursos import copiados, curriculo, lembretes
 from .recursos.google import atualizar_google
@@ -80,6 +82,18 @@ def conferir_ambiente():
         print("Aviso: sem ELEVENLABS_API_KEY. Ele vai responder só em texto na tela.")
 
 
+def ligar_barra():
+    """Abre a barra do topo da tela (barra.py) num processo à parte, se ela estiver ligada no .env."""
+    if not CFG["barra"] or os.name != "nt":
+        return
+    if importlib.util.find_spec("webview") is None:
+        print("Barra do topo desligada: falta instalar (py -m pip install -r requirements-barra.txt).")
+        return
+    saida = open(ESTADO / "barra.log", "a", encoding="utf-8")
+    subprocess.Popen([sys.executable, str(RAIZ / "barra.py")], cwd=str(RAIZ), stdin=subprocess.DEVNULL,
+                     stdout=saida, stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW)
+
+
 def main():
     conferir_ambiente()
     servidor = criar_servidor(CFG["porta"])
@@ -95,6 +109,7 @@ def main():
     _em_segundo_plano(aquecer)
     _em_segundo_plano(rotinas)
     _em_segundo_plano(copiados.vigiar)
+    ligar_barra()
     if "--sem-abrir" not in sys.argv:
         webbrowser.open(url)
     try:

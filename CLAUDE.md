@@ -31,6 +31,8 @@ Se não houver entrada nova, siga direto com a tarefa.
 ## Coisas a saber
 - Mudança em `.py` só vale depois de religar o servidor (o `palmas.py` liga com `server.py --sem-abrir`;
   `.estado/servidor.pid` tem o PID). Em `web/`, basta recarregar a tela.
+- A barra do topo da tela (`barra.py`, janela do pywebview) roda num processo à parte que o `app.py` abre. Uma só por
+  vez: pra ver mudança em `barra.py` ou `web/barra.*`, feche ela (some sozinha 20 s depois de o servidor cair) e religue.
 - Nos testes do controle do PC, simule `pc.executar` (mock): rodar de verdade bloqueia a tela, pausa o vídeo dele etc.
 - Nos testes do `/api/chamar`, simule o `log`: o `palmas.py` lê o log e abriria o microfone.
 - Nos testes dos Copiados, simule a área de transferência.

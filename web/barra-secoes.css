@@ -1,0 +1,144 @@
+/* As seções do painel da barra (Início, Conversa, Memória, listas, Música, Meu PC, Configurações). */
+
+/* ------------------------------------------------------------------ Início */
+.ola h2 { margin: 2px 0 2px; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.ola p { margin: 0; color: var(--suave); font-size: 12.5px; }
+.grade-inicio { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 10px; flex: 1; min-height: 150px; }
+.grade-inicio > .cartao { min-height: 0; display: flex; flex-direction: column; }
+.grade-inicio .bolhas { flex: 1; max-height: none; }
+.resumos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; flex: none; }
+.resumo {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; text-align: left; padding: 9px 12px 10px;
+  transition: border-color .2s, transform .15s;
+}
+.resumo:hover { border-color: rgba(215, 20, 30, .45); transform: translateY(-1px); }
+.resumo b { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.resumo small { color: var(--suave); font-size: 11px; }
+.resumo span { color: var(--suave); font-size: 11px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-height: 14px; }
+
+/* ------------------------------------------------------------------ Conversa (bolhas) */
+.bolhas { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 156px; scrollbar-width: thin; user-select: text; }
+.bolhas.grandes { flex: 1; max-height: none; padding: 2px 2px 6px; }
+.bolha { max-width: 86%; padding: 7px 11px; border-radius: 13px; font-size: 12.5px; line-height: 1.42; background: var(--botao); white-space: pre-wrap; overflow-wrap: anywhere; }
+.bolha.voce { align-self: flex-end; background: rgba(215, 20, 30, .16); border-bottom-right-radius: 4px; }
+.bolha.ultron { align-self: flex-start; border-bottom-left-radius: 4px; }
+.bolha.aviso { align-self: center; background: transparent; color: var(--suave); font-size: 11.5px; padding: 2px 8px; }
+.bolha small { display: block; margin-top: 3px; color: var(--fraco); font-size: 10px; }
+.bolhas:empty::before { content: "Nada por aqui ainda. Peça algo ao Ultron."; color: var(--suave); font-size: 12px; margin: auto; padding: 10px; }
+
+/* ------------------------------------------------------------------ o player (Início e Música) */
+.player { display: grid; grid-template-columns: 64px minmax(0, 1fr); grid-template-rows: auto auto auto; gap: 8px 12px; align-content: center; align-items: center; }
+.grade-inicio > .player { display: grid; }
+.player .capa { width: 64px; height: 64px; grid-row: 1 / 3; }
+.player .info { min-width: 0; align-self: end; }
+.player .faixa { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player .quem { font-size: 11.5px; color: var(--suave); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player .controles { display: flex; align-items: center; gap: 8px; align-self: start; }
+.player .controle-volume { grid-column: 1 / -1; }
+.player.grande { grid-template-columns: 120px 1fr; padding: 16px; gap: 10px 18px; }
+.player.grande .capa { width: 120px; height: 120px; border-radius: 12px; }
+.player.grande .faixa { font-size: 18px; }
+.player.grande .quem { font-size: 13px; }
+
+.controle-volume { display: flex; align-items: center; gap: 8px; }
+.controle-volume input { flex: 1; min-width: 0; accent-color: var(--vermelho); }
+.volume-valor { min-width: 34px; text-align: right; font-size: 12px; color: var(--suave); font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------ Memória (o grafo) */
+.busca { display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--linha); border-radius: 11px; background: var(--botao); flex: none; }
+.busca svg { color: var(--suave); }
+.busca input { flex: 1; border: 0; background: transparent; padding: 8px 0; outline: none; color: var(--texto); }
+.grafo { position: relative; flex: 1; min-height: 240px; padding: 0; overflow: hidden; }
+.grafo canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; }
+.grafo canvas.arrastando { cursor: grabbing; }
+.dica-grafo {
+  position: absolute; pointer-events: none; max-width: 280px; padding: 6px 10px; border-radius: 9px; font-size: 12px;
+  background: var(--texto); color: var(--fundo); box-shadow: var(--vidro-sombra); transform: translate(-50%, calc(-100% - 12px));
+}
+.grafo .vazio { position: absolute; inset: 0; display: grid; place-items: center; }
+.escolhida {
+  position: absolute; left: 10px; right: 10px; bottom: 10px; padding: 10px 12px; border-radius: 12px;
+  background: var(--vidro); border: 1px solid var(--vidro-borda); box-shadow: var(--vidro-sombra); backdrop-filter: blur(8px);
+  display: flex; align-items: center; gap: 10px;
+}
+.escolhida p { margin: 0; flex: 1; font-size: 12.5px; user-select: text; }
+.escolhida small { color: var(--suave); font-size: 11px; white-space: nowrap; }
+
+/* ------------------------------------------------------------------ listas (tarefas, lembretes, timers, copiados, IAs) */
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lista li {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 11px;
+  background: var(--vidro); border: 1px solid var(--vidro-borda);
+}
+.lista li .texto { flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.38; }
+.lista li .quando { color: var(--suave); font-size: 11.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lista li.feito .texto { color: var(--fraco); text-decoration: line-through; }
+.lista li .x { opacity: 0; }
+.lista li:hover .x { opacity: 1; }
+.lista:empty::before { content: attr(data-vazio); color: var(--suave); font-size: 12px; padding: 14px 4px; }
+.marcador {
+  width: 18px; height: 18px; flex: none; border: 1.6px solid var(--fraco); border-radius: 50%; background: transparent; padding: 0;
+  display: grid; place-items: center; transition: border-color .2s, background .2s;
+}
+.marcador:hover { border-color: var(--vermelho); }
+li.feito .marcador { background: var(--vermelho); border-color: var(--vermelho); }
+li.feito .marcador::after { content: ""; width: 8px; height: 4px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); }
+.selo { padding: 1px 7px; border-radius: 999px; font-size: 10.5px; background: var(--botao); color: var(--suave); white-space: nowrap; }
+.selo.alta { background: rgba(215, 20, 30, .16); color: var(--vermelho); }
+
+.timers li { padding: 10px 12px; }
+.timers .relogio-grande { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 92px; }
+.timers .progresso { flex: 1; height: 5px; border-radius: 3px; background: rgba(120, 124, 130, .2); overflow: hidden; }
+.timers .progresso i { display: block; height: 100%; background: var(--vermelho); border-radius: 3px; transition: width 1s linear; }
+.timers .nome { min-width: 110px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--suave); }
+.rapidos { display: flex; flex-wrap: wrap; gap: 6px; }
+.rapidos button {
+  padding: 7px 12px; border: 1px solid var(--linha); border-radius: 999px; background: var(--botao); font-size: 12px;
+  transition: border-color .2s, background .2s;
+}
+.rapidos button:hover { border-color: rgba(215, 20, 30, .45); background: rgba(215, 20, 30, .1); }
+
+.copiados li { cursor: pointer; align-items: flex-start; }
+.copiados li:hover { border-color: rgba(215, 20, 30, .35); }
+.copiados .texto { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; font-size: 12.5px; }
+
+.ias li { cursor: pointer; }
+.ias li:hover { border-color: rgba(215, 20, 30, .35); }
+.ias li.escolhida-ia { border-color: rgba(215, 20, 30, .6); background: rgba(215, 20, 30, .08); }
+.ias li.desligada { cursor: default; }
+.ias li.desligada .texto { color: var(--suave); }
+.ias .grupo { color: var(--suave); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; padding: 6px 2px 0; background: none; border: 0; }
+.ias button.entrar { padding: 5px 10px; border: 1px solid rgba(215, 20, 30, .5); border-radius: 999px; background: transparent; font-size: 11.5px; }
+.ias button.entrar:hover { background: rgba(215, 20, 30, .12); }
+
+/* ------------------------------------------------------------------ Meu PC */
+.medidor { display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 10px; padding: 3px 0; }
+.medidor .nome { color: var(--suave); font-size: 12px; }
+.medidor .trilho { height: 6px; border-radius: 3px; background: rgba(120, 124, 130, .18); overflow: hidden; }
+.medidor .barra { display: block; height: 100%; border-radius: 3px; background: var(--texto); opacity: .65; transition: width .5s; }
+.medidor.alerta .barra { background: var(--vermelho); opacity: 1; }
+.medidor .valor { min-width: 34px; text-align: right; font-size: 12px; font-variant-numeric: tabular-nums; }
+.medidor .valor small { color: var(--suave); font-size: 11px; margin-right: 6px; }
+.linha-botoes { display: flex; gap: 6px; margin-top: 10px; }
+.linha-botoes button, .atalhos button {
+  display: flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 10px; font-size: 12px;
+  border: 1px solid var(--linha); border-radius: 10px; background: transparent; transition: background .2s, border-color .2s;
+}
+.linha-botoes button { flex: 1; }
+.atalhos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.atalhos button { flex-direction: column; gap: 5px; padding: 9px 2px 8px; font-size: 11px; }
+.atalhos svg { width: 17px; height: 17px; }
+.linha-botoes button:hover, .atalhos button:hover { background: rgba(215, 20, 30, .10); border-color: rgba(215, 20, 30, .35); }
+
+/* ------------------------------------------------------------------ Configurações */
+.opcoes { display: flex; flex-direction: column; gap: 4px; padding: 6px 14px; }
+.opcao { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--linha); }
+.opcao:last-child { border-bottom: 0; }
+.opcao span small { display: block; color: var(--suave); font-size: 11px; margin-top: 2px; }
+.segmentado { display: flex; padding: 3px; border-radius: 999px; background: var(--botao); }
+.segmentado button { padding: 5px 14px; border: 0; border-radius: 999px; background: transparent; font-size: 12px; color: var(--suave); }
+.segmentado button.ativo { background: var(--texto); color: var(--fundo); font-weight: 600; }
+.chave { width: 40px; height: 23px; flex: none; padding: 0; border: 0; border-radius: 999px; background: var(--fraco); position: relative; transition: background .2s; }
+.chave::after { content: ""; position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); }
+.chave.ligada { background: var(--vermelho); }
+.chave.ligada::after { transform: translateX(17px); }

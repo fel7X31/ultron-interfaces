@@ -14,6 +14,7 @@ ESTADO = RAIZ / ".estado"                     # tudo que é gerado rodando: logs
 ATALHOS = RAIZ / "atalhos"                    # scripts que o Ultron roda (mercado, tela, abrir...)
 PREFS = ESTADO / "preferencias.json"
 PREFIXOS = ("ULTRON_", "JARVIS_", "ELEVENLABS_", "WHISPER_", "FISH_", "OPENAI_", "GEMINI_", "XAI_")
+TEMAS = ("prata", "escuro")
 
 
 def ler_env(caminho):
@@ -72,6 +73,8 @@ def carregar_config(base):
         "modo_texto": False,   # responde só escrito, sem voz
         "modo_prova": False,   # revisão dupla, correções guardadas, silêncio com "ok"
         "ia": "claude",        # quem responde: o Claude (com ferramentas) ou outra IA (veja recursos/ias.py)
+        "tema": "prata",       # a tela avisa quando muda; a barra do topo acompanha
+        "barra": base.get("ULTRON_BARRA", "1") == "1",  # a barra do topo da tela (barra.py)
         "chamado": base.get("ULTRON_CHAMADO", "1") == "1",  # dizer "Ultron" faz ele ouvir o pedido (palmas.py)
     }
 
@@ -89,6 +92,8 @@ def carregar_preferencias():
     for chave in ("ia", "modelo"):
         if p.get(chave):
             CFG[chave] = p[chave]
+    if p.get("tema") in TEMAS:
+        CFG["tema"] = p["tema"]
     if "chamado" in p:
         CFG["chamado"] = bool(p["chamado"])
 
@@ -96,7 +101,7 @@ def carregar_preferencias():
 def salvar_preferencias():
     salvar_json(PREFS, {"voz": CFG["voz"], "velocidade": CFG["velocidade_voz"], "nome": CFG["nome"],
                         "modo_texto": CFG["modo_texto"], "modo_prova": CFG["modo_prova"],
-                        "ia": CFG["ia"], "modelo": CFG["modelo"], "chamado": CFG["chamado"]})
+                        "ia": CFG["ia"], "modelo": CFG["modelo"], "tema": CFG["tema"], "chamado": CFG["chamado"]})
 
 
 def persona():
@@ -112,7 +117,7 @@ def config_publica():
     """O que a tela pode ver e mudar (sem chaves)."""
     return {"voz": CFG["voz"], "velocidade": CFG["velocidade_voz"], "vozes": VOZES,
             "nome": CFG["nome"], "modo_texto": CFG["modo_texto"], "modo_prova": CFG["modo_prova"],
-            "ia": CFG["ia"], "modelo": CFG["modelo"], "chamado": CFG["chamado"]}
+            "ia": CFG["ia"], "modelo": CFG["modelo"], "tema": CFG["tema"], "chamado": CFG["chamado"]}
 
 
 def voz_ligada():

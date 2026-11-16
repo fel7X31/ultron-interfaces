@@ -1,8 +1,9 @@
-"""Falar com o Ultron: áudio (segurou o espaço), texto (digitou), interromper e chamar."""
+"""Falar com o Ultron: áudio (segurou o espaço), texto (digitou), interromper, chamar e a conversa recente."""
 import threading
 
 from ...assistente import turno
 from ...nucleo.log import log
+from ...recursos.historico import conversa_recente
 from ..servidor import rota
 
 
@@ -40,3 +41,8 @@ def chamar(pedido):
         return 409, {"ocupado": True}
     log({"evento": "chamar"})
     return {"ok": True}
+
+
+@rota("GET", "/api/conversa")
+def conversa(pedido):
+    return {"turnos": conversa_recente()}

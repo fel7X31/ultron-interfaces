@@ -6,6 +6,7 @@ import threading
 class Eventos:
     def __init__(self):
         self.ouvintes = []
+        self.de_telas = set()  # os ouvintes que são a tela do Ultron (a barra do topo também ouve, mas não conta)
         self.lock = threading.Lock()
         self.ultimo_estado = {"tipo": "estado", "estado": "iniciando"}
 
@@ -24,10 +25,12 @@ class Eventos:
         """Atalho: mensagem curta na tela."""
         self.emitir({"tipo": "aviso", "texto": texto})
 
-    def assinar(self):
+    def assinar(self, tela=True):
         q = queue.Queue()
         with self.lock:
             self.ouvintes.append(q)
+            if tela:
+                self.de_telas.add(q)
         q.put(self.ultimo_estado)
         return q
 
@@ -35,6 +38,11 @@ class Eventos:
         with self.lock:
             if q in self.ouvintes:
                 self.ouvintes.remove(q)
+            self.de_telas.discard(q)
+
+    def telas(self):
+        """Quantas telas do Ultron estão abertas agora (o palmas.py desliga o Ultron quando chega a zero)."""
+        return len(self.de_telas)
 
 
 EVENTOS = Eventos()

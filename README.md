@@ -17,6 +17,10 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
 - **Comandos na hora:** "próxima música", "abre o currículo", "ativa o modo prova", "volume 30", "pausa o Spotify",
   "fecha o Discord" respondem sem passar pelo Claude.
 - **Controle do PC:** volume, música, janelas, programas, brilho, Configurações do Windows e uso do PC (Windows).
+- **Barra do topo:** com a tela minimizada, fica um entalhe comprido no meio do topo da tela, com o que o Ultron está
+  fazendo (ou a hora), a música com a capa e os botões, e um botão que abre a interface. Clicando, abre um painel com
+  menu do lado: Início, Conversa, Memória, Tarefas, Lembretes, Timers, Música, Copiados, Meu PC e Configurações.
+  Segue o tema da tela (prata ou escuro).
 - **Chamar pelo nome:** com o Ultron no ar, diga "Ultron", espere o bipe e peça. Usa o reconhecimento de fala do
   próprio Windows, sem internet (dá pra desligar em Configurações, na barra).
 - **Memória:** "lembra que minha namorada se chama Ana" guarda no `memoria.md` da sua pasta, e a barra mostra tudo
@@ -34,6 +38,7 @@ você fala → transcrição → Claude Code na sua pasta (skills, memória, con
 - Uma chave do [ElevenLabs](https://elevenlabs.io) (o plano grátis serve pra testar). Sem ela, ele responde só escrito.
 - Opcional: `ffmpeg` e o whisper local, pra transcrição grátis.
 - Opcional: `sounddevice` e `numpy`, só pra ligar com palmas (`palmas.py`).
+- Opcional: `pywebview`, só pra barra do topo da tela (`barra.py`, Windows).
 - Opcional, pra usar outra IA além do Claude: entrar com a sua conta (Gemini com o Google, ChatGPT com a conta do
   ChatGPT, pelos programas deles) ou a chave da API (`OPENAI_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`).
 
@@ -76,6 +81,18 @@ internet. Se ele ouvir sozinho, tire `"Medium"` de `CHAMADO_ACEITA` no `palmas.p
 Configurações, na barra (ou `ULTRON_CHAMADO=0` no `.env`). O Ctrl+Alt+V (segurar e falar) continua valendo.
 
 Pra ligar junto com o Windows, crie um atalho de `pythonw palmas.py` na pasta `shell:startup`.
+
+### Barra do topo da tela (opcional)
+
+```powershell
+py -m pip install -r requirements-barra.txt
+```
+
+Pronto: o Ultron abre a barra sozinho quando liga (`ULTRON_BARRA=0` no `.env` desliga). Ela aparece quando a tela do
+Ultron está minimizada ou fechada e some quando tem jogo ou vídeo em tela cheia. Clique no entalhe pra abrir o
+painel (o botão ⤢ abre a interface inteira); Esc ou clicar fora fecha. O microfone do painel faz o mesmo que dizer
+"Ultron" (precisa do `palmas.py` rodando). Copiados guarda só texto, só na memória, e pula o que os gerenciadores de
+senha marcam como sigiloso.
 
 ### Outras IAs (opcional)
 

@@ -1,5 +1,5 @@
 /* As cores dos dois temas do Ultron: prata (o claro) e escuro (classe "escuro" no body).
-   A tela (index.html) usa este arquivo. */
+   A tela (index.html) e a barra do topo (barra.html) usam este arquivo, então as duas mudam juntas. */
 :root {
   --fundo: #c3c6cb;
   --texto: #1d1f22;

@@ -24,6 +24,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 (pasta do projeto)/
 ├── server.py                  ponto de entrada (3 linhas). O palmas.py liga por aqui
 ├── palmas.py                  liga o Ultron com duas palmas ou dizendo "Ultron" (Windows)
+├── barra.py                   a janela da barra do topo da tela (Windows, pywebview); o app.py abre ela
 ├── ultron/
 │   ├── app.py                 main(): confere o ambiente, sobe o servidor, aquece o Claude, rotinas dos painéis
 │   ├── nucleo/                infraestrutura, sem regra de negócio
@@ -51,6 +52,7 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   │   ├── ias.py               outras IAs (ChatGPT, Gemini, Grok), pela API de cada uma
 │   │   ├── contas_ia.py         as mesmas IAs pela sua conta, sem chave (Gemini CLI com o Google, Codex com o ChatGPT)
 │   │   ├── limites.py           até quando cada IA está sem limite do plano (ias.quem_responde passa pra próxima)
+│   │   ├── barra.py             quando a barra do topo aparece (a tela está minimizada ou fechada?)
 │   │   ├── memoria.py           o que ele pede pra guardar (memoria.md na pasta dele) e o grafo disso
 │   │   ├── lembretes.py         lembretes (lembretes.md), timers e o tempo falado ("às 15h", "daqui a 10 minutos")
 │   │   ├── copiados.py          os últimos textos copiados (só na memória), pra copiar de novo
@@ -76,7 +78,9 @@ subir o servidor, e qualquer arquivo se lê sozinho: os imports do topo dizem tu
 │   └── http/
 │       ├── servidor.py          roteador: @rota("GET", "/api/...")
 │       └── rotas/               um arquivo de rotas por assunto
-├── web/                       a tela (HTML/CSS/JS, sem build)
+├── web/                       a tela (HTML/CSS/JS, sem build). A barra do topo é o barra.html: barra.js é o miolo
+│                              (entalhe, painel, eventos) e cada barra-*.js é uma seção; tema.css tem as cores dos
+│                              temas, usadas pela tela e pela barra
 ├── hooks/                     trava.py (o que precisa de confirmação) e registro.py (log das mudanças do Ultron)
 ├── atalhos/                   scripts que o Ultron roda (pc.py controla o PC, perguntar_ia.py consulta outra IA,
 │                              abrir.py, tela.py, mostrar.py, mercado.py...)

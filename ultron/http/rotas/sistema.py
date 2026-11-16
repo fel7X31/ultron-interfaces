@@ -5,18 +5,25 @@ import threading
 
 from ...assistente import turno
 from ...assistente.sessao import SESSAO
-from ...nucleo.config import CFG, ESTADO, VOZES, config_publica, salvar_preferencias
+from ...nucleo.config import CFG, ESTADO, TEMAS, VOZES, config_publica, salvar_preferencias
 from ...nucleo.eventos import EVENTOS
 from ...nucleo.log import log
+from ...recursos import barra
 from ...voz.fala import AMOSTRA, Fala, com_nome, gravar_avisos_prontos
 from ..servidor import Resposta, rota
 
 
 @rota("GET", "/api/eventos")
 def eventos(pedido):
-    """Server-Sent Events: a tela fica ouvindo aqui (estado da esfera, respostas, avisos, painéis...)."""
+    """Server-Sent Events: a tela fica ouvindo aqui (estado da esfera, respostas, avisos, painéis...).
+
+    A barra do topo também ouve (?quem=barra), mas não conta como tela aberta.
+    """
     pedido.abrir("text/event-stream")
-    q = EVENTOS.assinar()
+    e_tela = pedido.param("quem") != "barra"
+    q = EVENTOS.assinar(tela=e_tela)
+    if e_tela:
+        barra.avisar()  # uma tela abriu: a barra confere se ainda aparece
     try:
         while True:
             try:
@@ -24,10 +31,12 @@ def eventos(pedido):
             except queue.Empty:
                 dados = ": ping\n\n"
             pedido.escrever(dados)
-    except (BrokenPipeError, ConnectionResetError):
+    except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
         pass
     finally:
         EVENTOS.sair(q)
+        if e_tela:
+            barra.avisar()  # a tela fechou: a barra aparece
 
 
 @rota("GET", "/api/voz/{id_fala}")
@@ -89,6 +98,19 @@ def mudar_config(pedido):
     return config_publica()
 
 
+@rota("POST", "/api/tema")
+def mudar_tema(pedido):
+    """A tela trocou de tema (prata ou escuro): guarda e avisa a barra do topo, que acompanha."""
+    tema = pedido.json().get("tema")
+    if tema not in TEMAS:
+        raise ValueError(f"Tema desconhecido: {tema}.")
+    if tema != CFG["tema"]:
+        CFG["tema"] = tema
+        salvar_preferencias()
+        EVENTOS.emitir({"tipo": "tema", "tema": tema})
+    return {"tema": tema}
+
+
 @rota("POST", "/api/reiniciar")
 def reiniciar(pedido):
     turno.reiniciar()
@@ -97,7 +119,7 @@ def reiniciar(pedido):
 
 @rota("GET", "/api/saude")
 def saude(pedido):
-    return {"claude": SESSAO.vivo(), "pasta": str(CFG["pasta"]), "modelo": CFG["modelo"], "telas": len(EVENTOS.ouvintes),
+    return {"claude": SESSAO.vivo(), "pasta": str(CFG["pasta"]), "modelo": CFG["modelo"], "telas": EVENTOS.telas(),
             "estado": EVENTOS.ultimo_estado.get("estado"), "chamado": CFG["chamado"]}
 
 

@@ -30,6 +30,20 @@ def _ler_log():
         return []
 
 
+def conversa_recente(limite=30):
+    """Os últimos turnos da conversa (de hoje e de ontem), do mais velho pro mais novo: [{voce, resposta, quando}]."""
+    ontem = time.strftime("%Y-%m-%d", time.localtime(time.time() - 86400))
+    turnos = []
+    for linha in _ler_log()[-3000:]:
+        try:
+            e = json.loads(linha)
+        except ValueError:
+            continue
+        if e.get("evento") == "turno" and e.get("voce") and (e.get("quando") or "") >= ontem:
+            turnos.append({"voce": e["voce"], "resposta": e.get("resposta") or "", "quando": e.get("quando", "")})
+    return turnos[-limite:]
+
+
 def exportar_historico():
     """Escreve um .md por dia (só dias que já acabaram e que ainda não têm arquivo). Nunca reescreve um dia."""
     destino = CFG["pasta"] / "historico"
