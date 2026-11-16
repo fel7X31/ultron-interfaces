@@ -85,10 +85,13 @@
     larguraDoEntalhe = larguraCerta();
     corpo.classList.toggle("compacta", larguraDoEntalhe === LARGURA_COMPACTA);
     corpo.style.setProperty("--largura-entalhe", larguraDoEntalhe + "px");
-    Barra.janela("recolher", larguraDoEntalhe).then(() => {
+    const terminar = () => {
+      if (!corpo.classList.contains("fechando")) return;
       aberta = false;
       corpo.classList.remove("aberta", "fechando");
-    });
+    };
+    Barra.janela("recolher", larguraDoEntalhe).then(terminar);
+    setTimeout(terminar, 1000);  // se a resposta do barra.py se perder, não fica preso no meio do minimizar
   }
 
   let larguraDoEntalhe = LARGURA_COMPACTA;
