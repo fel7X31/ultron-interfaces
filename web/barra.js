@@ -229,6 +229,7 @@
   function tratar(e) {
     if (e.tipo === "estado") mudarEstado(e.estado);
     else if (e.tipo === "tema") aplicarTema(e.tema);
+    else if (e.tipo === "icone") window.Rosto && Rosto.atualizar(e);
     else if (e.tipo === "barra") aparecer(e.mostrar, e.telas);
     else if (e.tipo === "tocando") desenharMusica(e.tocando);
     else if (e.tipo === "voce") falaNoEntalhe(e.texto, "voce");

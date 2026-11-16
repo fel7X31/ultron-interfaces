@@ -1975,6 +1975,8 @@
         if (e.abrir) abrirCurriculo(e.modo); else fecharCurriculo();
       } else if (e.tipo === "ia") {  // trocou quem responde ("usa o Gemini")
         el("iaNome").textContent = e.nome;
+      } else if (e.tipo === "icone") {  // trocou o ícone pela barra do topo
+        if (window.Rosto) Rosto.atualizar(e);
       } else if (e.tipo === "tema") {  // trocou o tema pela barra do topo
         if (e.tema !== (localStorage.getItem("tema") || "prata")) aplicarTema(e.tema);
       } else if (e.tipo === "visor") {  // "mostra essa foto / abre esse arquivo" na tela

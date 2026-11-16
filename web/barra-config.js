@@ -1,4 +1,4 @@
-// Configurações: tema, ouvir o nome "Ultron", responder só por escrito e quem responde (o Claude ou outra IA).
+// Configurações: tema, ícone, ouvir o nome "Ultron", responder só por escrito e quem responde (o Claude ou outra IA).
 // O nome de quem responde também fica no topo do menu, embaixo do Ultron.
 (() => {
   const B = window.Barra;
@@ -20,6 +20,25 @@
   async function mudarTema(tema) {
     try { await B.mandar("/api/tema", { tema }); } catch (erro) { B.toast(erro.message); }
   }
+
+  // ---------------------------------------------------------- ícone
+  async function enviarIcone(arquivo) {
+    if (!arquivo) return;
+    try {
+      const r = await fetch("/api/icone", { method: "POST", headers: { "Content-Type": arquivo.type }, body: arquivo });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.erro || "Não deu certo.");
+      desenharIcone(d);
+      B.toast("Ícone trocado.");
+    } catch (erro) { B.toast(erro.message); }
+  }
+
+  async function voltarIcone() {
+    try { desenharIcone(await B.mandar("/api/icone/apagar")); B.toast("Voltei pro robô."); }
+    catch (erro) { B.toast(erro.message); }
+  }
+
+  function desenharIcone(s) { B.el("voltarIcone").hidden = !s.personalizado; }
 
   // ---------------------------------------------------------- quem responde
   async function carregarIas() {
@@ -93,11 +112,15 @@
       B.el("chaveChamado").addEventListener("click", () => mudar("chamado"));
       B.el("chaveTexto").addEventListener("click", () => mudar("modo_texto"));
       document.querySelectorAll("[data-tema]").forEach((b) => b.addEventListener("click", () => mudarTema(b.dataset.tema)));
+      B.el("enviarIcone").addEventListener("click", () => B.el("arquivoIcone").click());
+      B.el("arquivoIcone").addEventListener("change", (ev) => { enviarIcone(ev.target.files[0]); ev.target.value = ""; });
+      B.el("voltarIcone").addEventListener("click", voltarIcone);
     },
-    abrir() { desenharChaves(); carregarIas(); },
+    abrir() { desenharChaves(); carregarIas(); B.pegar("/api/icone").then(desenharIcone).catch(() => {}); },
     evento(e) {
       if (e.tipo === "conectou" || e.tipo === "ia") carregarIas();
       if (e.tipo === "conectou" || e.tipo === "tema_local") desenharChaves();
+      if (e.tipo === "icone") desenharIcone(e);
     },
   });
 })();
