@@ -233,6 +233,13 @@
   #botaoProvas:hover { transform: none; }
   #botaoCurriculo { right: 210px; }
   #botaoCurriculo:hover { transform: none; }
+  #botaoAjuda { right: 258px; }
+  #botaoAjuda:hover { transform: none; }
+  .ajuda-lista { max-height: 62vh; overflow: auto; font-size: 14px; line-height: 1.5; }
+  .ajuda-lista h4 { margin: 14px 0 4px; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--suave); }
+  .ajuda-lista h4:first-child { margin-top: 0; }
+  .ajuda-lista p { margin: 0 0 2px; }
+  .ajuda-lista b { font-weight: 600; }
   #botaoProvas.ativo { color: #d7141e; }
   .painel[data-painel="musica"] .conteudo { max-height: none; overflow: hidden; display: flex; flex-direction: column; }
   .painel[data-painel="musica"] .conteudo > * { flex: none; }
@@ -688,6 +695,44 @@
 <button id="botaoCurriculo" class="engrenagem" aria-label="Currículo" title="Abrir o currículo">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
 </button>
+<button id="botaoAjuda" class="engrenagem" aria-label="Ajuda de comandos" title="Comandos de voz">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg>
+</button>
+<div id="ajuda" class="config" hidden>
+  <div class="config-caixa chat-caixa" role="dialog" aria-modal="true" aria-label="Comandos de voz">
+    <div class="config-topo">
+      <span class="config-titulo">Comandos de voz</span>
+      <button id="fecharAjuda" class="config-fechar" aria-label="Fechar">×</button>
+    </div>
+    <div class="ajuda-lista">
+      <h4>Computador</h4>
+      <p><b>"volume 30"</b>, "sobe o volume", "mudo", "tira o mudo"</p>
+      <p><b>"pausa o Spotify"</b>, "toca o Spotify", "próxima", "volta a música"</p>
+      <p><b>"abre o Chrome"</b>, "fecha o Discord", "abre a calculadora"</p>
+      <p><b>"brilho 50"</b>, "bloqueia o PC", "área de trabalho"</p>
+      <p><b>"abre as configurações de bluetooth"</b></p>
+      <p><b>"quanto de CPU está usando"</b>, "que música está tocando"</p>
+      <h4>Música</h4>
+      <p><b>"toca [nome da música]"</b>, "próxima música", "pausa a música", "fecha o player"</p>
+      <h4>Telas</h4>
+      <p><b>"abre o currículo"</b> (analisar ou adaptar), "fecha o currículo"</p>
+      <p><b>"abre o quadro de tarefas"</b>, "fecha as tarefas"</p>
+      <p><b>"ativa o modo prova"</b>, "desliga o modo prova"</p>
+      <p><b>"modo entrevista"</b>, "terminar"</p>
+      <h4>Lembretes e memória</h4>
+      <p><b>"me lembra de X às 15h"</b>, "timer de 5 minutos", "cancela o timer"</p>
+      <p><b>"lembra que..."</b>, "esquece que..."</p>
+      <p><b>"anota..."</b> (cria nota)</p>
+      <h4>Quem responde</h4>
+      <p><b>"usa o Gemini"</b>, "usa o ChatGPT", "usa o Opus", "volta pro Claude"</p>
+      <p><b>"pergunta pro Gemini..."</b></p>
+      <h4>Ultron</h4>
+      <p><b>"olha minha tela"</b>, "mostra a foto...", "abre o link..."</p>
+      <p><b>"Ultron, desligar"</b>, "soltar microfone", "voltar"</p>
+      <p>O resto, é só pedir em linguagem natural.</p>
+    </div>
+  </div>
+</div>
 <div id="ia" class="ia-topo">
   <button id="botaoIa" class="ia-chip" type="button" aria-expanded="false" title="Quem responde: o Claude ou outra IA">
     <span class="ponto-ia"></span><span id="iaNome">Claude</span>
@@ -1996,7 +2041,7 @@
 
   // ---------------------------------------------------------- configurações (engrenagem)
   const painel = el("config");
-  const configAberta = () => !painel.hidden || !el("chat").hidden || !el("perfil").hidden || !el("leitor").hidden || !el("novoEvento").hidden || !el("recorte").hidden || !el("provas").hidden || !el("quadro").hidden || !el("visor").hidden;
+  const configAberta = () => !painel.hidden || !el("chat").hidden || !el("perfil").hidden || !el("leitor").hidden || !el("novoEvento").hidden || !el("recorte").hidden || !el("provas").hidden || !el("quadro").hidden || !el("visor").hidden || !el("ajuda").hidden;
   let config = null;
   let mouseTimer = null;
 
@@ -3353,6 +3398,11 @@
     animarCurriculo("fechando", () => { curriculoTela.hidden = true; });
   }
   addEventListener("message", (e) => { if (e.data && e.data.tipo === "fecharCurriculo") fecharCurriculo(); });
+  const ajudaEl = el("ajuda");
+  el("botaoAjuda").addEventListener("click", (e) => { e.currentTarget.blur(); ajudaEl.hidden = false; });
+  el("fecharAjuda").addEventListener("click", () => { ajudaEl.hidden = true; });
+  ajudaEl.addEventListener("click", (e) => { if (e.target === ajudaEl) ajudaEl.hidden = true; });
+  addEventListener("keydown", (e) => { if (e.key === "Escape" && !ajudaEl.hidden) ajudaEl.hidden = true; });
   el("botaoCurriculo").addEventListener("click", (e) => { e.currentTarget.blur(); abrirCurriculo(); });
 
   // ---------------------------------------------------------- tema e detalhes
